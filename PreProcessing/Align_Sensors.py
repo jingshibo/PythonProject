@@ -12,7 +12,7 @@ import csv
 
 ## initialization
 data_dir = 'D:\Data\Insole_Emg'
-data_file_name = 'subject0_20220805_175751'
+data_file_name = 'subject0_20220810_205047'
 left_insole_file = f'left_insole\left_{data_file_name}.csv'
 right_insole_file = f'right_insole\\right_{data_file_name}.csv'
 emg_file = f'emg\emg_{data_file_name}.csv'
@@ -31,7 +31,6 @@ insole_sampling_period = 25  # insole sampling period
 now = datetime.datetime.now()
 raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16',
                            converters={0: str, 1: str, 2: str})  # change data type for faster reading
-print(datetime.datetime.now() - now)
 # left insole
 raw_left_data = pd.read_csv(left_insole_path, sep=',', header=None)
 recovered_left_data = insertMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
@@ -39,22 +38,22 @@ recovered_left_data = insertMissingRow(raw_left_data, insole_sampling_period)  #
 # right insole
 raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
 recovered_right_data = insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
-
+print(datetime.datetime.now() - now)
 
 ## comcat two insole data into one dataframe
 combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data, recovered_right_data)  # to view combined_insole_data data
 
 
 ## align the begin of sensor data
-left_start_timestamp = 100
-right_start_timestamp = 350
+left_start_timestamp = 35175
+right_start_timestamp = 16300
 combine_cropped_begin, left_cropped_begin, right_cropped_begin = Align_Two_Insoles.alignInsoleBegin(  # to view combine_cropped_begin data
                         left_start_timestamp, right_start_timestamp, recovered_left_data,  recovered_right_data)
 
 
 ## align the end of sensor data
-left_end_timestamp = 304550
-right_end_timestamp = 304800
+left_end_timestamp = 331625
+right_end_timestamp = 312750
 left_insole_aligned, right_insole_aligned = Align_Two_Insoles.alignInsoleEnd(left_end_timestamp,
                                 right_end_timestamp, left_cropped_begin, right_cropped_begin)
 
@@ -64,8 +63,8 @@ left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole
 
 ## check the insole alignment results
 start_index = 0
-end_index = 40000
-Align_Two_Insoles.plotAlignedInsole(left_insole_upsampled, right_insole_upsampled, start_index, end_index)
+end_index = 10000
+Align_Two_Insoles.plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index)
 
 
 

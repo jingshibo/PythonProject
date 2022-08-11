@@ -8,7 +8,7 @@ import datetime
 from PreProcessing.Recover_Insole import insertMissingRow
 from PreProcessing import Align_Two_Insoles
 from PreProcessing import Align_Insole_Emg
-
+from Processing import Split_Insole_Data
 
 ## read raw sensor data
 # initialization
@@ -38,12 +38,11 @@ recovered_left_data = insertMissingRow(raw_left_data, insole_sampling_period)  #
 raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
 recovered_right_data = insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 
-
 ## read alignment data
 data_dir = 'D:\Data\Insole_Emg'
 alignment_file_name = 'subject0.csv'
 alignment_file_path = os.path.join(data_dir, alignment_file_name)
-alignment_data = pd.read_csv(alignment_file_path, sep=',') # header exists
+alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
 
 file_parameter = alignment_data.query('data_file_name == data_file_name')
 align_parameter = file_parameter.iloc[[-1]]  # extract the last row (apply the newest parameters)
@@ -53,16 +52,25 @@ left_end_timestamp = align_parameter['left_end_timestamp'].iloc[0]
 right_end_timestamp = align_parameter['right_end_timestamp'].iloc[0]
 print(left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp)
 
-
 ## read aligned sensor data
 _, left_cropped_begin, right_cropped_begin = Align_Two_Insoles.alignInsoleBegin(  # to view combine_cropped_begin data
-                        left_start_timestamp, right_start_timestamp, recovered_left_data,  recovered_right_data)
+    left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data)
 left_insole_aligned, right_insole_aligned = Align_Two_Insoles.alignInsoleEnd(left_end_timestamp,
-                                right_end_timestamp, left_cropped_begin, right_cropped_begin)
+                                                                             right_end_timestamp, left_cropped_begin,
+                                                                             right_cropped_begin)
 emg_aligned = Align_Insole_Emg.alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned)
 
 ## preprocess sensor data
 # upsampling insole data
-left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(left_insole_aligned, right_insole_aligned)
+left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(left_insole_aligned,
+                                                                                 right_insole_aligned)
 # filtering emg data
 emg_filtered = Align_Insole_Emg.filterEmg(emg_aligned)
+
+## plot sensor data
+start_index = 00000
+end_index = 610000
+left_force_baseline = 0
+right_force_baseline = 0
+Split_Insole_Data.plotSplitLine(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index,
+                                left_force_baseline, right_force_baseline)
