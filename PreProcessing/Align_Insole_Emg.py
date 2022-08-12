@@ -32,8 +32,8 @@ def filterEmg(emg_aligned, notch = True, quality_factor = 10):
 
 ## plot insole and emg data
 def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index):
-    left_total_force = left_insole_dataframe[195]
-    right_total_force = right_insole_dataframe[195]
+    left_total_force = left_insole_dataframe.iloc[:, 192] # extract total force column
+    right_total_force = right_insole_dataframe.iloc[:, 192]
     emg_data = emg_dataframe.sum(1)
 
     # plot

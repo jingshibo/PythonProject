@@ -1,11 +1,13 @@
 ## import modules
 import os
+
+import datashape
 import pandas as pd
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import datetime
-from PreProcessing.Recover_Insole import insertMissingRow
+from PreProcessing import Recover_Insole
 from PreProcessing import Align_Two_Insoles
 from PreProcessing import Align_Insole_Emg
 import csv
@@ -25,7 +27,6 @@ raw_right_data = []
 raw_emg_data = []
 insole_sampling_period = 25  # insole sampling period
 
-
 ## read and impute sensor data
 # emg
 now = datetime.datetime.now()
@@ -33,39 +34,34 @@ raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16',
                            converters={0: str, 1: str, 2: str})  # change data type for faster reading
 # left insole
 raw_left_data = pd.read_csv(left_insole_path, sep=',', header=None)
-recovered_left_data = insertMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
+recovered_left_data = Recover_Insole.insertMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
 
 # right insole
 raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
-recovered_right_data = insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
+recovered_right_data = Recover_Insole.insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 print(datetime.datetime.now() - now)
 
 ## comcat two insole data into one dataframe
-combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data, recovered_right_data)  # to view combined_insole_data data
-
+combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data,
+                                                      recovered_right_data)  # to view combined_insole_data data
 
 ## align the begin of sensor data
 left_start_timestamp = 35175
 right_start_timestamp = 16300
-combine_cropped_begin, left_cropped_begin, right_cropped_begin = Align_Two_Insoles.alignInsoleBegin(  # to view combine_cropped_begin data
-                        left_start_timestamp, right_start_timestamp, recovered_left_data,  recovered_right_data)
-
+# to view combine_cropped_begin data
+combine_cropped_begin, left_cropped_begin, right_cropped_begin = Align_Two_Insoles.alignInsoleBegin(
+    left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data)
 
 ## align the end of sensor data
 left_end_timestamp = 331625
 right_end_timestamp = 312750
 left_insole_aligned, right_insole_aligned = Align_Two_Insoles.alignInsoleEnd(left_end_timestamp,
-                                right_end_timestamp, left_cropped_begin, right_cropped_begin)
-
-## upsampling and filtering aligned insole data
-left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(left_insole_aligned, right_insole_aligned)
-# left_insole_filtered, right_insole_filtered = Align_Two_Insoles.filterInsole(left_insole_upsampled, right_insole_upsampled)
+                     right_end_timestamp, left_cropped_begin, right_cropped_begin)
 
 ## check the insole alignment results
 start_index = 0
-end_index = 10000
+end_index = 11859
 Align_Two_Insoles.plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index)
-
 
 
 ## align insole and EMG
@@ -73,9 +69,15 @@ emg_aligned = Align_Insole_Emg.alignInsoleEmg(raw_emg_data, left_insole_aligned,
 emg_filtered = Align_Insole_Emg.filterEmg(emg_aligned, notch=False, quality_factor=30)
 
 
+## upsampling and filtering aligned insole data
+left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(left_insole_aligned,
+                                                                                 right_insole_aligned, emg_aligned)
+# left_insole_filtered, right_insole_filtered = Align_Two_Insoles.filterInsole(left_insole_upsampled, right_insole_upsampled)
+
+
 ## check the insole and emg alignment results
 start_index = 00000
-end_index = 610000
+end_index = 600000
 Align_Insole_Emg.plotInsoleEmg(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index)
 
 
@@ -87,9 +89,9 @@ alignment_save_file = f'subject{subject}.csv'
 alignment_save_path = os.path.join(data_dir, alignment_save_file)
 
 # alignment parameters to save
-columns = ['alignment_save_date', 'data_file_name', 'left_start_timestamp', 'right_start_timestamp',
+columns = ['data_file_name', 'alignment_save_date', 'left_start_timestamp', 'right_start_timestamp',
            'left_end_timestamp', 'right_end_timestamp']
-save_parameters = [datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), data_file_name, left_start_timestamp,
+save_parameters = [data_file_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), left_start_timestamp,
                    right_start_timestamp, left_end_timestamp, right_end_timestamp]
 
 with open(alignment_save_path, 'a+') as file:
@@ -101,10 +103,6 @@ with open(alignment_save_path, 'a+') as file:
     else:
         write = csv.writer(file)
         write.writerow(save_parameters)
-
-
-
-
 
 ## plot sensor data
 start_index = 00000
@@ -132,9 +130,10 @@ axes[0].legend(loc="upper right")
 axes[1].legend(loc="upper right")
 
 
+
 ## test
-date1 = datetime.datetime.strptime(combine_cropped_begin.iat[0,2], "%Y-%m-%d_%H:%M:%S.%f")
-date2 = datetime.datetime.strptime(combine_cropped_begin.iat[1014,2], "%Y-%m-%d_%H:%M:%S.%f")
-delta = (date2 - date1).total_seconds() * 1000
-number = delta / 25
-print(number)
+data = recovered_left_data
+date1 = datetime.datetime.strptime(data.iloc[0, 0], "%Y-%m-%d_%H:%M:%S.%f")
+date2 = datetime.datetime.strptime(data.iloc[6000, 0], "%Y-%m-%d_%H:%M:%S.%f")
+print((date2 - date1).total_seconds() * 1000 / 25)
+print(1000 / ((date2 - date1).total_seconds() * 1000 / 6000))

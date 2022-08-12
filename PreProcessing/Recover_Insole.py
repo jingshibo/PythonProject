@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from scipy.interpolate import PchipInterpolator
 
 ## insert missing insole data
 def insertMissingRow(raw_insole_data, sampling_period):
@@ -15,11 +16,21 @@ def insertMissingRow(raw_insole_data, sampling_period):
     recovered_left_data = inserted_left_data.interpolate(method='pchip', limit_direction='forward', axis=0)
     return recovered_left_data
 
-## upsample insole data
-def upsampleInsoleData(insole_data):
+## upsample insole data to every 0.5ms to match EMG
+def upsampleInsoleData(insole_data): # (abandoned method, because the insole sampling rate is not exact 40Hz)
     only_measured_data = insole_data.iloc[:, 3:] # extract only measurement value columns
     only_measured_data.iloc[:, 0] = pd.to_datetime(only_measured_data.iloc[:, 0], unit='ms') # convert timestamp string to datetime object
     only_measured_data = only_measured_data.set_index([3]) # set the timestamp column as datetime index
-    upsampled_sensor_data = only_measured_data.resample('0.5ms').asfreq()  # upsampling to every 0.5ms to match EMG
+    upsampled_sensor_data = only_measured_data.resample('0.5ms').asfreq()  # insert row of NaN every 0.5ms
     upsampled_sensor_data = upsampled_sensor_data.interpolate(method='pchip', limit_direction='forward', axis=0) # impute the NaN missing values
     return upsampled_sensor_data
+
+## upsample insole data to exactly the same number as EMG
+def upsampleInsoleEqualToEMG(insole_data, emg_data):
+    x = np.arange(len(insole_data))
+    y = insole_data.iloc[:, 3:].to_numpy()
+    f = PchipInterpolator(x, y)
+    x_upsampled = np.linspace(min(x), max(x), len(emg_data))
+    y_upsampled = f(x_upsampled)
+    insole_upsampled = pd.DataFrame(y_upsampled)
+    return insole_upsampled
