@@ -1,16 +1,9 @@
 ## import modules
 import os
-
-import datashape
-import pandas as pd
-import numpy as np
-from scipy import signal
-import matplotlib.pyplot as plt
-import datetime
-from PreProcessing import Recover_Insole
-from PreProcessing import Align_Two_Insoles
-from PreProcessing import Align_Insole_Emg
 import csv
+import pandas as pd
+import datetime
+from PreProcessing.Utility import Align_Two_Insoles, Align_Insole_Emg, Recover_Insole, Split_Insole_Data
 
 ## initialization
 data_dir = 'D:\Data\Insole_Emg'
@@ -49,14 +42,14 @@ combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data,
 left_start_timestamp = 35175
 right_start_timestamp = 16300
 # to view combine_cropped_begin data
-combine_cropped_begin, left_cropped_begin, right_cropped_begin = Align_Two_Insoles.alignInsoleBegin(
+combine_cropped_begin, left_begin_cropped, right_begin_cropped = Align_Two_Insoles.alignInsoleBegin(
     left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data)
 
 ## align the end of sensor data
 left_end_timestamp = 331625
 right_end_timestamp = 312750
 left_insole_aligned, right_insole_aligned = Align_Two_Insoles.alignInsoleEnd(left_end_timestamp,
-                     right_end_timestamp, left_cropped_begin, right_cropped_begin)
+                     right_end_timestamp, left_begin_cropped, right_begin_cropped)
 
 ## check the insole alignment results
 start_index = 0
@@ -70,8 +63,8 @@ emg_filtered = Align_Insole_Emg.filterEmg(emg_aligned, notch=False, quality_fact
 
 
 ## upsampling and filtering aligned insole data
-left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(left_insole_aligned,
-                                                                                 right_insole_aligned, emg_aligned)
+left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(
+                            left_insole_aligned, right_insole_aligned, emg_aligned)
 # left_insole_filtered, right_insole_filtered = Align_Two_Insoles.filterInsole(left_insole_upsampled, right_insole_upsampled)
 
 
@@ -104,36 +97,48 @@ with open(alignment_save_path, 'a+') as file:
         write = csv.writer(file)
         write.writerow(save_parameters)
 
-## plot sensor data
+
+## plot sensor data to split gait cycles
 start_index = 00000
-end_index = 610000
-
-left_total_force = left_insole_upsampled[195]
-right_total_force = right_insole_upsampled[195]
-emg_data = emg_filtered.sum(1)
-
-# plot
-fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
-axes[0].plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
-             label="Left Insole Force")
-axes[0].plot(range(len(right_total_force.iloc[start_index:end_index])),
-             right_total_force.iloc[start_index:end_index], label="Right Insole Force")
-axes[1].plot(range(len(emg_data.iloc[start_index:end_index])), emg_data.iloc[start_index:end_index],
-             label="Emg Signal")
-
-axes[0].set(title="Insole Force", ylabel="force(kg)")
-axes[1].set(title="Emg Signal", xlabel="Sample Number", ylabel="Emg Value")
-
-axes[0].tick_params(labelbottom=True)  # show x-axis ticklabels
-
-axes[0].legend(loc="upper right")
-axes[1].legend(loc="upper right")
+end_index = 600000
+left_force_baseline = 4.5
+right_force_baseline = 4.5
+Split_Insole_Data.plotSplitLine(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index,
+    left_force_baseline, right_force_baseline)
 
 
 
-## test
-data = recovered_left_data
-date1 = datetime.datetime.strptime(data.iloc[0, 0], "%Y-%m-%d_%H:%M:%S.%f")
-date2 = datetime.datetime.strptime(data.iloc[6000, 0], "%Y-%m-%d_%H:%M:%S.%f")
-print((date2 - date1).total_seconds() * 1000 / 25)
-print(1000 / ((date2 - date1).total_seconds() * 1000 / 6000))
+
+# ## plot sensor data
+# start_index = 00000
+# end_index = 610000
+#
+# left_total_force = left_insole_upsampled[195]
+# right_total_force = right_insole_upsampled[195]
+# emg_data = emg_filtered.sum(1)
+#
+# # plot
+# fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+# axes[0].plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
+#              label="Left Insole Force")
+# axes[0].plot(range(len(right_total_force.iloc[start_index:end_index])),
+#              right_total_force.iloc[start_index:end_index], label="Right Insole Force")
+# axes[1].plot(range(len(emg_data.iloc[start_index:end_index])), emg_data.iloc[start_index:end_index],
+#              label="Emg Signal")
+#
+# axes[0].set(title="Insole Force", ylabel="force(kg)")
+# axes[1].set(title="Emg Signal", xlabel="Sample Number", ylabel="Emg Value")
+#
+# axes[0].tick_params(labelbottom=True)  # show x-axis ticklabels
+#
+# axes[0].legend(loc="upper right")
+# axes[1].legend(loc="upper right")
+#
+#
+#
+# ## test
+# data = recovered_left_data
+# date1 = datetime.datetime.strptime(data.iloc[0, 0], "%Y-%m-%d_%H:%M:%S.%f")
+# date2 = datetime.datetime.strptime(data.iloc[6000, 0], "%Y-%m-%d_%H:%M:%S.%f")
+# print((date2 - date1).total_seconds() * 1000 / 25)
+# print(1000 / ((date2 - date1).total_seconds() * 1000 / 6000))

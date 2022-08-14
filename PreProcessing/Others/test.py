@@ -1,14 +1,10 @@
 ## import modules
 import os
 import pandas as pd
-import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import datetime
-from PreProcessing.Recover_Insole import insertMissingRow
-from PreProcessing import Align_Two_Insoles
-from PreProcessing import Align_Insole_Emg
-import csv
+from PreProcessing.Utility.Recover_Insole import insertMissingRow
 
 ## initialization
 data_dir = 'D:\Data\Insole_Emg'

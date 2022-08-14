@@ -1,9 +1,9 @@
 ##
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
-from PreProcessing import Recover_Insole
+from PreProcessing.Utility import Recover_Insole
+
 
 ## comcat two insole data into one dataframe
 def cancatInsole(recovered_left_data, recovered_right_data):

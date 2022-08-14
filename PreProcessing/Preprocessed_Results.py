@@ -1,9 +1,9 @@
-##
+## import modules
 import json
 import os
 
 ## Shibo's data spliting results
-split_Shibo_data = {
+Shibo_preprocessed_results = {
     'up_to_down': {
         'session0': {
             'file_name': 'subject0_20220810_205047',
@@ -437,18 +437,17 @@ split_Shibo_data = {
 }
 
 
-
-## save split data path
+## split result path
 subject = 'Shibo'
 data_dir = 'D:\Data\Insole_Emg'
 data_file_name = f'subject_{subject}_split'
-split_file = f'Subject_{subject}\{data_file_name}.json'
-split_path = os.path.join(data_dir, split_file)
+parameter_file = f'Subject_{subject}\{data_file_name}.json'
+parameter_path = os.path.join(data_dir, parameter_file)
 
 ## save split results to json files
-with open(split_path, 'w') as outfile:
-    json.dump(split_Shibo_data, outfile, indent=8)
+with open(parameter_path, 'w') as json_file:
+    json.dump(Shibo_preprocessed_results, json_file, indent=8)
 
 ## read split results from json files
-with open(split_path) as json_file:
-    split_Shibo_data = json.load(json_file)
+with open(parameter_path) as json_file:
+    Shibo_preprocessed_results = json.load(json_file)
