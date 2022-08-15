@@ -75,27 +75,9 @@ Align_Insole_Emg.plotInsoleEmg(emg_filtered, left_insole_upsampled, right_insole
 
 
 ## save the alignment parameters
-# save file path
 subject = 0
-data_dir = 'D:\Data\Insole_Emg'
-alignment_save_file = f'subject{subject}.csv'
-alignment_save_path = os.path.join(data_dir, alignment_save_file)
-
-# alignment parameters to save
-columns = ['data_file_name', 'alignment_save_date', 'left_start_timestamp', 'right_start_timestamp',
-           'left_end_timestamp', 'right_end_timestamp']
-save_parameters = [data_file_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), left_start_timestamp,
-                   right_start_timestamp, left_end_timestamp, right_end_timestamp]
-
-with open(alignment_save_path, 'a+') as file:
-    if os.stat(alignment_save_path).st_size == 0:  # if the file is new created
-        print("Created file.")
-        write = csv.writer(file)
-        write.writerow(columns)  # write the column fields
-        write.writerow(save_parameters)
-    else:
-        write = csv.writer(file)
-        write.writerow(save_parameters)
+Align_Two_Insoles.saveAlignData(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp,
+    right_end_timestamp)
 
 
 ## plot sensor data to split gait cycles

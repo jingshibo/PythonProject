@@ -2,6 +2,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import json
 
 ## plot split line in order to seperate the gait cycle
 def plotSplitLine(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index,
@@ -54,3 +56,21 @@ def plotSplitLine(emg_dataframe, left_insole_dataframe, right_insole_dataframe, 
     axes[1].legend(loc="upper right")
     axes[2].legend(loc="upper right")
 
+def saveSplitData(subject, split_data):
+    data_dir = 'D:\Data\Insole_Emg'
+    data_file_name = f'subject_{subject}_split'
+    split_file = f'Subject_{subject}\{data_file_name}.json'
+    split_path = os.path.join(data_dir, split_file)
+
+    with open(split_path, 'w') as json_file:
+        json.dump(split_data, json_file, indent=8)
+
+def readSplitData(subject):
+    data_dir = 'D:\Data\Insole_Emg'
+    data_file_name = f'subject_{subject}_split'
+    split_file = f'Subject_{subject}\{data_file_name}.json'
+    split_path = os.path.join(data_dir, split_file)
+
+    with open(split_path) as json_file:
+        split_data = json.load(json_file)
+    return split_data

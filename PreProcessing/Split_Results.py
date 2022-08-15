@@ -1,13 +1,10 @@
 ## import modules
-import json
-import os
+from PreProcessing.Utility import Split_Insole_Data
 
-## Shibo's data spliting results
-Shibo_preprocessed_results = {
+## Shibo's data spliting results saved in dict
+split_Shibo_results = {
     'up_to_down': {
         'session0': {
-            'file_name': 'subject0_20220810_205047',
-            'align parameter': [35175, 16300, 331625, 312750],
             'turnSSSS': [82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758],
             'SSLW': [90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219],
             'LW_1': [91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893],
@@ -29,8 +26,6 @@ Shibo_preprocessed_results = {
             'LW_4': [126039, 179573, 126039, 179573, 126039, 179573, 126039, 179573, 126039, 179573],
             'LWSS': [128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869]},
         'session1': {
-            'file_name': 'subject0_20220810_205047',
-            'align parameter': [35175, 16300, 331625, 312750],
             'turnSSSS': [82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758],
             'SSLW': [90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219],
             'LW_1': [91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893],
@@ -221,8 +216,6 @@ Shibo_preprocessed_results = {
         'LWSS': [128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869]}},
     'down_to_up': {
         'session0': {
-            'file_name': 'subject0_20220810_205047',
-            'align parameter': [35175, 16300, 331625, 312750],
             'turnSSSS': [82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758],
             'SSLW': [90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219],
             'LW_1': [91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893],
@@ -244,8 +237,6 @@ Shibo_preprocessed_results = {
             'LW_4': [126039, 179573, 126039, 179573, 126039, 179573, 126039, 179573, 126039, 179573],
             'LWSS': [128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869]},
         'session1': {
-            'file_name': 'subject0_20220810_205047',
-            'align parameter': [35175, 16300, 331625, 312750],
             'turnSSSS': [82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758],
             'SSLW': [90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219, 90565, 149219],
             'LW_1': [91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893, 91210, 149893],
@@ -436,18 +427,10 @@ Shibo_preprocessed_results = {
         'LWSS': [128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869, 128450, 181869]}}
 }
 
-
-## split result path
-subject = 'Shibo'
-data_dir = 'D:\Data\Insole_Emg'
-data_file_name = f'subject_{subject}_split'
-parameter_file = f'Subject_{subject}\{data_file_name}.json'
-parameter_path = os.path.join(data_dir, parameter_file)
-
 ## save split results to json files
-with open(parameter_path, 'w') as json_file:
-    json.dump(Shibo_preprocessed_results, json_file, indent=8)
+subject = 'Shibo'
+Split_Insole_Data.saveSplitData(subject, split_Shibo_results)
 
 ## read split results from json files
-with open(parameter_path) as json_file:
-    Shibo_preprocessed_results = json.load(json_file)
+subject = 'Shibo'
+split_Shibo_results = Split_Insole_Data.readSplitData(subject)
