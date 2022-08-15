@@ -20,7 +20,7 @@ def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
     return emg_aligned
 
 ## filter EMG signal
-def filterEmg(emg_aligned, notch = True, quality_factor = 10):
+def filterEmg(emg_aligned, notch = False, quality_factor = 30):
     sos = signal.butter(4, [20, 400], fs=2000, btype="bandpass", output='sos')
     emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_aligned.iloc[:, 3:67], axis=0)
     emg_filtered = emg_bandpass_filtered

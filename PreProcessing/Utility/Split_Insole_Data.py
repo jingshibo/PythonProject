@@ -6,7 +6,7 @@ import os
 import json
 
 ## plot split line in order to seperate the gait cycle
-def plotSplitLine(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index,
+def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, start_index, end_index,
                   left_force_baseline, right_force_baseline):
     left_total_force = left_insole_dataframe.iloc[:, 192]
     right_total_force = right_insole_dataframe.iloc[:, 192]
@@ -58,8 +58,7 @@ def plotSplitLine(emg_dataframe, left_insole_dataframe, right_insole_dataframe, 
 
 def saveSplitData(subject, split_data):
     data_dir = 'D:\Data\Insole_Emg'
-    data_file_name = f'subject_{subject}_split'
-    split_file = f'Subject_{subject}\{data_file_name}.json'
+    split_file = f'subject_{subject}\subject_{subject}_split.json'
     split_path = os.path.join(data_dir, split_file)
 
     with open(split_path, 'w') as json_file:
@@ -67,8 +66,7 @@ def saveSplitData(subject, split_data):
 
 def readSplitData(subject):
     data_dir = 'D:\Data\Insole_Emg'
-    data_file_name = f'subject_{subject}_split'
-    split_file = f'Subject_{subject}\{data_file_name}.json'
+    split_file = f'subject_{subject}\subject_{subject}_split.json'
     split_path = os.path.join(data_dir, split_file)
 
     with open(split_path) as json_file:

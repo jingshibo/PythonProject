@@ -2,7 +2,8 @@
 from PreProcessing.Utility import Split_Insole_Data
 
 ## Shibo's data spliting results saved in dict
-split_Shibo_results = {
+subject = 'Shibo'
+split_results = {
     'up_to_down': {
         'session0': {
             'turnSSSS': [82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758],
@@ -428,9 +429,4 @@ split_Shibo_results = {
 }
 
 ## save split results to json files
-subject = 'Shibo'
-Split_Insole_Data.saveSplitData(subject, split_Shibo_results)
-
-## read split results from json files
-subject = 'Shibo'
-split_Shibo_results = Split_Insole_Data.readSplitData(subject)
+Split_Insole_Data.saveSplitData(subject, split_results)

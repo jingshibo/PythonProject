@@ -93,8 +93,8 @@ def plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, en
 def saveAlignData(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp):
     # save file path
     data_dir = 'D:\Data\Insole_Emg'
-    alignment_save_file = f'subject_{subject}.csv'
-    alignment_save_path = os.path.join(data_dir, alignment_save_file)
+    alignment_file = f'subject_{subject}\subject_{subject}_align.csv'
+    alignment_file_path = os.path.join(data_dir, alignment_file)
 
     # alignment parameters to save
     columns = ['data_file_name', 'alignment_save_date', 'left_start_timestamp', 'right_start_timestamp',
@@ -102,8 +102,8 @@ def saveAlignData(subject, data_file_name, left_start_timestamp, right_start_tim
     save_parameters = [data_file_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), left_start_timestamp,
         right_start_timestamp, left_end_timestamp, right_end_timestamp]
 
-    with open(alignment_save_path, 'a+') as file:
-        if os.stat(alignment_save_path).st_size == 0:  # if the file is new created
+    with open(alignment_file_path, 'a+') as file:
+        if os.stat(alignment_file_path).st_size == 0:  # if the file is new created
             print("Created file.")
             write = csv.writer(file)
             write.writerow(columns)  # write the column fields
@@ -115,15 +115,18 @@ def saveAlignData(subject, data_file_name, left_start_timestamp, right_start_tim
 ## read the alignment data
 def readAlignData(subject, data_file_name):
     data_dir = 'D:\Data\Insole_Emg'
-    alignment_file_name = f'subject_{subject}.csv'
-    alignment_file_path = os.path.join(data_dir, alignment_file_name)
+    alignment_file = f'subject_{subject}\subject_{subject}_align.csv'
+    alignment_file_path = os.path.join(data_dir, alignment_file)
+
     alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
-
     file_parameter = alignment_data.query('data_file_name == @data_file_name') # use @ to cite variable values
-    align_parameter = file_parameter.iloc[[-1]]  # extract the last row (apply the newest parameters)
+    if file_parameter.empty:  # if no alignment parameter found
+        raise Exception(f"No alignment parameter found for data file: {data_file_name}")
+    else:
+        align_parameter = file_parameter.iloc[[-1]]  # extract the last row (apply the newest parameters)
 
-    left_start_timestamp = align_parameter['left_start_timestamp'].iloc[0]
-    right_start_timestamp = align_parameter['right_start_timestamp'].iloc[0]
-    left_end_timestamp = align_parameter['left_end_timestamp'].iloc[0]
-    right_end_timestamp = align_parameter['right_end_timestamp'].iloc[0]
-    return left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp
+        left_start_timestamp = align_parameter['left_start_timestamp'].iloc[0]
+        right_start_timestamp = align_parameter['right_start_timestamp'].iloc[0]
+        left_end_timestamp = align_parameter['left_end_timestamp'].iloc[0]
+        right_end_timestamp = align_parameter['right_end_timestamp'].iloc[0]
+        return left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp

@@ -5,12 +5,25 @@ import pandas as pd
 import datetime
 from PreProcessing.Utility import Align_Two_Insoles, Align_Insole_Emg, Recover_Insole, Split_Insole_Data
 
+
 ## initialization
+
+subject = 'Shibo'
+mode = 'up_down'
+session = 0
+
 data_dir = 'D:\Data\Insole_Emg'
-data_file_name = 'subject0_20220810_205047'
-left_insole_file = f'left_insole\left_{data_file_name}.csv'
-right_insole_file = f'right_insole\\right_{data_file_name}.csv'
-emg_file = f'emg\emg_{data_file_name}.csv'
+data_file_name = f'subject_{subject}_session_{session}_{mode}'
+
+# data_file_name = 'subject0_20220810_205047'
+# left_insole_file = f'left_insole\left_{data_file_name}.csv'
+# right_insole_file = f'right_insole\\right_{data_file_name}.csv'
+# emg_file = f'emg\emg_{data_file_name}.csv'
+
+left_insole_file = f'subject_{subject}\{mode}\left_insole\left_{data_file_name}.csv'
+right_insole_file = f'subject_{subject}\{mode}\\right_insole\\right_{data_file_name}.csv'
+emg_file = f'subject_{subject}\{mode}\emg\emg_{data_file_name}.csv'
+
 left_insole_path = os.path.join(data_dir, left_insole_file)
 right_insole_path = os.path.join(data_dir, right_insole_file)
 emg_path = os.path.join(data_dir, emg_file)
@@ -18,9 +31,10 @@ emg_path = os.path.join(data_dir, emg_file)
 raw_left_data = []
 raw_right_data = []
 raw_emg_data = []
-insole_sampling_period = 25  # insole sampling period
+
 
 ## read and impute sensor data
+insole_sampling_period = 25  # insole sampling period
 # emg
 now = datetime.datetime.now()
 raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16',
@@ -34,6 +48,7 @@ raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
 recovered_right_data = Recover_Insole.insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 print(datetime.datetime.now() - now)
 
+
 ## comcat two insole data into one dataframe
 combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data,
                                                       recovered_right_data)  # to view combined_insole_data data
@@ -45,16 +60,19 @@ right_start_timestamp = 16300
 combine_cropped_begin, left_begin_cropped, right_begin_cropped = Align_Two_Insoles.alignInsoleBegin(
     left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data)
 
+
 ## align the end of sensor data
 left_end_timestamp = 331625
 right_end_timestamp = 312750
 left_insole_aligned, right_insole_aligned = Align_Two_Insoles.alignInsoleEnd(left_end_timestamp,
                      right_end_timestamp, left_begin_cropped, right_begin_cropped)
 
+
 ## check the insole alignment results
 start_index = 0
 end_index = 11859
 Align_Two_Insoles.plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index)
+
 
 
 ## align insole and EMG
@@ -75,7 +93,6 @@ Align_Insole_Emg.plotInsoleEmg(emg_filtered, left_insole_upsampled, right_insole
 
 
 ## save the alignment parameters
-subject = 0
 Align_Two_Insoles.saveAlignData(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp,
     right_end_timestamp)
 
@@ -85,7 +102,7 @@ start_index = 00000
 end_index = 600000
 left_force_baseline = 4.5
 right_force_baseline = 4.5
-Split_Insole_Data.plotSplitLine(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index,
+Split_Insole_Data.plotSplitLine(left_insole_upsampled, right_insole_upsampled, emg_filtered, start_index, end_index,
     left_force_baseline, right_force_baseline)
 
 
