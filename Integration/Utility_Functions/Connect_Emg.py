@@ -1,5 +1,5 @@
 ##
-from Integration.Utility import Emg_Sq_Class
+from Integration.Utility_Functions import Emg_Sq_Class
 import datetime
 
 def connectEmg():

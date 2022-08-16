@@ -1,8 +1,7 @@
 ##
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal
+import os
 
 ## align EMG and insoles
 def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
@@ -19,16 +18,6 @@ def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
     emg_aligned = raw_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
     return emg_aligned
 
-## filter EMG signal
-def filterEmg(emg_aligned, notch = False, quality_factor = 30):
-    sos = signal.butter(4, [20, 400], fs=2000, btype="bandpass", output='sos')
-    emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_aligned.iloc[:, 3:67], axis=0)
-    emg_filtered = emg_bandpass_filtered
-    if notch:
-        b, a = signal.iircomb(50, quality_factor, fs=2000, ftype='notch')
-        emg_notch_filtered = signal.filtfilt(b, a, pd.DataFrame(emg_bandpass_filtered), axis=0)
-        emg_filtered = emg_notch_filtered
-    return pd.DataFrame(emg_filtered)
 
 ## plot insole and emg data
 def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index):
@@ -55,3 +44,39 @@ def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, 
     axes[0].legend(loc="upper right")
     axes[1].legend(loc="upper right")
     axes[2].legend(loc="upper right")
+
+
+def saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned):
+    data_dir = 'D:\Data\Insole_Emg'
+    data_file_name = f'subject_{subject}_session_{session}_{mode}'
+
+    left_insole_file = f'subject_{subject}\\aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
+    right_insole_file = f'subject_{subject}\\aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
+    emg_file = f'subject_{subject}\\aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
+
+    left_insole_path = os.path.join(data_dir, left_insole_file)
+    right_insole_path = os.path.join(data_dir, right_insole_file)
+    emg_path = os.path.join(data_dir, emg_file)
+
+    left_insole_aligned.to_csv(left_insole_path, index=False)
+    right_insole_aligned.to_csv(right_insole_path, index=False)
+    emg_aligned.to_csv(emg_path, index=False)
+
+
+def readAlignedData(subject, session, mode):
+    data_dir = 'D:\Data\Insole_Emg'
+    data_file_name = f'subject_{subject}_session_{session}_{mode}'
+
+    left_insole_file = f'subject_{subject}\\aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
+    right_insole_file = f'subject_{subject}\\aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
+    emg_file = f'subject_{subject}\\aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
+
+    left_insole_path = os.path.join(data_dir, left_insole_file)
+    right_insole_path = os.path.join(data_dir, right_insole_file)
+    emg_path = os.path.join(data_dir, emg_file)
+
+    left_insole_aligned = pd.read_csv(left_insole_path)
+    right_insole_aligned = pd.read_csv(right_insole_path)
+    emg_aligned = pd.read_csv(emg_path)
+
+    return left_insole_aligned, right_insole_aligned, emg_aligned

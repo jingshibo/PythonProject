@@ -1,10 +1,8 @@
 ## import modules
 import os
-import csv
 import pandas as pd
 import datetime
-from PreProcessing.Utility import Align_Two_Insoles, Align_Insole_Emg, Recover_Insole, Split_Insole_Data
-
+from RawData.Utility_Functions import Align_Two_Insoles, Align_Insole_Emg, Recover_Insole, Upsampling_Filtering
 
 ## initialization
 
@@ -20,9 +18,9 @@ data_file_name = f'subject_{subject}_session_{session}_{mode}'
 # right_insole_file = f'right_insole\\right_{data_file_name}.csv'
 # emg_file = f'emg\emg_{data_file_name}.csv'
 
-left_insole_file = f'subject_{subject}\{mode}\left_insole\left_{data_file_name}.csv'
-right_insole_file = f'subject_{subject}\{mode}\\right_insole\\right_{data_file_name}.csv'
-emg_file = f'subject_{subject}\{mode}\emg\emg_{data_file_name}.csv'
+left_insole_file = f'subject_{subject}\\raw_{mode}\left_insole\left_{data_file_name}.csv'
+right_insole_file = f'subject_{subject}\\raw_{mode}\\right_insole\\right_{data_file_name}.csv'
+emg_file = f'subject_{subject}\\raw_{mode}\emg\emg_{data_file_name}.csv'
 
 left_insole_path = os.path.join(data_dir, left_insole_file)
 right_insole_path = os.path.join(data_dir, right_insole_file)
@@ -74,17 +72,14 @@ end_index = 11859
 Align_Two_Insoles.plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index)
 
 
-
 ## align insole and EMG
 emg_aligned = Align_Insole_Emg.alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned)
-emg_filtered = Align_Insole_Emg.filterEmg(emg_aligned, notch=False, quality_factor=30)
 
 
-## upsampling and filtering aligned insole data
-left_insole_upsampled, right_insole_upsampled = Align_Two_Insoles.upsampleInsole(
-                            left_insole_aligned, right_insole_aligned, emg_aligned)
-# left_insole_filtered, right_insole_filtered = Align_Two_Insoles.filterInsole(left_insole_upsampled, right_insole_upsampled)
-
+## upsampling and filtering aligned data
+left_insole_upsampled, right_insole_upsampled = Upsampling_Filtering.upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
+# left_insole_filtered, right_insole_filtered = Upsampling_Filtering.filterInsole(left_insole_upsampled, right_insole_upsampled)
+emg_filtered = Upsampling_Filtering.filterEmg(emg_aligned, notch=False, quality_factor=30)
 
 ## check the insole and emg alignment results
 start_index = 00000
@@ -92,18 +87,12 @@ end_index = 600000
 Align_Insole_Emg.plotInsoleEmg(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index)
 
 
-## save the alignment parameters
-Align_Two_Insoles.saveAlignData(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp,
+## save the align results
+#  save the alignment parameters
+Align_Two_Insoles.saveAlignParameters(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp,
     right_end_timestamp)
-
-
-## plot sensor data to split gait cycles
-start_index = 00000
-end_index = 600000
-left_force_baseline = 4.5
-right_force_baseline = 4.5
-Split_Insole_Data.plotSplitLine(left_insole_upsampled, right_insole_upsampled, emg_filtered, start_index, end_index,
-    left_force_baseline, right_force_baseline)
+# save the aligned data
+Align_Insole_Emg.saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned)
 
 
 

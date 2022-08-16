@@ -2,10 +2,10 @@
 import asyncio
 import multiprocessing
 import datetime
-from Integration.Utility import Insole_Asyncio_Class  # for two insoles working
-from Integration.Utility import Insole_Single_Class  # for only one insole working
-from Integration.Utility import Emg_Asyncio_Class # by asyncio method reading emg data
-from Integration.Utility import Connect_Emg # by loop method reading emg data
+from Integration.Utility_Functions import Insole_Asyncio_Class  # for two insoles working
+from Integration.Utility_Functions import Insole_Single_Class  # for only one insole working
+from Integration.Utility_Functions import Emg_Asyncio_Class # by asyncio method reading emg data
+from Integration.Utility_Functions import Connect_Emg # by loop method reading emg data
 
 
 def task(insole_device, addresses, emg_device): # read both insole and emg using asyncio

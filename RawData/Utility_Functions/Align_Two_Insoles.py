@@ -1,8 +1,6 @@
 ##
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy import signal
-from PreProcessing.Utility import Recover_Insole
 import os
 import datetime
 import csv
@@ -40,34 +38,6 @@ def alignInsoleEnd(left_end_timestamp, right_end_timestamp, left_cropped_begin, 
     right_insole_aligned = right_cropped_begin.iloc[:right_end_index[0]+1, 1:].reset_index(drop=True) # remove the first column indicating data number
     return left_insole_aligned, right_insole_aligned
 
-## upsamling insole data to match emg
-def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
-    # upsample insole data to every 5ms (abandoned)
-    # upsampled_left_insole = upsampleInsoleData(left_insole_aligned).reset_index()
-    # upsampled_right_insole = upsampleInsoleData(right_insole_aligned).reset_index()
-
-    # check if there are emg data lost
-    emg_timestamp = pd.to_datetime(emg_aligned[0])
-    expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2
-    if abs(expected_number - len(emg_timestamp)) >= 50:
-        raise Exception("EMG Data Lost")  # then you need to recover the lost data in EMG
-    else:
-        # upsample insole data to 2000Hz
-        upsampled_left_insole = Recover_Insole.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
-        upsampled_right_insole = Recover_Insole.upsampleInsoleEqualToEMG(right_insole_aligned, emg_aligned)
-        return upsampled_left_insole, upsampled_right_insole
-
-## filtering insole data
-def filterInsole(upsampled_left_insole, upsampled_right_insole):
-    # filtering insole signal after upsampling
-    sos  = signal.butter(4, [20], fs=2000, btype = "lowpass", output='sos')
-    left_insole_filtered = signal.sosfiltfilt(sos, upsampled_left_insole.iloc[:,1:193], axis=0)
-    right_insole_filtered = signal.sosfiltfilt(sos, upsampled_right_insole.iloc[:,1:193], axis=0)
-    left_insole_filtered = pd.DataFrame(left_insole_filtered)
-    left_insole_filtered.insert(0, "timestamp", upsampled_left_insole.iloc[:, 0]) # add timestamp column
-    right_insole_filtered = pd.DataFrame(right_insole_filtered)
-    right_insole_filtered.insert(0, "timestamp", upsampled_right_insole.iloc[:, 0]) # add timestamp column
-    return left_insole_filtered, right_insole_filtered
 
 ## plot insole data
 def plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index):
@@ -90,7 +60,7 @@ def plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, en
     axes[1].legend(loc="upper right")
 
 ## save the alignment data
-def saveAlignData(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp):
+def saveAlignParameters(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp):
     # save file path
     data_dir = 'D:\Data\Insole_Emg'
     alignment_file = f'subject_{subject}\subject_{subject}_align.csv'
@@ -113,7 +83,7 @@ def saveAlignData(subject, data_file_name, left_start_timestamp, right_start_tim
             write.writerow(save_parameters)
 
 ## read the alignment data
-def readAlignData(subject, data_file_name):
+def readAlignParameters(subject, data_file_name):
     data_dir = 'D:\Data\Insole_Emg'
     alignment_file = f'subject_{subject}\subject_{subject}_align.csv'
     alignment_file_path = os.path.join(data_dir, alignment_file)

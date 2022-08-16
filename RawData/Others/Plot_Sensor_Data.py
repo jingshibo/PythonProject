@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime
-from PreProcessing.Utility.Recover_Insole import insertMissingRow
+from RawData.Utility_Functions.Recover_Insole import insertMissingRow
 
 # initialization
 data_dir = 'D:\Data\Insole_Emg'

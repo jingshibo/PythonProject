@@ -56,7 +56,7 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[1].legend(loc="upper right")
     axes[2].legend(loc="upper right")
 
-def saveSplitData(subject, split_data):
+def saveSplitParameters(subject, split_data):
     data_dir = 'D:\Data\Insole_Emg'
     split_file = f'subject_{subject}\subject_{subject}_split.json'
     split_path = os.path.join(data_dir, split_file)
@@ -64,7 +64,7 @@ def saveSplitData(subject, split_data):
     with open(split_path, 'w') as json_file:
         json.dump(split_data, json_file, indent=8)
 
-def readSplitData(subject):
+def readSplitParameters(subject):
     data_dir = 'D:\Data\Insole_Emg'
     split_file = f'subject_{subject}\subject_{subject}_split.json'
     split_path = os.path.join(data_dir, split_file)

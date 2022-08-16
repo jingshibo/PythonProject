@@ -1,9 +1,29 @@
 ## import modules
-from PreProcessing.Utility import Split_Insole_Data
+from RawData.Utility_Functions import Align_Insole_Emg, Split_Insole_Data, Upsampling_Filtering
 
-## Shibo's data spliting results saved in dict
+## read and preprocess aligned data
 subject = 'Shibo'
-split_results = {
+mode = 'up_down'
+session = 0
+
+# read aligned data
+left_insole_aligned, right_insole_aligned, emg_aligned = Align_Insole_Emg.readAlignedData(subject, session, mode)
+# upsampling and filtering aligned data
+left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(left_insole_aligned,
+    right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
+
+## plot sensor data to split gait cycles
+start_index = 00000
+end_index = 600000
+left_force_baseline = 4.5
+right_force_baseline = 4.5
+
+Split_Insole_Data.plotSplitLine(left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed, start_index, end_index,
+    left_force_baseline, right_force_baseline)
+
+## split results stored in dict
+subject = 'Shibo'
+split_parameters = {
     'up_to_down': {
         'session0': {
             'turnSSSS': [82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758, 82500, 128758],
@@ -429,4 +449,4 @@ split_results = {
 }
 
 ## save split results to json files
-Split_Insole_Data.saveSplitData(subject, split_results)
+Split_Insole_Data.saveSplitParameters(subject, split_parameters)

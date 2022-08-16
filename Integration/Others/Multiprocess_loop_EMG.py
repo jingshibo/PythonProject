@@ -6,8 +6,8 @@ import os
 from bleak import BleakClient, BleakScanner
 import datetime
 from functools import partial
-from Integration.Utility.Insole_Struct import *
-from Integration.Utility import Connect_Emg
+from Integration.Utility_Functions.Insole_Struct import *
+from Integration.Utility_Functions import Connect_Emg
 import copy
 
 ## Initialization

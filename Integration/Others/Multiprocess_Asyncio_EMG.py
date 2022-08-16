@@ -6,8 +6,8 @@ import os
 from bleak import BleakClient, BleakScanner
 import datetime
 from functools import partial
-from Integration.Utility.Insole_Struct import *
-from Integration.Utility import Emg_Asyncio_Class
+from Integration.Utility_Functions.Insole_Struct import *
+from Integration.Utility_Functions import Emg_Asyncio_Class
 import copy
 
 ## Initialization
