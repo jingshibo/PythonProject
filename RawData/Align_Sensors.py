@@ -5,10 +5,9 @@ import datetime
 from RawData.Utility_Functions import Align_Two_Insoles, Align_Insole_Emg, Recover_Insole, Upsampling_Filtering
 
 ## initialization
-
 subject = 'Shibo'
 mode = 'up_down'
-session = 0
+session = 1
 
 data_dir = 'D:\Data\Insole_Emg'
 data_file_name = f'subject_{subject}_session_{session}_{mode}'
@@ -48,20 +47,19 @@ print(datetime.datetime.now() - now)
 
 
 ## comcat two insole data into one dataframe
-combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data,
-                                                      recovered_right_data)  # to view combined_insole_data data
+combined_insole_data = Align_Two_Insoles.cancatInsole(recovered_left_data, recovered_right_data)  # to view combined_insole_data data
 
 ## align the begin of sensor data
-left_start_timestamp = 35175
-right_start_timestamp = 16300
+left_start_timestamp = 535175
+right_start_timestamp = 516300
 # to view combine_cropped_begin data
 combine_cropped_begin, left_begin_cropped, right_begin_cropped = Align_Two_Insoles.alignInsoleBegin(
     left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data)
 
 
 ## align the end of sensor data
-left_end_timestamp = 331625
-right_end_timestamp = 312750
+left_end_timestamp = 631625
+right_end_timestamp = 612750
 left_insole_aligned, right_insole_aligned = Align_Two_Insoles.alignInsoleEnd(left_end_timestamp,
                      right_end_timestamp, left_begin_cropped, right_begin_cropped)
 
@@ -80,6 +78,7 @@ emg_aligned = Align_Insole_Emg.alignInsoleEmg(raw_emg_data, left_insole_aligned,
 left_insole_upsampled, right_insole_upsampled = Upsampling_Filtering.upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
 # left_insole_filtered, right_insole_filtered = Upsampling_Filtering.filterInsole(left_insole_upsampled, right_insole_upsampled)
 emg_filtered = Upsampling_Filtering.filterEmg(emg_aligned, notch=False, quality_factor=30)
+
 
 ## check the insole and emg alignment results
 start_index = 00000
@@ -125,8 +124,32 @@ Align_Insole_Emg.saveAlignedData(subject, session, mode, left_insole_aligned, ri
 #
 #
 # ## test
-# data = recovered_left_data
-# date1 = datetime.datetime.strptime(data.iloc[0, 0], "%Y-%m-%d_%H:%M:%S.%f")
-# date2 = datetime.datetime.strptime(data.iloc[6000, 0], "%Y-%m-%d_%H:%M:%S.%f")
-# print((date2 - date1).total_seconds() * 1000 / 25)
-# print(1000 / ((date2 - date1).total_seconds() * 1000 / 6000))
+# data = emg_aligned
+# # date1 = datetime.datetime.strptime(data.iloc[600, 0], "%Y-%m-%d_%H:%M:%S.%f")
+# # date2 = datetime.datetime.strptime(data.iloc[-1, 0], "%Y-%m-%d_%H:%M:%S.%f")
+# date1 = data.iloc[0, 0]
+# date2 = data.iloc[-1, 0]
+# print((date2 - date1).total_seconds() * 1000 * 2)
+
+
+
+## check which part of the EMG data goes wrong
+lower_limit = pd.DataFrame({'baseline': ['0:00:00.07']})
+lower_limit = pd.to_datetime(lower_limit.iloc[:, 0]).to_frame().iloc[0, 0]
+higher_limit = pd.DataFrame({'baseline': ['0:00:00.14']})
+higher_limit = pd.to_datetime(higher_limit.iloc[:, 0]).to_frame().iloc[0, 0]
+
+interval = pd.to_datetime(emg_aligned.iloc[:, 1]).to_frame()
+interval.columns = ['interval']
+unusual_lower_interval = interval.query('interval < @lower_limit')
+unusual_higher_interval = interval.query('interval > @higher_limit')
+
+
+## calcutate the expected number of emg data
+first_index = unusual_higher_interval.index[0] - 1
+last_index = unusual_lower_interval.index[-1] + 1
+real_number = last_index - first_index - 1
+expected_number = (emg_aligned.iloc[last_index, 0] - emg_aligned.iloc[first_index, 0]).total_seconds() * 1000 * 2
+diff_number = real_number - expected_number
+
+emg_aligned.drop(emg_aligned.index[range(400, 600)])

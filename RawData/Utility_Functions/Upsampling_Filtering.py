@@ -11,9 +11,9 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
 
     # check if there are emg data lost
     emg_timestamp = pd.to_datetime(emg_aligned.iloc[:, 0])
-    expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2
+    expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
     if abs(expected_number - len(emg_timestamp)) >= 100:
-        raise Exception("EMG Data Lost")  # then you need to recover the lost data in EMG
+        raise Exception("EMG Data Number Unusual")  # in this case, you need to recover the lost data in EMG
     else:
         # upsample insole data to 2000Hz
         upsampled_left_insole = Recover_Insole.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)

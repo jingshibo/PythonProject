@@ -15,12 +15,12 @@ emg_downup_list = []
 ## read aligned and filtered data
 subject = 'Shibo'
 modes = ['up_down', 'down_up']
-sessions = list(range(1))
+sessions = list(range(10))
 
-modes = ['up_down']
-sessions = [0]
+# modes = ['up_down']
+# sessions = [0]
 
-# read aligned sensor data
+# read multiple session aligned sensor data, save the results to a list
 now = datetime.datetime.now()
 for mode in modes:
     for session in sessions:
@@ -43,9 +43,8 @@ for mode in modes:
 print(datetime.datetime.now() - now)
 
 
-
-## read split results from json files
+## read corresponding split results from json files
 split_parameters = Split_Insole_Data.readSplitParameters(subject)
 # convert split results to dataframe
-split_updown_data = [pd.DataFrame(value) for session, value in split_parameters["up_to_down"].items()]
-split_downup_data = [pd.DataFrame(value) for session, value in split_parameters["down_to_up"].items()]
+split_updown_list = [pd.DataFrame(value) for session, value in split_parameters["up_to_down"].items()]
+split_downup_list = [pd.DataFrame(value) for session, value in split_parameters["down_to_up"].items()]

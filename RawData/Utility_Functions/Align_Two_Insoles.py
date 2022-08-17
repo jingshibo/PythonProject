@@ -25,7 +25,7 @@ def alignInsoleBegin(left_start_timestamp, right_start_timestamp, recovered_left
     left_cropped_begin.insert(loc=0, column='number', value=range(len(left_cropped_begin)))
     right_cropped_begin.insert(loc=0, column='number', value=range(len(right_cropped_begin)))
     combine_cropped_begin = pd.concat([left_cropped_begin, right_cropped_begin], ignore_index=True).sort_values([0, 3]) # sort according to column 0, then column 3
-    combine_cropped_begin = combine_cropped_begin.reset_index(drop=False)
+    combine_cropped_begin = combine_cropped_begin.reset_index(drop=False)  # reset index after sort
     return combine_cropped_begin, left_cropped_begin, right_cropped_begin
 
 ## align the end of sensor data
