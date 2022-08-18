@@ -9,13 +9,13 @@ def seperateGait(split_data, window_size=512):
     LWSS = pd.concat([split_data["LWSS"] - window_size, split_data["LWSS"] + window_size], axis=1)
 
     LW_concatenated = pd.concat([split_data["LW_1"], split_data["LW_2"], split_data["LW_3"], split_data["LW_4"]],
-        ignore_index=True).sort_values(0).reset_index(drop=True)
+        ignore_index=True).sort_values(axis=0).reset_index(drop=True)
     LW = pd.concat([LW_concatenated - window_size, LW_concatenated + window_size], axis=1)
-    LWLW_concatenated = pd.concat([split_data["LWLW_1"], split_data["LWLW_2"]], ignore_index=True).sort_values(0).reset_index(drop=True)
+    LWLW_concatenated = pd.concat([split_data["LWLW_1"], split_data["LWLW_2"]], ignore_index=True).sort_values(axis=0).reset_index(drop=True)
     LWLW = pd.concat([LWLW_concatenated - window_size, LWLW_concatenated + window_size], axis=1)
-    SA_concatenated = pd.concat([split_data["SA_1"], split_data["SA_2"]], ignore_index=True).sort_values(0).reset_index(drop=True)
+    SA_concatenated = pd.concat([split_data["SA_1"], split_data["SA_2"]], ignore_index=True).sort_values(axis=0).reset_index(drop=True)
     SA = pd.concat([SA_concatenated - window_size, SA_concatenated + window_size], axis=1)
-    SD_concatenated = pd.concat([split_data["SD_1"], split_data["SD_2"]], ignore_index=True).sort_values(0).reset_index(drop=True)
+    SD_concatenated = pd.concat([split_data["SD_1"], split_data["SD_2"]], ignore_index=True).sort_values(axis=0).reset_index(drop=True)
     SD = pd.concat([SD_concatenated - window_size, SD_concatenated + window_size], axis=1)
 
     if 'LWSA' and 'SSSD' and 'SASS' and 'SDLW' in split_data.columns:  # if it is up_dowm experiment
@@ -41,7 +41,7 @@ def seperateGait(split_data, window_size=512):
     return gait_events
 
 
-## use the seperated gait event timestamp from the above function to seperate emg data for one session
+## use the gait event seperation timestamp to seperate emg data (for one session data)
 def seperateEmgdata(emg_data, gait_events):
     seperated_emg_data = {}
     for key, values in gait_events.items():

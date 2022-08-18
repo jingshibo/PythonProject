@@ -1,30 +1,7 @@
 ## import modules
 import pandas as pd
-from Processing.Utility_Functions import Seperate_Data
-
-##
-emg_updown_value = emg_updown_list[0]
-# emg_downup_value = emg_downup_list[0]
-
-split_updown_value = split_updown_list[0]
-split_downup_value = split_downup_list[0]
-
-## devide the gait into subcycles
-gait_event_devision = Seperate_Data.seperateGait(split_updown_value, window_size=512)
-
-## divide the emg data into subcycles
-seperated_emg_data = Seperate_Data.seperateEmgdata(emg_updown_value, gait_event_devision)
 
 
-##
-gait_event_list = []
-emg_data_list = []
-for i in range(len(emg_updown_list)):
-    gait_event_devision = Seperate_Data.seperateGait(split_updown_list[i], window_size=512)
-    gait_event_list.append(gait_event_devision)
-
-    seperated_emg_data = Seperate_Data.seperateEmgdata(emg_updown_list[i], gait_event_devision)
-    emg_data_list.append(seperated_emg_data)
 
 
 ##
