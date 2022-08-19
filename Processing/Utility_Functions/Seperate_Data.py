@@ -1,7 +1,8 @@
 ## import modules
 import pandas as pd
+import numpy as np
 
-## obtain the first and last timestamp to devide the gait into subcycles
+## obtain the first and last timestamp to seperate (label) the gait event
 def seperateGait(split_data, window_size=512):
     SSLW = pd.concat([split_data["SSLW"] - window_size, split_data["SSLW"] + window_size], axis=1) # column 1 is the start timestamp, column 2 is the end timestamp
     SASA = pd.concat([split_data["SASA"] - window_size, split_data["SASA"] + window_size], axis=1)
@@ -41,10 +42,11 @@ def seperateGait(split_data, window_size=512):
     return gait_events
 
 
-## use the gait event seperation timestamp to seperate emg data (for one session data)
+## use the gait event timestamp to separate (label) emg data (for one session data)
 def seperateEmgdata(emg_data, gait_events):
     seperated_emg_data = {}
     for key, values in gait_events.items():
-        seperated_emg_data[f"emg_{key}"] = [emg_data.iloc[start_timestamp:end_timestamp, :] for start_timestamp, end_timestamp in
+        seperated_emg_data[f"emg_{key}"] = [np.array(emg_data.iloc[start_timestamp:end_timestamp, :]) for start_timestamp, end_timestamp in
         zip(values["first_sample"], values["last_sample"])]
     return seperated_emg_data
+
