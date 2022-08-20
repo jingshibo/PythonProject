@@ -2,8 +2,8 @@
 import pandas as pd
 import numpy as np
 import datetime
-from RawData.Utility_Functions import Align_Insole_Emg, Upsampling_Filtering, Split_Insole_Data
-from Processing.Utility_Functions import Seperate_Data, Reorder_Electrodes, Calculate_Features
+from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
+from Processing.Utility_Functions import Data_Separation, Electrode_Reordering, Feature_Extraction
 
 
 ## basic information
@@ -16,7 +16,7 @@ sessions = [0]
 
 
 ## read split data from json files
-split_parameters = Split_Insole_Data.readSplitParameters(subject)
+split_parameters = Insole_Data_Splition.readSplitParameters(subject)
 # convert split results to dataframe
 split_up_down_list = [pd.DataFrame(value) for session, value in split_parameters["up_to_down"].items()]
 split_down_up_list = [pd.DataFrame(value) for session, value in split_parameters["down_to_up"].items()]
@@ -31,18 +31,18 @@ combined_emg_labelled = {}
 for mode in modes:
     for session in sessions:
         # read aligned data
-        left_insole_aligned, right_insole_aligned, emg_aligned = Align_Insole_Emg.readAlignedData(subject, session, mode)
+        left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
         # upsampling and filtering data
         left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
             left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
         # recover mission emg channels
 
         # adjust electrode order to match the physical EMG grid
-        emg_reordered = Reorder_Electrodes.reorderElectrodes(emg_preprocessed)
+        emg_reordered = Electrode_Reordering.reorderElectrodes(emg_preprocessed)
         # separate the gait event with labelling
-        gait_event_label = Seperate_Data.seperateGait(split_data[mode][session], window_size=512)
+        gait_event_label = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
         # use the gait event timestamp to label emg data
-        labelled_emg_data = Seperate_Data.seperateEmgdata(emg_reordered, gait_event_label)
+        labelled_emg_data = Data_Separation.seperateEmgdata(emg_reordered, gait_event_label)
         # combine emg data from all sessions together
         for key, value in labelled_emg_data.items():
             if key in combined_emg_labelled:
@@ -61,26 +61,18 @@ now = datetime.datetime.now()
 emg_features_labelled = {}
 for key, gait_event in combined_emg_labelled.items():
     emg_window_features = []
+
+    event =  datetime.datetime.now()
     for emg_session_data in gait_event:
+
+        session = datetime.datetime.now()
         for i in range(0, len(emg_session_data) - window_size + 1, increment):
             emg_window_data = emg_session_data[i:i + window_size, :]
-            emg_window_features.append(Calculate_Features.calcuEmgFeatures(emg_window_data))
+            emg_window_features.append(Feature_Extraction.calcuEmgFeatures(emg_window_data))
+
+        print("session:", datetime.datetime.now() - session)
+
     emg_features_labelled[f"{key}_features"] = np.array(emg_window_features)
+    print("event:", datetime.datetime.now() - event)
 
-print(datetime.datetime.now() - now)
-
-## feature calculation
-
-
-##
-from math import sqrt
-now = datetime.datetime.now()
-a = [sqrt(i ** 2) for i in range(100000000)]
-print(datetime.datetime.now() - now)
-
-##
-from math import sqrt
-from joblib import Parallel, delayed
-now = datetime.datetime.now()
-Parallel(n_jobs=8)(delayed(sqrt)(i ** 2) for i in range(100000000))
 print(datetime.datetime.now() - now)

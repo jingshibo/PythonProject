@@ -4,7 +4,7 @@ import pandas as pd
 from scipy import signal
 import matplotlib.pyplot as plt
 import datetime
-from RawData.Utility_Functions.Recover_Insole import insertMissingRow
+from RawData.Utility_Functions.Insole_Recovery import insertMissingRow
 
 ## initialization
 data_dir = 'D:\Data\Insole_Emg'

@@ -1,6 +1,9 @@
 ##
 import numpy as np
+import datetime
 from statsmodels.tsa.ar_model import AutoReg
+import multiprocessing
+import functools
 
 ## emg feature extraction
 def calcuEmgFeatures(emg_window_data):
@@ -67,23 +70,46 @@ def calcuEmgFeatures(emg_window_data):
     ZCn = np.sum(ZC, axis=0)
 
     # autoregression coeffecients
-    # AR_1 = np.zeros(channel_number)
-    # AR_2 = np.zeros(channel_number)
-    # AR_3 = np.zeros(channel_number)
-    # # AR_4 = np.zeros(channel_number)
-    # # AR_5 = np.zeros(channel_number)
-    # # AR_6 = np.zeros(channel_number)
-    # num_coeff = 3
-    #
-    # for i in np.arange(0, channel_number):
-    #     ar_model = AutoReg(emg_window_data[:, i], lags=num_coeff).fit()
-    #     ar_para = ar_model.params
-    #     AR_1[i] = ar_para[1]
-    #     AR_2[i] = ar_para[2]
-    #     AR_3[i] = ar_para[3]
+    AR_1 = np.zeros(channel_number)
+    AR_2 = np.zeros(channel_number)
+    AR_3 = np.zeros(channel_number)
+    # AR_4 = np.zeros(channel_number)
+    # AR_5 = np.zeros(channel_number)
+    # AR_6 = np.zeros(channel_number)
+    num_coeff = 3
+
+    for i in np.arange(0, channel_number):
+        ar_model = AutoReg(emg_window_data[:, i], lags=num_coeff).fit()
+        ar_para = ar_model.params
+        AR_1[i] = ar_para[1]
+        AR_2[i] = ar_para[2]
+        AR_3[i] = ar_para[3]
         # AR_4[i] = ar_para[4] / ar_para[0]
         # AR_5[i] = ar_para[5] / ar_para[0]
         # AR_6[i] = ar_para[6] / ar_para[0]
-    return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3])
 
-    return np.concatenate([MAV, RMS, WL, SSCn, ZCn])
+    return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3])
+    # return np.concatenate([MAV, RMS, WL, SSCn, ZCn])
+
+
+def labelEmgFeatures(gait_event_label, gait_event_emg, window_size=512, increment=32):
+    emg_feature_labelled = {}
+    emg_window_features = []
+
+    event = datetime.datetime.now()
+
+    for session_emg in gait_event_emg:
+
+        session = datetime.datetime.now()
+
+        for i in range(0, len(session_emg) - window_size + 1, increment):
+            emg_window_data = session_emg[i:i + window_size, :]
+            emg_window_features.append(calcuEmgFeatures(emg_window_data))
+
+        print("session:", multiprocessing.current_process().name, datetime.datetime.now() - session)
+
+    emg_feature_labelled[f"{gait_event_label}_features"] = np.array(emg_window_features)
+
+    print(f"event:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - event)
+
+    return emg_feature_labelled

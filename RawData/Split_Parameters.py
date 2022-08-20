@@ -1,5 +1,5 @@
 ## import modules
-from RawData.Utility_Functions import Align_Insole_Emg, Split_Insole_Data, Upsampling_Filtering
+from RawData.Utility_Functions import Insole_Emg_Alignment, Insole_Data_Splition, Upsampling_Filtering
 
 ## read and preprocess aligned data
 subject = 'Shibo'
@@ -7,7 +7,7 @@ mode = 'up_down'
 session = 0
 
 # read aligned data
-left_insole_aligned, right_insole_aligned, emg_aligned = Align_Insole_Emg.readAlignedData(subject, session, mode)
+left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
 # upsampling and filtering aligned data
 left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(left_insole_aligned,
     right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
@@ -19,7 +19,7 @@ end_index = 600000
 left_force_baseline = 4.5
 right_force_baseline = 4.5
 
-Split_Insole_Data.plotSplitLine(left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed, start_index, end_index,
+Insole_Data_Splition.plotSplitLine(left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed, start_index, end_index,
     left_force_baseline, right_force_baseline)
 
 
@@ -452,4 +452,4 @@ split_parameters = {
 
 
 ## save split results to json files
-Split_Insole_Data.saveSplitParameters(subject, split_parameters)
+Insole_Data_Splition.saveSplitParameters(subject, split_parameters)

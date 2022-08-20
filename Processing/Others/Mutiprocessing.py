@@ -1,16 +1,13 @@
 ## import modules
 import pandas as pd
-import numpy as np
 import datetime
 from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
-from Processing.Utility_Functions import Data_Separation, Electrode_Reordering, Feature_Extraction
+from Processing.Utility_Functions import Data_Separation, Electrode_Reordering
+from Processing.Others import Calculate_Features
 import concurrent.futures
 
-## feature labelling\
 
 if __name__ == '__main__':
-
-
     ## basic information
     subject = 'Shibo'
     modes = ['up_down', 'down_up']
@@ -43,43 +40,28 @@ if __name__ == '__main__':
             # adjust electrode order to match the physical EMG grid
             emg_reordered = Electrode_Reordering.reorderElectrodes(emg_preprocessed)
             # separate the gait event with labelling
-            gait_event = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
+            gait_event_label = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
             # use the gait event timestamp to label emg data
-            emg_labelled= Data_Separation.seperateEmgdata(emg_reordered, gait_event)
+            labelled_emg_data = Data_Separation.seperateEmgdata(emg_reordered, gait_event_label)
             # combine emg data from all sessions together
-            for gait_event_label, gait_event_emg in emg_labelled.items():
-                if gait_event_label in combined_emg_labelled:
-                    combined_emg_labelled[gait_event_label].extend(gait_event_emg)
+            for key, value in labelled_emg_data.items():
+                if key in combined_emg_labelled:
+                    combined_emg_labelled[key].extend(value)
                 else:
-                    combined_emg_labelled[gait_event_label] = gait_event_emg
-
+                    combined_emg_labelled[key] = value
     print(datetime.datetime.now() - now)
 
-
-    ## calculate and label emg features
+    ##
     window_size = 512
     increment = 32
+    emg_features = []
 
     now = datetime.datetime.now()
-    combined_emg_features = []
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(Feature_Extraction.labelEmgFeatures, key, gait_event) for key, gait_event in combined_emg_labelled.items()]
-        for f in concurrent.futures.as_completed(futures):
-            combined_emg_features.append(f.result())
-
-    emg_features = {}
-    for gait_event_features in combined_emg_features:
-        key = list(gait_event_features.keys())[0]
-        emg_features[key] = gait_event_features[key]
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        emg_features_labelled = {}
+        for key, gait_event in combined_emg_labelled.items():
+            emg_features_labelled.update(Calculate_Features.labelEmgFeatures(key, gait_event, executor, window_size=512, increment=32))
 
     print(datetime.datetime.now() - now)
 
-
-## balance emg data
-# banlanced_emg = {}
-# for key, value in combined_emg_labelled.items():
-#     base_number = len(combined_emg_labelled["emg_SSLW"])
-#     to_devide = int(len(value) / base_number)
-#     for i in range(to_devide):
-#         banlanced_emg[f"emg_{key}_{i}"] = value[i*base_number:(i+1)*base_number]

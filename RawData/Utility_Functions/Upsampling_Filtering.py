@@ -1,7 +1,7 @@
 ## import mudules
 import pandas as pd
 from scipy import signal
-from RawData.Utility_Functions import Recover_Insole
+from RawData.Utility_Functions import Insole_Recovery
 
 ## upsamling insole data to match emg
 def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
@@ -16,8 +16,8 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
         raise Exception("EMG Data Number Unusual")  # in this case, you need to recover the lost data in EMG
     else:
         # upsample insole data to 2000Hz
-        upsampled_left_insole = Recover_Insole.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
-        upsampled_right_insole = Recover_Insole.upsampleInsoleEqualToEMG(right_insole_aligned, emg_aligned)
+        upsampled_left_insole = Insole_Recovery.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
+        upsampled_right_insole = Insole_Recovery.upsampleInsoleEqualToEMG(right_insole_aligned, emg_aligned)
         return upsampled_left_insole, upsampled_right_insole
 
 ## filtering insole data
