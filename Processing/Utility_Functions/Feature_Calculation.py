@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 from statsmodels.tsa.ar_model import AutoReg
 import multiprocessing
-import functools
+
 
 ## emg feature extraction
 def calcuEmgFeatures(emg_window_data):
@@ -92,24 +92,17 @@ def calcuEmgFeatures(emg_window_data):
     # return np.concatenate([MAV, RMS, WL, SSCn, ZCn])
 
 
-def labelEmgFeatures(gait_event_label, gait_event_emg, window_size=512, increment=32):
+def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
     emg_feature_labelled = {}
     emg_window_features = []
 
-    event = datetime.datetime.now()
-
-    for session_emg in gait_event_emg:
-
-        session = datetime.datetime.now()
-
-        for i in range(0, len(session_emg) - window_size + 1, increment):
-            emg_window_data = session_emg[i:i + window_size, :]
+    event_time = datetime.datetime.now()
+    for per_round_emg in gait_event_emg:
+        round_time = datetime.datetime.now()
+        for i in range(0, len(per_round_emg) - window_size + 1, increment):
+            emg_window_data = per_round_emg[i:i + window_size, :]
             emg_window_features.append(calcuEmgFeatures(emg_window_data))
-
-        print("session:", multiprocessing.current_process().name, datetime.datetime.now() - session)
-
+        print("round time:", multiprocessing.current_process().name, datetime.datetime.now() - round_time)
     emg_feature_labelled[f"{gait_event_label}_features"] = np.array(emg_window_features)
-
-    print(f"event:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - event)
-
+    print(f"event time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - event_time)
     return emg_feature_labelled

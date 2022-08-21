@@ -24,29 +24,29 @@ def seperateGait(split_data, window_size=512):
         SSSD = pd.concat([split_data["SSSD"] - window_size, split_data["SSSD"] + window_size], axis=1)
         SASS = pd.concat([split_data["SASS"] - window_size, split_data["SASS"] + window_size], axis=1)
         SDLW = pd.concat([split_data["SDLW"] - window_size, split_data["SDLW"] + window_size], axis=1)
-        gait_events = {'SSLW': SSLW, "LW": LW, "LWLW": LWLW, "LWSA": LWSA, "SA": SA, "SASA": SASA, "SASS": SASS, "SSSD": SSSD, "SD": SD,
+        gait_event_timestamp = {'SSLW': SSLW, "LW": LW, "LWLW": LWLW, "LWSA": LWSA, "SA": SA, "SASA": SASA, "SASS": SASS, "SSSD": SSSD, "SD": SD,
             "SDSD": SDSD, "SDLW": SDLW, "LWSS": LWSS}
     elif 'LWSD' and 'SSSA' and 'SDSS' and 'SALW' in split_data.columns:  # if it is dowm_up experiment
         LWSD = pd.concat([split_data["LWSD"] - window_size, split_data["LWSD"] + window_size], axis=1)
         SSSA = pd.concat([split_data["SSSA"] - window_size, split_data["SSSA"] + window_size], axis=1)
         SDSS = pd.concat([split_data["SDSS"] - window_size, split_data["SDSS"] + window_size], axis=1)
         SALW = pd.concat([split_data["SALW"] - window_size, split_data["SALW"] + window_size], axis=1)
-        gait_events = {'SSLW': SSLW, "LW": LW, "LWLW": LWLW, "LWSD": LWSD, "SD": SD, "SDSD": SDSD, "SDSS": SDSS, "SSSA": SSSA, "SA": SA,
+        gait_event_timestamp = {'SSLW': SSLW, "LW": LW, "LWLW": LWLW, "LWSD": LWSD, "SD": SD, "SDSD": SDSD, "SDSS": SDSS, "SSSA": SSSA, "SA": SA,
             "SASA": SASA, "SALW": SALW, "LWSS": LWSS}
     else:
         raise Exception("gait event wrong")
 
-    for key, gait in gait_events.items():
+    for key, gait in gait_event_timestamp.items():
         gait.columns = ["first_sample", "last_sample"]
 
-    return gait_events
+    return gait_event_timestamp
 
 
 ## use the gait event timestamp to separate (label) emg data (for one session data)
-def seperateEmgdata(emg_data, gait_events):
+def seperateEmgdata(emg_data, gait_event_timestamp):
     seperated_emg_data = {}
-    for key, values in gait_events.items():
-        seperated_emg_data[f"emg_{key}"] = [np.array(emg_data.iloc[start_timestamp:end_timestamp, :]) for start_timestamp, end_timestamp in
-        zip(values["first_sample"], values["last_sample"])]
+    for gait_event, timestamp in gait_event_timestamp.items():
+        seperated_emg_data[f"emg_{gait_event}"] = [np.array(emg_data.iloc[start_timestamp:end_timestamp, :]) for
+            start_timestamp, end_timestamp in zip(timestamp["first_sample"], timestamp["last_sample"])]
     return seperated_emg_data
 

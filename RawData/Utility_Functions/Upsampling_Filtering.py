@@ -1,6 +1,6 @@
 ## import mudules
 import pandas as pd
-from scipy import signal
+from scipy import signal, ndimage
 from RawData.Utility_Functions import Insole_Recovery
 
 ## upsamling insole data to match emg
@@ -37,10 +37,13 @@ def filterEmg(emg_aligned, notch = False, quality_factor = 30):
     sos = signal.butter(4, [20, 400], fs=2000, btype="bandpass", output='sos')
     emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_aligned.iloc[:, 3:67], axis=0)
     emg_filtered = emg_bandpass_filtered
+    # remove power line interference
     if notch:
         b, a = signal.iircomb(50, quality_factor, fs=2000, ftype='notch')
         emg_notch_filtered = signal.filtfilt(b, a, pd.DataFrame(emg_bandpass_filtered), axis=0)
         emg_filtered = emg_notch_filtered
+    # compensate mission emg channels (median filtering)
+    emg_filtered = pd.DataFrame(ndimage.median_filter(emg_filtered, mode='nearest', size=3))
     return pd.DataFrame(emg_filtered)
 
 
