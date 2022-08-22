@@ -1,5 +1,13 @@
+"""
+run the following codes in order:
+read the alignment parameters first
+draw a baseline to help identify the gait event separation points
+record and save the split parameters
+"""
+
 ## import modules
 from RawData.Utility_Functions import Insole_Emg_Alignment, Insole_Data_Splition, Upsampling_Filtering
+
 
 ## read and preprocess aligned data
 subject = 'Shibo'

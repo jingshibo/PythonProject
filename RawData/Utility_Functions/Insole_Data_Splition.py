@@ -1,11 +1,11 @@
 ##
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import json
 
 ## plot split line in order to seperate the gait cycle
+# plot the left and right insole data, select an appropriate baseline to help identify the gait events
 def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, start_index, end_index,
                   left_force_baseline, right_force_baseline):
     left_total_force = left_insole_dataframe.iloc[:, 192]
@@ -56,6 +56,7 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[1].legend(loc="upper right")
     axes[2].legend(loc="upper right")
 
+# save the split parameters into a json file
 def saveSplitParameters(subject, split_data):
     data_dir = 'D:\Data\Insole_Emg'
     split_file = f'subject_{subject}\subject_{subject}_split.json'
@@ -64,6 +65,7 @@ def saveSplitParameters(subject, split_data):
     with open(split_path, 'w') as json_file:
         json.dump(split_data, json_file, indent=8)
 
+# read the split parameters from a json file
 def readSplitParameters(subject):
     data_dir = 'D:\Data\Insole_Emg'
     split_file = f'subject_{subject}\subject_{subject}_split.json'

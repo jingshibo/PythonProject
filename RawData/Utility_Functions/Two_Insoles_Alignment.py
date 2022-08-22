@@ -59,7 +59,7 @@ def plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, en
     axes[0].legend(loc="upper right")
     axes[1].legend(loc="upper right")
 
-## save the alignment data
+## save the alignment parameters into a csv file
 def saveAlignParameters(subject, data_file_name, left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp):
     # save file path
     data_dir = 'D:\Data\Insole_Emg'
@@ -82,7 +82,7 @@ def saveAlignParameters(subject, data_file_name, left_start_timestamp, right_sta
             write = csv.writer(file)
             write.writerow(save_parameters)
 
-## read the alignment data
+## read the alignment parameters from a csv file
 def readAlignParameters(subject, data_file_name):
     data_dir = 'D:\Data\Insole_Emg'
     alignment_file = f'subject_{subject}\subject_{subject}_align.csv'

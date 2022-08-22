@@ -6,7 +6,7 @@ from Processing.Utility_Functions import Data_Separation, Electrode_Reordering, 
 import concurrent.futures
 
 
-## read split data from json files
+## read split parameters from json files
 def readSplitData(subject):
     split_parameters = Insole_Data_Splition.readSplitParameters(subject)
     # convert split results to dataframe
@@ -33,7 +33,7 @@ def labelSensorData(subject, modes, sessions, split_data):
             gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_reordered, gait_event_timestamp)
-            # combine emg data from all sessions
+            # combine the emg data from all sessions of the same gait event into the same key of a dict
             for gait_event_label, gait_event_emg in emg_labelled.items():
                 if gait_event_label in combined_emg_labelled: # check if there is already the key in the dict
                     combined_emg_labelled[gait_event_label].extend(gait_event_emg)
@@ -45,16 +45,16 @@ def labelSensorData(subject, modes, sessions, split_data):
 
 ## calculate and label emg features
 def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
-    # calculate emg features using multiprocessing modules
     now = datetime.datetime.now()
     combined_emg_features = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:  # there is balance of CPU number, not more is better
+    # calculate emg features using multiprocessing. there is balance of CPU number, not more is better as numpy auto parallel to some extent
+    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(Feature_Calculation.labelEmgFeatures, gait_event_label, gait_event_emg, window_size, increment) for
-            gait_event_label, gait_event_emg in combined_emg_labelled.items()]
+            gait_event_label, gait_event_emg in combined_emg_labelled.items()]  # parallel calculate features in multiple gait events
         for future in concurrent.futures.as_completed(futures):
             combined_emg_features.append(future.result())
     print(datetime.datetime.now() - now)
-    # reorganize calculated features with labelling
+    # reorganize teh calculated features with labelling
     emg_features = {}
     for gait_event_features in combined_emg_features:
         gait_event_label = list(gait_event_features.keys())[0]

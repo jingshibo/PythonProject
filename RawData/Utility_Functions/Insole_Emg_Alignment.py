@@ -5,9 +5,10 @@ import os
 
 ## align EMG and insoles
 def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
-    # get the average beginning and ending insole timestamp
+    # get the beginning and ending timestamp for both insoles.
     left_insole_aligned[0] = pd.to_datetime(left_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
     right_insole_aligned[0] = pd.to_datetime(right_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
+    # always select the earliest one as reference for emg alignment
     insole_begin_timestamp = min(left_insole_aligned.iloc[0, 0], right_insole_aligned.iloc[0, 0]) # select earliest one
     insole_end_timestamp = min((left_insole_aligned[0].iloc[-1], right_insole_aligned[0].iloc[-1]))
 
@@ -46,6 +47,7 @@ def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, 
     axes[2].legend(loc="upper right")
 
 
+## save all sensor data after alignment into a csc file
 def saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned):
     data_dir = 'D:\Data\Insole_Emg'
     data_file_name = f'subject_{subject}_session_{session}_{mode}'
@@ -63,6 +65,7 @@ def saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_al
     emg_aligned.to_csv(emg_path, index=False)
 
 
+## read all sensor data after alignment from a csc file
 def readAlignedData(subject, session, mode):
     data_dir = 'D:\Data\Insole_Emg'
     data_file_name = f'subject_{subject}_session_{session}_{mode}'

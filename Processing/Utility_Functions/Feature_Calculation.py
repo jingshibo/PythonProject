@@ -5,7 +5,7 @@ from statsmodels.tsa.ar_model import AutoReg
 import multiprocessing
 
 
-## emg feature extraction
+## calculate emg features within a window
 def calcuEmgFeatures(emg_window_data):
     sample_number = emg_window_data.shape[0]
     channel_number = emg_window_data.shape[1]
@@ -92,6 +92,7 @@ def calcuEmgFeatures(emg_window_data):
     # return np.concatenate([MAV, RMS, WL, SSCn, ZCn])
 
 
+## extract features for emg data in an experiment round, which contains multiple windows
 def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
     emg_feature_labelled = {}
     emg_window_features = []
@@ -103,6 +104,8 @@ def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
             emg_window_data = per_round_emg[i:i + window_size, :]
             emg_window_features.append(calcuEmgFeatures(emg_window_data))
         print("round time:", multiprocessing.current_process().name, datetime.datetime.now() - round_time)
+
+    # the features are stored in the dict below, which can also be regarded as a process of labeling
     emg_feature_labelled[f"{gait_event_label}_features"] = np.array(emg_window_features)
     print(f"event time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - event_time)
     return emg_feature_labelled

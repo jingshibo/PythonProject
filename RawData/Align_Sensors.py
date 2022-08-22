@@ -1,8 +1,17 @@
+"""
+run the following code blocks in order:
+input the start and end timestamp for both left and right insoles to align them.
+the emg signal will be automatically aligned using this information
+save the alignment parameters into a csv file for later use
+"""
+
+
 ## import modules
 import os
 import pandas as pd
 import datetime
 from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignment, Insole_Recovery, Upsampling_Filtering
+
 
 ## initialization
 subject = 'Shibo'
@@ -47,9 +56,10 @@ print(datetime.datetime.now() - now)
 
 
 ## comcat two insole data into one dataframe
-combined_insole_data = Two_Insoles_Alignment.cancatInsole(recovered_left_data, recovered_right_data)  # to view combined_insole_data data
+combined_insole_data = Two_Insoles_Alignment.cancatInsole(recovered_left_data, recovered_right_data)
 
 ## align the begin of sensor data
+# view the combined_insole_data table in order to find the appropriate start timestamp for alignment
 left_start_timestamp = 535175
 right_start_timestamp = 516300
 # to view combine_cropped_begin data
@@ -58,6 +68,7 @@ combine_cropped_begin, left_begin_cropped, right_begin_cropped = Two_Insoles_Ali
 
 
 ## align the end of sensor data
+# view the combine_cropped_begin table in order to find the appropriate end timestamp for alignment
 left_end_timestamp = 631625
 right_end_timestamp = 612750
 left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEnd(left_end_timestamp,
@@ -67,6 +78,7 @@ left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEnd
 ## check the insole alignment results
 start_index = 0
 end_index = 11859
+# plot the insole data to check the alignment result
 Two_Insoles_Alignment.plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index)
 
 
@@ -83,6 +95,7 @@ emg_filtered = Upsampling_Filtering.filterEmg(emg_aligned, notch=False, quality_
 ## check the insole and emg alignment results
 start_index = 00000
 end_index = 600000
+# plot the emg and insole data to check the alignment result
 Insole_Emg_Alignment.plotInsoleEmg(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index)
 
 

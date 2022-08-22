@@ -15,7 +15,7 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
     if abs(expected_number - len(emg_timestamp)) >= 100:
         raise Exception("EMG Data Number Unusual")  # in this case, you need to recover the lost data in EMG
     else:
-        # upsample insole data to 2000Hz
+        # upsample insole data to 2000Hz same to EMG data
         upsampled_left_insole = Insole_Recovery.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
         upsampled_right_insole = Insole_Recovery.upsampleInsoleEqualToEMG(right_insole_aligned, emg_aligned)
         return upsampled_left_insole, upsampled_right_insole
@@ -42,12 +42,12 @@ def filterEmg(emg_aligned, notch = False, quality_factor = 30):
         b, a = signal.iircomb(50, quality_factor, fs=2000, ftype='notch')
         emg_notch_filtered = signal.filtfilt(b, a, pd.DataFrame(emg_bandpass_filtered), axis=0)
         emg_filtered = emg_notch_filtered
-    # compensate mission emg channels (median filtering)
+    # compensate bad emg channels (median filtering)
     emg_filtered = pd.DataFrame(ndimage.median_filter(emg_filtered, mode='nearest', size=3))
     return pd.DataFrame(emg_filtered)
 
 
-## preprocess sensor data
+## preprocess all sensor data
 def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole = False, notchEMG = False, quality_factor=10):
     # upsampling insole data
     left_insole_preprocessed, right_insole_preprocessed = upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
