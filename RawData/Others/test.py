@@ -4,7 +4,7 @@ import pandas as pd
 from scipy import signal
 import matplotlib.pyplot as plt
 import datetime
-from RawData.Utility_Functions.Insole_Recovery import insertMissingRow
+from RawData.Utility_Functions.Insole_Emg_Recovery import insertInsoleMissingRow
 
 ## initialization
 data_dir = 'D:\Data\Insole_Emg'
@@ -28,11 +28,11 @@ raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16',
 print(datetime.datetime.now() - now)
 ## left insole
 raw_left_data = pd.read_csv(left_insole_path, sep=',', header=None)
-recovered_left_data = insertMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
+recovered_left_data = insertInsoleMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
 
 ## right insole
 raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
-recovered_right_data = insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
+recovered_right_data = insertInsoleMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 
 ## align the begin of sensor data
 # observe to get the beginning index

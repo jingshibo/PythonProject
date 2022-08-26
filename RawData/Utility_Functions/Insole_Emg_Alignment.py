@@ -6,7 +6,7 @@ import os
 ## align EMG and insoles
 def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
     # get the beginning and ending timestamp for both insoles.
-    left_insole_aligned[0] = pd.to_datetime(left_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
+    left_insole_aligned[0] = pd.to_datetime(left_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f') # the column named 0 is the timestamp
     right_insole_aligned[0] = pd.to_datetime(right_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
     # always select the earliest one as reference for emg alignment
     insole_begin_timestamp = min(left_insole_aligned.iloc[0, 0], right_insole_aligned.iloc[0, 0]) # select earliest one
@@ -22,7 +22,7 @@ def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
 
 ## plot insole and emg data
 def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index):
-    left_total_force = left_insole_dataframe.iloc[:, 192] # extract total force column
+    left_total_force = left_insole_dataframe.iloc[:, 192]  # extract total force column
     right_total_force = right_insole_dataframe.iloc[:, 192]
     emg_data = emg_dataframe.sum(1)
 

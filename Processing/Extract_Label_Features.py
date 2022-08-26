@@ -1,8 +1,12 @@
+"""
+read split parameters to separate emg data and then calculate emg features for each gait event. the results are stored in a dict.
+"""
+
 ## import modules
 import pandas as pd
 import datetime
 from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
-from Processing.Utility_Functions import Data_Separation, Electrode_Reordering, Feature_Calculation, Feature_Storage
+from Processing.Utility_Functions import Data_Separation, Data_Reshaping, Feature_Calculation, Feature_Storage
 import concurrent.futures
 
 
@@ -28,7 +32,7 @@ def labelSensorData(subject, modes, sessions, split_data):
             left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
                 left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
             # adjust electrode order to match the physical EMG grid
-            emg_reordered = Electrode_Reordering.reorderElectrodes(emg_preprocessed)
+            emg_reordered = Data_Reshaping.reorderElectrodes(emg_preprocessed)
             # separate the gait event using timestamps
             gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
             # use the gait event timestamps to label emg data

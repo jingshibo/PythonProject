@@ -11,13 +11,13 @@ def cancatInsole(recovered_left_data, recovered_right_data):
     combined_insole_data = combined_insole_data.reset_index(drop=False)
     return combined_insole_data
 
-## align the begin of sensor data
+## align the begin of insole data
 def alignInsoleBegin(left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data):
     # observe to get the beginning index
     left_start_index = recovered_left_data.index[recovered_left_data[3] == left_start_timestamp].tolist()
     right_start_index = recovered_right_data.index[recovered_right_data[3] == right_start_timestamp].tolist()
 
-    # only keep insole data after the start index
+    # only reserve insole data after the start index
     left_cropped_begin = recovered_left_data.iloc[left_start_index[0]:, :].reset_index(drop=True)
     right_cropped_begin = recovered_right_data.iloc[right_start_index[0]:, :].reset_index(drop=True)
 
@@ -28,12 +28,12 @@ def alignInsoleBegin(left_start_timestamp, right_start_timestamp, recovered_left
     combine_cropped_begin = combine_cropped_begin.reset_index(drop=False)  # reset index after sort
     return combine_cropped_begin, left_cropped_begin, right_cropped_begin
 
-## align the end of sensor data
+## align the end of insole data
 def alignInsoleEnd(left_end_timestamp, right_end_timestamp, left_cropped_begin, right_cropped_begin):
     left_end_index = left_cropped_begin.index[left_cropped_begin[3] == left_end_timestamp].tolist()
     right_end_index = right_cropped_begin.index[right_cropped_begin[3] == right_end_timestamp].tolist()
 
-    # only keep data before the ending index
+    # only reserve insole data before the ending index
     left_insole_aligned = left_cropped_begin.iloc[:left_end_index[0]+1, 1:].reset_index(drop=True) # remove the first column indicating data number
     right_insole_aligned = right_cropped_begin.iloc[:right_end_index[0]+1, 1:].reset_index(drop=True) # remove the first column indicating data number
     return left_insole_aligned, right_insole_aligned

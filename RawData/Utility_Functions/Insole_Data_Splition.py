@@ -8,7 +8,7 @@ import json
 # plot the left and right insole data, select an appropriate baseline to help identify the gait events
 def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, start_index, end_index,
                   left_force_baseline, right_force_baseline):
-    left_total_force = left_insole_dataframe.iloc[:, 192]
+    left_total_force = left_insole_dataframe.iloc[:, 192]  # extract total force column
     right_total_force = right_insole_dataframe.iloc[:, 192]
     emg_data = emg_dataframe.sum(1)
     left_length = len(left_total_force.iloc[start_index:end_index])

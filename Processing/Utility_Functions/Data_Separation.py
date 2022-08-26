@@ -44,10 +44,10 @@ def seperateGait(split_data, window_size=512):
     return gait_event_timestamp
 
 
-## use the gait event timestamp to separate the emg data (for one session data). Basically it is also a labelling process
+## separate the emg data (for one session data).
 def seperateEmgdata(emg_data, gait_event_timestamp):
     seperated_emg_data = {}
-    for gait_event, timestamp in gait_event_timestamp.items():
+    for gait_event, timestamp in gait_event_timestamp.items():  # use gait event timestamps to separate emg data and save the data with labeling
         seperated_emg_data[f"emg_{gait_event}"] = [np.array(emg_data.iloc[start_timestamp:end_timestamp, :]) for
             start_timestamp, end_timestamp in zip(timestamp["first_sample"], timestamp["last_sample"])]
     return seperated_emg_data

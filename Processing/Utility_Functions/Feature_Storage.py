@@ -11,10 +11,7 @@ def saveEmgFeatures(subject, emg_features):
     # convert all numpy data to list, otherwise it cannot be saved as json
     emg_feature_json = {}
     for gait_event_label, gait_event_emg in emg_features.items():
-        if gait_event_label in emg_feature_json:
-            emg_feature_json[gait_event_label].extend(gait_event_emg.tolist())
-        else:
-            emg_feature_json[gait_event_label] = gait_event_emg.tolist()
+        emg_feature_json[gait_event_label] = gait_event_emg.tolist()
 
     # save the lists in a dict to a json file
     with open(feature_path, 'w') as json_file:

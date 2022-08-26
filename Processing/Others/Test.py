@@ -4,7 +4,7 @@ import numpy as np
 import datetime
 from statsmodels.tsa.ar_model import AutoReg
 from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
-from Processing.Utility_Functions import Data_Separation, Electrode_Reordering
+from Processing.Utility_Functions import Data_Separation, Data_Reshaping
 import concurrent.futures
 import multiprocessing
 import functools
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             # recover mission emg channels
 
             # adjust electrode order to match the physical EMG grid
-            emg_reordered = Electrode_Reordering.reorderElectrodes(emg_preprocessed)
+            emg_reordered = Data_Reshaping.reorderElectrodes(emg_preprocessed)
             # separate the gait event with labelling
             gait_event_key = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
             # use the gait event timestamp to label emg data

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import datetime
-from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignment, Insole_Recovery
+from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignment, Insole_Emg_Recovery
 
 ## read align parameters and reconstruct aligned data (abandoned as it is too slow)
 def readAlignedData(subject, session, mode):
@@ -30,11 +30,11 @@ def readAlignedData(subject, session, mode):
 
     # left insole
     raw_left_data = pd.read_csv(left_insole_path, sep=',', header=None)
-    recovered_left_data = Insole_Recovery.insertMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
+    recovered_left_data = Insole_Emg_Recovery.insertInsoleMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
 
     # right insole
     raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
-    recovered_right_data = Insole_Recovery.insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
+    recovered_right_data = Insole_Emg_Recovery.insertInsoleMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 
     ## read alignment parameters
     left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp = Two_Insoles_Alignment.readAlignParameters(

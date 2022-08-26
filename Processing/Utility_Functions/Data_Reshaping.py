@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 ## adjust electrode order to match the physical EMG grid
 def reorderElectrodes(emg_data):
@@ -16,3 +17,15 @@ def reorderElectrodes(emg_data):
     emg_reordered.columns = columnNames
 
     return emg_reordered
+
+
+## rearrange emg data to map 4d matrix
+def reshapeEmgFeatures(emg_feature_data):
+    emg_feature_reshaped = {}
+    rows = 13
+    columns = 5
+    features = -1
+    for gait_event_label, gait_event_emg in emg_feature_data.items():
+        samples = len(gait_event_emg)
+        emg_feature_reshaped[gait_event_label] = np.reshape(np.transpose(gait_event_emg), (rows, columns, features, samples), order='F')
+    return emg_feature_reshaped

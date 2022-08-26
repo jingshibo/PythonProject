@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime
-from RawData.Utility_Functions.Insole_Recovery import insertMissingRow
+from RawData.Utility_Functions.Insole_Emg_Recovery import insertInsoleMissingRow
 
 # initialization
 data_dir = 'D:\Data\Insole_Emg'
@@ -30,7 +30,7 @@ print(datetime.datetime.now() - now)
 
 ## left insole
 raw_left_data = pd.read_csv(left_insole_path, sep=',', header=None)
-recovered_left_data = insertMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
+recovered_left_data = insertInsoleMissingRow(raw_left_data, insole_sampling_period)  # add missing rows with NaN values
 
 left_total_force = recovered_left_data[195]  # extract total force column
 big_toes = recovered_left_data[191]
@@ -55,7 +55,7 @@ ax2.set_title('Left Insole Force')
 
 ## right insole
 raw_right_data = pd.read_csv(right_insole_path, sep=',', header=None)
-recovered_right_data = insertMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
+recovered_right_data = insertInsoleMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 
 right_total_force = recovered_right_data[195]  # extract total force column
 
