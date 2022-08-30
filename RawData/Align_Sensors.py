@@ -50,7 +50,7 @@ recovered_right_data = Insole_Emg_Recovery.insertInsoleMissingRow(raw_right_data
 
 # emg
 raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16', converters={0: str, 1: str, 2: str})  # change data type for faster reading
-wrong_timestamp = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)  # check each row. Note there will be lost data or duplicated data
+wrong_timestamp = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)  # check each row to see if there are lost data or duplicated data
 print(datetime.datetime.now() - now)
 
 ## recover emg signal (both deleting duplicated data and add missing data)
@@ -65,8 +65,8 @@ dropped_emg_data = raw_emg_data.drop(raw_emg_data.index[range(start_index+1, end
 inserted_emg_data = Insole_Emg_Recovery.insertEmgNanRow(dropped_emg_data, start_index, end_index)
 
 # how to deal with lost data: calculate the number of missing data and then insert Nan of the same number
-start_index = 588775
-end_index = 588776
+start_index = 588775  # the last index before the missing data
+end_index = 588776  # the first index after the missing data
 inserted_emg_data = Insole_Emg_Recovery.insertEmgNanRow(inserted_emg_data, start_index, end_index)
 
 # # interpolate emg data
@@ -176,3 +176,11 @@ diff_number = real_number - expected_number
 
 
 ##
+datetime_end = datetime.datetime.strptime(raw_emg_data.iloc[-1,0], '%Y-%m-%d_%H:%M:%S.%f')
+datetime_start = datetime.datetime.strptime(raw_emg_data.iloc[400,0], '%Y-%m-%d_%H:%M:%S.%f')
+expected_number = (datetime_end - datetime_start).total_seconds() * 1000 * 2
+print(expected_number)
+real_number = len(recovered_emg_data) - 400
+print(real_number)
+diff_number = real_number - expected_number
+print(diff_number)

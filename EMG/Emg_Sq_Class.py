@@ -109,6 +109,7 @@ class Sessantaquattro():
 
         return int(command).to_bytes(COMMAND_LENGTH_IN_BYTES, byteorder="big")
 
+
     def connect_to_sq(self):
         start_command = self.create_bin_command(go=1)
         print("Server binding")
@@ -136,7 +137,7 @@ class Sessantaquattro():
 
         # Read the data row by row
         dt = np.dtype(np.uint16) # each sample is 16 bits
-        dt = dt.newbyteorder('big') # data received from TCP/IP us big Endian order
+        dt = dt.newbyteorder('big') # data received from TCP/IP use big Endian order
         bdata = np.frombuffer(buffer=raw_data_stream, dtype=dt, count=self._buffsize * self._number_of_channels)
         emgarray = np.reshape(bdata, [self._buffsize, self._number_of_channels], order='C')
 
