@@ -37,15 +37,15 @@ def readAlignedData(subject, session, mode):
     recovered_right_data = Insole_Emg_Recovery.insertInsoleMissingRow(raw_right_data, insole_sampling_period)  # add missing rows with NaN values
 
     ## read alignment parameters
-    left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp = Two_Insoles_Alignment.readAlignParameters(
-        subject, data_file_name)
-    print(left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp)
+    left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp, emg_start_timestamp, emg_end_timestamp = \
+        Two_Insoles_Alignment.readAlignParameters(subject, data_file_name)
+    print(left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp, emg_start_timestamp, emg_end_timestamp)
 
     ## get aligned sensor data
-    _, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBegin(  # to view combine_cropped_begin data
+    _, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginTimestamp(  # to view combine_cropped_begin data
         left_start_timestamp, right_start_timestamp, recovered_left_data, recovered_right_data)
-    left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEnd(left_end_timestamp, right_end_timestamp,
+    left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndTimestamp(left_end_timestamp, right_end_timestamp,
         left_begin_cropped, right_begin_cropped)
-    emg_aligned = Insole_Emg_Alignment.alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned)
+    emg_aligned = Insole_Emg_Alignment.alignInsoleEmgTimestamp(raw_emg_data, left_insole_aligned, right_insole_aligned)
 
     return left_insole_aligned, right_insole_aligned, emg_aligned

@@ -82,24 +82,24 @@ combined_insole_data = Two_Insoles_Alignment.cancatInsole(recovered_left_data, r
 left_start_timestamp = 331775
 right_start_timestamp = 313275
 # to view combine_cropped_begin data
-combine_cropped_begin, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBegin(left_start_timestamp,
+combine_cropped_begin, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginTimestamp(left_start_timestamp,
     right_start_timestamp, recovered_left_data, recovered_right_data)
 
 ## align the end of sensor data
 # view the combine_cropped_begin table in order to find the appropriate end timestamp for alignment
 left_end_timestamp = 748500
 right_end_timestamp = 730025
-left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEnd(left_end_timestamp, right_end_timestamp,
+left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndTimestamp(left_end_timestamp, right_end_timestamp,
     left_begin_cropped, right_begin_cropped)
 
 ## check the insole alignment results
 start_index = 0
 end_index = 600000
 # plot the insole data to check the alignment result
-Two_Insoles_Alignment.plotAlignedInsole(left_insole_aligned, right_insole_aligned, start_index, end_index)
+Two_Insoles_Alignment.plotBothInsoles(left_insole_aligned, right_insole_aligned, start_index, end_index)
 
 ## align insole and EMG
-emg_aligned = Insole_Emg_Alignment.alignInsoleEmg(recovered_emg_data, left_insole_aligned, right_insole_aligned)
+emg_aligned = Insole_Emg_Alignment.alignInsoleEmgTimestamp(recovered_emg_data, left_insole_aligned, right_insole_aligned)
 
 ## upsampling and filtering aligned data
 left_insole_upsampled, right_insole_upsampled = Upsampling_Filtering.upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)

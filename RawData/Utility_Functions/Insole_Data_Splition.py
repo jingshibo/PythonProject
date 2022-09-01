@@ -59,7 +59,7 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
 # save the split parameters into a json file
 def saveSplitParameters(subject, split_data):
     data_dir = 'D:\Data\Insole_Emg'
-    split_file = f'subject_{subject}\subject_{subject}_split.json'
+    split_file = f'subject_{subject}\subject_{subject}_split_parameters.json'
     split_path = os.path.join(data_dir, split_file)
 
     with open(split_path, 'w') as json_file:
@@ -68,7 +68,7 @@ def saveSplitParameters(subject, split_data):
 # read the split parameters from a json file
 def readSplitParameters(subject):
     data_dir = 'D:\Data\Insole_Emg'
-    split_file = f'subject_{subject}\subject_{subject}_split.json'
+    split_file = f'subject_{subject}\subject_{subject}_split_parameters.json'
     split_path = os.path.join(data_dir, split_file)
 
     with open(split_path) as json_file:

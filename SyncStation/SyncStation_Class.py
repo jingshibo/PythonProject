@@ -1,5 +1,7 @@
 import socket
+import asyncio
 import numpy as np
+import datetime
 from SyncStation import CRC8_Calculation
 
 class SyncStation():
@@ -116,7 +118,7 @@ class SyncStation():
         self.TotNumChan = self.TotNumChan + 6  # 6 additional channels from SyncStation
         self.ConfString.append(CRC8_Calculation.CRC8(self.ConfString, ConfStrLen))
 
-        print("init done")
+        print("SyncStation initialization done")
 
     # Open the TCP socket
     def start_syncstation(self):
@@ -143,8 +145,8 @@ class SyncStation():
         else:
             raise Exception("Can't disconnect from because the connection is not established")
 
-    # receive emg data
-    def receive_sync_emg(self):
+    # receive emg data using loop
+    def loop_read_sync_emg(self):
         buffer_size = self.TotNumChan * self.bytes_in_sample * self.buffer_num
         raw_data_stream = self.ss_socket.recv(buffer_size, socket.MSG_WAITALL)
 
@@ -156,3 +158,53 @@ class SyncStation():
 
         emg_data = emgarray.tolist()
         return emgarray, raw_data_stream
+
+    # receive emg data using asyncio
+    async def async_read_sync_emg(self):
+        _ip = "192.168.76.1"
+        _port = 54320
+
+        # Create a TCP server (socket type: SOCK_STREAM)
+        reader, writer = await asyncio.open_connection(_ip, _port, family=socket.AF_INET)
+
+        # send command to start connection
+        for command in self.ConfString:
+            writer.write(int(command).to_bytes(1, byteorder="big"))
+            await writer.drain()
+
+        # initialize buffer
+        buffer_size = self.TotNumChan * self.bytes_in_sample * self.buffer_num
+
+        init_time = datetime.datetime.now()
+        last_time = init_time
+        end_time = init_time + datetime.timedelta(seconds=10)
+        emg_list = []
+
+        while datetime.datetime.now() < end_time:
+            last_time = datetime.datetime.now()
+            raw_data_stream = await reader.readexactly(buffer_size)
+
+            # Read the data row by row
+            dt = np.dtype(np.uint16)  # each sample is 16 bits
+            dt = dt.newbyteorder('big')  # data received from TCP/IP use big Endian order
+            bdata = np.frombuffer(buffer=raw_data_stream, dtype=dt, count=self.buffer_num * self.TotNumChan)
+            emgarray = np.reshape(bdata, [self.buffer_num, self.TotNumChan], order='C')
+
+            # return emgarray, raw_data_stream
+            emg_list.append(emgarray)
+            print("time:", datetime.datetime.now() - init_time, "length:", len(emg_list) * 200)  # print(emgarray[0])
+
+        # close connection
+        print("Close the connection")
+        ConfString = []
+        ConfString.append(0)
+        ConfString.append(CRC8_Calculation.CRC8(ConfString, 1))
+        for command in ConfString:
+            writer.write(int(command).to_bytes(1, byteorder="big"))
+            await writer.drain()
+
+        writer.close()
+        await writer.wait_closed()
+        print("Connection closed")
+
+

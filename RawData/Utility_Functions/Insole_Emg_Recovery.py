@@ -12,9 +12,8 @@ def insertInsoleMissingRow(raw_insole_data, sampling_period):
             row_to_insert = [raw_insole_data.iloc[i, 0], 0, raw_insole_data.iloc[i, 2], time_stamp[i] + sampling_period * (j + 1),
                              *nan_to_filling]  # construct a row list. the first four columns are not measurements that needs to interpolate
             raw_insole_data.loc[i + (j + 1) / (num_to_insert + 1)] = row_to_insert  # Append row at the bottom with a given index
-    inserted_left_data = raw_insole_data.sort_index().reset_index(drop=True)  # Reorder DataFrame
-    recovered_left_data = inserted_left_data.interpolate(method='pchip', limit_direction='forward', axis=0)
-    return recovered_left_data
+    inserted_insole_data = raw_insole_data.sort_index().reset_index(drop=True)  # Reorder DataFrame
+    return inserted_insole_data, raw_insole_data
 
 ## upsample insole data to every 0.5ms to match EMG (abandoned method, because the insole sampling rate is not exact 40Hz)
 def upsampleInsoleData(insole_data):
@@ -37,19 +36,19 @@ def upsampleInsoleEqualToEMG(insole_data, emg_data):
 
 ## find lost emg data according to the value in sample counter
 def findLostEmgData(raw_emg_data):
-    sample_counter = raw_emg_data.iloc[:, -1].to_frame()  # the final column is sample counter (timestamp)
+    sample_counter = raw_emg_data.iloc[:, -1].to_frame()  # the final column is the sample counter (timestamp)
     sample_counter.columns = ["sample_counter"]
     counter_diff = sample_counter["sample_counter"].diff().to_frame()
     counter_diff.columns = ["counter_difference"]
     wrong_timestamp = counter_diff.query('abs(counter_difference) > 1 & abs(counter_difference) < 65535') # exclude 65535 as it is when the counter restarts
-    return wrong_timestamp
+    return wrong_timestamp  # return the index of wrong timestamps
 
 ## insert value of Nan with the number of missing rows to EMG
 def insertEmgNanRow(emg_data, start_index, end_index):
     # Note: here we use .loc instead of .iloc in order to use the original row index to reach the data.
     start_sample_count = emg_data.loc[start_index, 70]  # the column named 70 is timestamp.
     end_sample_count = emg_data.loc[end_index, 70]
-    # Warning: the following code only applies to when the number of lost data is less than 131072 (65s), but this is usually satisfied
+    # Warning: the following code only applies to when the number of lost data is less than 131072 (65s), which is usually satisfied
     if end_sample_count > start_sample_count:
         number_to_insert = end_sample_count - start_sample_count - 1
     else:  # the sample counter starts over when the count number > 65536

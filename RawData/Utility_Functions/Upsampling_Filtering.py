@@ -13,7 +13,7 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
     emg_timestamp = pd.to_datetime(emg_aligned.iloc[:, 0])
     expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
     if abs(expected_number - len(emg_timestamp)) >= 50:  # 50 is a self-selected threshold
-        raise Exception("EMG Data Number Problematic")  # in this case, you need to recover the lost data in EMG
+        raise Exception("Abnormal EMG Data Number")  # in this case, you need to recover the lost data in EMG
     else:
         # upsample insole data to 2000Hz same to EMG data
         upsampled_left_insole = Insole_Emg_Recovery.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
@@ -33,9 +33,12 @@ def filterInsole(upsampled_left_insole, upsampled_right_insole):
     return left_insole_filtered, right_insole_filtered
 
 ## filtering EMG data
-def filterEmg(emg_aligned, notch = False, quality_factor = 30):
+def filterEmg(emg_aligned, emg_id=1, notch = False, quality_factor = 30):
     sos = signal.butter(4, [20, 400], fs=2000, btype="bandpass", output='sos')
-    emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_aligned.iloc[:, 3:67], axis=0) # only filter the emg measurements
+    if emg_id == 1:  # for the first sessantaquattro data
+        emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_aligned.iloc[:, 3:67], axis=0) # only filter the emg measurements
+    elif emg_id == 2:  # for the second sessantaquattro data
+        emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_aligned.iloc[:, 73:137], axis=0)  # only filter the emg measurements
     emg_filtered = emg_bandpass_filtered
     if notch: # to remove power line interference
         b, a = signal.iircomb(50, quality_factor, fs=2000, ftype='notch')

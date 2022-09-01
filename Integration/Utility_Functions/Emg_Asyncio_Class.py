@@ -155,7 +155,7 @@ class Sessantaquattro():
                 raw_data_stream = await reader.readexactly(buffer_size)
 
                 # Read emg data row by row
-                dt = np.dtype(np.uint16)  # each sample is 16 bits
+                dt = np.dtype(np.int16)  # each sample is 16 bits
                 dt = dt.newbyteorder('big')  # data received from TCP/IP us big Endian order
                 bdata = np.frombuffer(buffer=raw_data_stream, dtype=dt, count=self._buffsize * self._number_of_channels)
                 emgarray = np.reshape(bdata, [self._buffsize, self._number_of_channels], order='C')

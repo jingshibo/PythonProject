@@ -3,8 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-## align EMG and insoles
-def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
+## align EMG and insoles based on timestamp
+def alignInsoleEmgTimestamp(raw_emg_data, left_insole_aligned, right_insole_aligned):
     # get the beginning and ending timestamp for both insoles.
     left_insole_aligned[0] = pd.to_datetime(left_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f') # the column named 0 is the timestamp
     right_insole_aligned[0] = pd.to_datetime(right_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
@@ -19,12 +19,44 @@ def alignInsoleEmg(raw_emg_data, left_insole_aligned, right_insole_aligned):
     emg_aligned = raw_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
     return emg_aligned
 
+## plot insole and sync force data
+def plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, start_index, end_index):
+    left_total_force = recovered_left_data.loc[:, 195]  # extract total force column
+    right_total_force = recovered_right_data.loc[:, 195]
+    sync_force = recovered_emg_data.iloc[:, -3]  # extract load cell column
+
+    # plot
+    fig = plt.figure()
+
+    ax1 = fig.add_subplot(3, 1, 1)
+    ax2 = fig.add_subplot(3, 1, 2, sharex=ax1)
+    ax3 = fig.add_subplot(3, 1, 3)
+
+    ax1.plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
+        label="Left Insole Force")
+    ax2.plot(range(len(right_total_force.iloc[start_index:end_index])), right_total_force.iloc[start_index:end_index],
+        label="Right Insole Force")
+    ax3.plot(range(len(sync_force.iloc[start_index:end_index])), sync_force.iloc[start_index:end_index], label="Sync Station Force")
+
+    ax1.set(title="Left Insole Force", ylabel="force(kg)")
+    ax2.set(title="Right Insole Force", ylabel="force(kg)")
+    ax3.set(title="Emg Signal", xlabel="Sample Number", ylabel="Emg Value")
+
+    ax1.tick_params(labelbottom=True)  # show x-axis ticklabels
+    ax2.tick_params(labelbottom=True)
+
+    ax1.legend(loc="upper right")
+    ax2.legend(loc="upper right")
+    ax3.legend(loc="upper right")
 
 ## plot insole and emg data
-def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index):
-    left_total_force = left_insole_dataframe.iloc[:, 192]  # extract total force column
-    right_total_force = right_insole_dataframe.iloc[:, 192]
-    emg_data = emg_dataframe.sum(1)
+def plotInsoleEmg(emg_dataframe, left_insole_dataframe, right_insole_dataframe, start_index, end_index, sync_force=True):
+    left_total_force = left_insole_dataframe.loc[:, 192]  # extract total force column
+    right_total_force = right_insole_dataframe.loc[:, 192]
+    if sync_force:  # plot syncstation load cell data
+        emg_data = emg_dataframe.iloc[:, -3]  # extract load cell column
+    else:  # plot emg data
+        emg_data = emg_dataframe.iloc[3, 67].sum(axis=1)  # calculate sum of emg signals for one sessantaquattro
 
     # plot
     fig, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
