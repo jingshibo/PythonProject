@@ -28,18 +28,16 @@ def labelSensorData(subject, modes, sessions, split_data):
         for session in sessions:
             # read aligned data
             left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
-            # upsampling and filtering data
+            # upsampling, filtering and reordering data
             left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
                 left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
-            # adjust electrode order to match the physical EMG grid
-            emg_reordered = Data_Reshaping.reorderElectrodes(emg_preprocessed)
             # separate the gait event using timestamps
             gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
             # use the gait event timestamps to label emg data
-            emg_labelled = Data_Separation.seperateEmgdata(emg_reordered, gait_event_timestamp)
+            emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict
             for gait_event_label, gait_event_emg in emg_labelled.items():
-                if gait_event_label in combined_emg_labelled: # check if there is already the key in the dict
+                if gait_event_label in combined_emg_labelled:  # check if there is already the key in the dict
                     combined_emg_labelled[gait_event_label].extend(gait_event_emg)
                 else:
                     combined_emg_labelled[gait_event_label] = gait_event_emg
@@ -68,11 +66,14 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
 ## read sensor data and extract features with labeling
 if __name__ == '__main__':
     # basic information
+
+    # subject = 'Shibo'
+    # modes = ['up_down', 'down_up']
+    # sessions = list(range(10))
     subject = 'Shibo'
-    modes = ['up_down', 'down_up']
-    sessions = list(range(10))
     modes = ['up_down']
     sessions = [0]
+
     # Feature extraction
     split_data = readSplitData(subject)
     combined_emg_labelled = labelSensorData(subject, modes, sessions, split_data)

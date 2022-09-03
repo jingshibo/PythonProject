@@ -98,7 +98,7 @@ def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
     emg_window_features = []
 
     event_time = datetime.datetime.now()
-    for per_round_emg in gait_event_emg:
+    for per_round_emg in gait_event_emg:  # each gait event contains multiple rounds of experiment data
         round_time = datetime.datetime.now()
         for i in range(0, len(per_round_emg) - window_size + 1, increment):
             emg_window_data = per_round_emg[i:i + window_size, :]

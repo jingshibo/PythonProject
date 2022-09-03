@@ -2,7 +2,7 @@
 run the following code blocks in order:
 input the start and end timestamp for both left and right insoles to align them.
 the emg signal will be automatically aligned using this information
-save the alignment parameters into a csv file for later use
+save the alignment parameters into disk for later use
 """
 
 ## import modules
@@ -104,13 +104,13 @@ emg_aligned = Insole_Emg_Alignment.alignInsoleEmgTimestamp(recovered_emg_data, l
 ## upsampling and filtering aligned data
 left_insole_upsampled, right_insole_upsampled = Upsampling_Filtering.upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
 # left_insole_filtered, right_insole_filtered = Upsampling_Filtering.filterInsole(left_insole_upsampled, right_insole_upsampled)
-emg_filtered = Upsampling_Filtering.filterEmg(emg_aligned, notch=False, quality_factor=30)
+emg_filtered = Upsampling_Filtering.filterEmg(emg_aligned.iloc[:, 3:67], notch=False, quality_factor=30)
 
 ## check the insole and emg alignment results
 start_index = 00000
 end_index = 600000
 # plot the emg and insole data to check the alignment result
-Insole_Emg_Alignment.plotInsoleEmg(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index)
+Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_filtered, left_insole_upsampled, right_insole_upsampled, start_index, end_index)
 
 ## save the align results
 #  save the alignment parameters
