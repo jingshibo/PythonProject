@@ -66,7 +66,7 @@ def plotBothInsoles(left_insole_aligned, right_insole_aligned, start_index, end_
     right_total_force = right_insole_aligned.loc[:, 195]
 
     # plot
-    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', sharey='all')
     axes[0].plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
                  label="Left Insole Force")
     axes[1].plot(range(len(right_total_force.iloc[start_index:end_index])),

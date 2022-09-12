@@ -13,9 +13,13 @@ from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignmen
 
 
 ## initialization
-subject = 'Test'
-mode = 'up_down'
-session = 3
+# subject = 'Test'
+# mode = 'up_down'
+# session = 2
+
+subject = 'Shibo'
+mode = 'down_up'
+session = 2
 
 data_dir = 'D:\Data\Insole_Emg'
 data_file_name = f'subject_{subject}_session_{session}_{mode}'
@@ -34,7 +38,7 @@ raw_emg_data = []
 
 
 ## read and impute sensor data
-insole_sampling_period = 20  # insole sampling period
+insole_sampling_period = 25  # insole sampling period
 now = datetime.datetime.now()
 
 # left insole
@@ -49,33 +53,18 @@ recovered_right_data = inserted_right_data.interpolate(method='pchip', limit_dir
 
 # emg
 raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16', converters={0: str, 1: str, 2: str})  # change data type for faster reading
-wrong_timestamp = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)
+wrong_timestamp_sync, wrong_timestamp_emg1, wrong_timestamp_emg2 = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)
 recovered_emg_data = raw_emg_data  # if there are no abnormal emg data numbers
 print(datetime.datetime.now() - now)
 
-
-## recover emg signal (both deleting duplicated data and add missing data)
-# check each row in wrong_timestamp variable to see if there are lost data or duplicated data
-# how to deal with duplicated data: delete all these data and use the first data and the last data as reference to count the number of
-# missing data, then insert Nan of this number
-now = datetime.datetime.now()
-# delete duplicated data
-start_index = 588863  # the index before the first duplicated data
-end_index = 590748  # the index after the last duplicated data.
-# Note: it only drop data between start_index+1 ~ end_index-1. the last index will not be dropped.
-dropped_emg_data = raw_emg_data.drop(raw_emg_data.index[range(start_index+1, end_index)])
-inserted_emg_data = Insole_Emg_Recovery.insertEmgNanRow(dropped_emg_data, start_index, end_index)
-
-# how to deal with lost data: calculate the number of missing data and then insert Nan of the same number
-start_index = 588775  # the last index before the missing data
-end_index = 588776  # the first index after the missing data
-inserted_emg_data = Insole_Emg_Recovery.insertEmgNanRow(inserted_emg_data, start_index, end_index)
-
-# # interpolate emg data
-reindex_emg_data = inserted_emg_data.sort_index().reset_index(drop=True)  # Reorder DataFrame
-recovered_emg_data = reindex_emg_data.interpolate(method='cubic', limit_direction='forward', axis=0)
-print(datetime.datetime.now() - now)
-
+## view raw emg and insole data
+# plot emg and insole data
+Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, 0, -1)
+# check the number of emg data
+emg_timestamp = pd.to_datetime(recovered_emg_data[0], format='%Y-%m-%d_%H:%M:%S.%f')
+expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
+real_number = len(emg_timestamp)
+print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
 
 ## align two insoles based on the force value
 # concat two insole data into one dataframe to check timestamps when necessary
@@ -87,9 +76,10 @@ Two_Insoles_Alignment.plotBothInsoles(recovered_left_data, recovered_right_data,
 
 
 ## align the beginning of insole data
-# view the insole force plotted above to find an appropriate start index for alignment of two insoles
-left_start_index = 819
-right_start_index = 831
+# view the insole force plotted above to find an appropriate start index that matches most force pulses
+# usually use the first pulse as the referenece. if the result is undesired, just add or minus one on the index to adjust instead of selecting anather pulse
+left_start_index = 123
+right_start_index = 142
 combine_begin_cropped, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginIndex(left_start_index,
     right_start_index, recovered_left_data, recovered_right_data)
 # check the following timestamps in combined_insole_data table when necessary
@@ -102,9 +92,10 @@ Two_Insoles_Alignment.plotBothInsoles(left_begin_cropped, right_begin_cropped, s
 
 
 ## align the ending of insole data
-# view the insole force plotted above to find an appropriate end index for alignment of two insoles
-left_end_index = 9705
-right_end_index = 9705
+# view the insole force plotted above to find an appropriate end index that matches most force pulses. usually use the last pulse as the referenece.
+# Note: scale the figure up to large enough in order to look into the alignment result more clearly
+left_end_index = 5610
+right_end_index = 5610
 left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndIndex(left_end_index, right_end_index,
     left_begin_cropped, right_begin_cropped)
 # display the eng_index before data cropping. this can be used to obtain the pulse number for insole/emg alignment
@@ -118,20 +109,30 @@ Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data
 
 ## align the insole and emg data based on force value
 # view the sync force plotted above to find an appropriate start and end index for alignment of insoles and emg
-emg_start_index = 38225  # select the index belonging to the pulse number where the insole start_index is
-emg_end_index = 426767  # select the index belonging to the pulse number where the insole end_index is
+emg_start_index = 10213  # select the index belonging to the pulse number where the insole start_index is
+emg_end_index = 290690  # select the index belonging to the pulse number where the insole end_index is
 emg_aligned = recovered_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
 # convert the timestamp column to datetime type for insole data upsampling calculation
 emg_aligned[0] = pd.to_datetime(emg_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
-# upsampling aligned insole data(this function also checks if there are significant emg data lost)
-left_insole_upsampled, right_insole_upsampled = Upsampling_Filtering.upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
 
-
-## plot the insole and emg alignment results
+# plot the insole and emg alignment results
 start_index = 0
 end_index = -1
-# upsampling emg data
+# upsampling aligned insole data (this is not for alignment. rather it is only for plotting to check the alignment result)
+left_insole_upsampled, right_insole_upsampled = Upsampling_Filtering.upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
+# plot emg and insole data
 Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsampled, start_index, end_index, sync_force=True)
+
+
+## save the aligned results
+# save the alignment parameters
+Two_Insoles_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
+    right_end_index, emg_start_index, emg_end_index)
+# save the aligned data
+Insole_Emg_Alignment.saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned)
+
+
+
 
 
 ## align insole and EMG based on timestamps (if there is no sync force to use)
@@ -145,13 +146,56 @@ start_index = 0
 end_index = -1
 # plot the emg and insole data to check the alignment result
 Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned_2, left_insole_upsampled, right_insole_upsampled, start_index, end_index,
-    sync_force=False, emg_channel=range(3, 67))
+    sync_force=False, emg_columns=range(3, 67))
 
 
-## save the align results
- # save the alignment parameters
-Two_Insoles_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
-    right_end_index, emg_start_index, emg_end_index)
-# save the aligned data
-Insole_Emg_Alignment.saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned)
 
+
+
+
+## test
+Insole_Emg_Alignment.plotInsoleSyncForce(emg_aligned, recovered_left_data, recovered_right_data, 0, -1)
+
+##
+# Read aligned data when needed
+left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
+# wrong timestamp from aligned data
+wrong_timestamp, wrong_timestamp1, wrong_timestamp2 = Insole_Emg_Recovery.findLostEmgData(emg_aligned)
+
+# sample_counter = emg_aligned.iloc[:, -1].to_frame()  # this column is the sample counter (timestamp) for SyncStation
+# sample_counter.columns = ["sample_counter"]
+# counter_diff = sample_counter["sample_counter"].diff().to_frame()
+# counter_diff.columns = ["counter_difference"]
+# wrong_timestamp = counter_diff.query('counter_difference != 1')  # exclude 65535 as it is when the counter restarts
+
+
+## recover emg signal
+# check each row in wrong_timestamp variable to figure out the reason for the abnormal number
+
+# 1. change column order
+# start_index = 589999
+# reordered_emg_data = Insole_Emg_Recovery.changeColumnOrder(raw_emg_data, start_index)
+# start_index = 632360
+# reordered_emg_data = Insole_Emg_Recovery.changeColumnOrder(reordered_emg_data, start_index)
+# recovered_emg_data = reordered_emg_data
+# wrong_timestamp_sync, wrong_timestamp_emg1, wrong_timestamp_emg2 = Insole_Emg_Recovery.findLostEmgData(recovered_emg_data)
+
+# # 2. how to deal with duplicated data: delete all these data and use the first data and the last data as reference to count the number of
+# # missing data, then insert Nan of this number
+# now = datetime.datetime.now()
+# # delete duplicated data
+# start_index = 588863  # the index before the first duplicated data
+# end_index = 590748  # the index after the last duplicated data.
+# # Note: it only drop data between start_index+1 ~ end_index-1. the last index will not be dropped.
+# dropped_emg_data = raw_emg_data.drop(raw_emg_data.index[range(start_index+1, end_index)])
+# inserted_emg_data = Insole_Emg_Recovery.insertEmgNanRow(dropped_emg_data, start_index, end_index)
+#
+# # 3. how to deal with lost data: calculate the number of missing data and then insert Nan of the same number
+# start_index = 588775  # the last index before the missing data
+# end_index = 588776  # the first index after the missing data
+# inserted_emg_data = Insole_Emg_Recovery.insertEmgNanRow(inserted_emg_data, start_index, end_index)
+#
+# # interpolate emg data
+# reindex_emg_data = inserted_emg_data.sort_index().reset_index(drop=True)  # Reorder DataFrame
+# recovered_emg_data = reindex_emg_data.interpolate(method='cubic', limit_direction='forward', axis=0)
+# print(datetime.datetime.now() - now)

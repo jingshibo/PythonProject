@@ -1,9 +1,29 @@
 ## import mudules
 import pandas as pd
+import numpy as np
 from scipy import signal, ndimage
-from RawData.Utility_Functions import Insole_Emg_Recovery
 from Processing.Utility_Functions import Data_Reshaping
+from scipy.interpolate import PchipInterpolator
 
+
+## upsample insole data to every 0.5ms to match EMG (abandoned method, because the insole sampling rate is not exact 40Hz)
+def upsampleInsoleDataTo2000(insole_data):
+    only_measured_data = insole_data.iloc[:, 3:]  # extract only measurement value columns
+    only_measured_data.iloc[:, 0] = pd.to_datetime(only_measured_data.iloc[:, 0], unit='ms') # convert timestamp string to datetime object
+    only_measured_data = only_measured_data.set_index([3])  # set the timestamp column as datetime index
+    upsampled_sensor_data = only_measured_data.resample('0.5ms').asfreq()  # insert row of NaN every 0.5ms
+    upsampled_sensor_data = upsampled_sensor_data.interpolate(method='pchip', limit_direction='forward', axis=0) # impute the NaN missing values
+    return upsampled_sensor_data
+
+## upsample insole data to exactly the same number as EMG
+def upsampleInsoleEqualToEMG(insole_data, emg_data):
+    x = np.arange(len(insole_data))
+    y = insole_data.iloc[:, 3:].to_numpy()  # only extract measurement value columns
+    f = PchipInterpolator(x, y)
+    x_upsampled = np.linspace(min(x), max(x), len(emg_data))
+    y_upsampled = f(x_upsampled)
+    insole_upsampled = pd.DataFrame(y_upsampled)
+    return insole_upsampled
 
 ## upsamling insole data to match emg
 def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
@@ -15,15 +35,13 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
     emg_timestamp = pd.to_datetime(emg_aligned.iloc[:, 0])
     expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
     real_number = len(emg_timestamp)
-    print("expected emg number:", expected_number, "real emg number:", real_number, "number difference:", expected_number - real_number)
+    print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
 
-    if abs(expected_number - real_number) >= 20:  # 20 is a self-selected threshold
-        raise Exception("Abnormal EMG Data Number")  # in this case, you need to recover the lost data in EMG
-    else:
-        # upsample insole data to 2000Hz same to EMG data
-        upsampled_left_insole = Insole_Emg_Recovery.upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
-        upsampled_right_insole = Insole_Emg_Recovery.upsampleInsoleEqualToEMG(right_insole_aligned, emg_aligned)
-        return upsampled_left_insole, upsampled_right_insole
+    # upsample insole data to 2000Hz same to EMG data
+    upsampled_left_insole = upsampleInsoleEqualToEMG(left_insole_aligned, emg_aligned)
+    upsampled_right_insole = upsampleInsoleEqualToEMG(right_insole_aligned, emg_aligned)
+
+    return upsampled_left_insole, upsampled_right_insole
 
 
 ## filtering insole data

@@ -6,7 +6,7 @@ read split parameters to separate emg data and then calculate emg features for e
 import pandas as pd
 import datetime
 from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
-from Processing.Utility_Functions import Data_Separation, Data_Reshaping, Feature_Calculation, Feature_Storage
+from Processing.Utility_Functions import Data_Separation, Feature_Calculation, Feature_Storage
 import concurrent.futures
 
 
@@ -56,7 +56,7 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
         for future in concurrent.futures.as_completed(futures):
             combined_emg_features.append(future.result())
     print(datetime.datetime.now() - now)
-    # reorganize teh calculated features with labelling
+    # reorganize the calculated features with labelling
     emg_features = {}
     for gait_event_features in combined_emg_features:
         gait_event_label = list(gait_event_features.keys())[0]
@@ -87,4 +87,4 @@ if __name__ == '__main__':
 #     to_devide = int(len(value) / base_number)
 #     for i in range(to_devide):
 #         banlanced_emg[f"emg_{key}_{i}"] = value[i*base_number:(i+1)*base_number]
-
+# emg_features = extractEmgFeatures(banlanced_emg, window_size=512, increment=32)

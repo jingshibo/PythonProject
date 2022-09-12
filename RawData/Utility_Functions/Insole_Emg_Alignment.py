@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-## plot insole and sync force data for alignment
+## plot insole and sync force data for alignment (only two insole force images share axes)
 def plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, start_index, end_index):
     left_total_force = recovered_left_data.loc[:, 195]  # extract total force column
     right_total_force = recovered_right_data.loc[:, 195]
@@ -35,17 +35,18 @@ def plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right
     ax3.legend(loc="upper right")
 
 
-## plot insole and emg data for displaying results
-def plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsampled, start_index, end_index, sync_force=False, emg_channel=range(0, 64)):
+## plot insole and emg data for displaying results (all thress images share axes)
+def plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsampled, start_index, end_index, sync_force=False,
+        emg_columms=range(0, 65)):
     left_total_force = left_insole_upsampled.loc[:, 192]  # extract total force column
     right_total_force = right_insole_upsampled.loc[:, 192]
     if emg_aligned.shape[1] == 64:  # the input is filtered emg data, only contain 64 channel data
-        emg_data = emg_aligned.iloc[:, emg_channel].sum(axis=1)
+        emg_data = emg_aligned.iloc[:, emg_columms].sum(axis=1)
     else:  # the input is aligned emg data before filtering, contain other information more than 64 channel data
         if sync_force:  # plot syncstation load cell data
             emg_data = emg_aligned.iloc[:, -3]  # extract load cell column
         else:  # plot selected emg channel data
-            emg_data = emg_aligned.iloc[:, emg_channel].sum(axis=1)  # calculate sum of emg signals from selected emg channels
+            emg_data = emg_aligned.iloc[:, emg_columms].sum(axis=1)  # calculate sum of emg signals from selected emg channels
 
     # plot
     fig, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
