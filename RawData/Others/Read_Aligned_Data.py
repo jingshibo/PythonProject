@@ -38,7 +38,7 @@ def readAlignedData(subject, session, mode):
 
     ## read alignment parameters
     left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp, emg_start_timestamp, emg_end_timestamp = \
-        Two_Insoles_Alignment.readAlignParameters(subject, data_file_name)
+        Insole_Emg_Alignment.readAlignParameters(subject, session, mode)
     print(left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp, emg_start_timestamp, emg_end_timestamp)
 
     ## get aligned sensor data

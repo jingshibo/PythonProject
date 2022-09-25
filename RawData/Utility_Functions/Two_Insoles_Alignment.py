@@ -1,9 +1,7 @@
 ##
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
-import datetime
-import csv
+
 
 ## comcat two insole data into one dataframe
 def cancatInsole(recovered_left_data, recovered_right_data):
@@ -67,62 +65,16 @@ def plotBothInsoles(left_insole_aligned, right_insole_aligned, start_index, end_
 
     # plot
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', sharey='all')
-    axes[0].plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
-                 label="Left Insole Force")
-    axes[1].plot(range(len(right_total_force.iloc[start_index:end_index])),
+    axes[0].plot(range(len(right_total_force.iloc[start_index:end_index])),
                  right_total_force.iloc[start_index:end_index], label="Right Insole Force")
+    axes[1].plot(range(len(left_total_force.iloc[start_index:end_index])),
+                 left_total_force.iloc[start_index:end_index], label="Left Insole Force")
 
-    axes[0].set(title="Left Insole Force", ylabel="force(kg)")
-    axes[1].set(title="right Insole Force", ylabel="force(kg)")
+    axes[0].set(title="Right Insole Force", ylabel="force(kg)")
+    axes[1].set(title="Left Insole Force", ylabel="force(kg)")
 
     axes[0].tick_params(labelbottom=True)  # show x-axis ticklabels
 
     axes[0].legend(loc="upper right")
     axes[1].legend(loc="upper right")
 
-
-## save the alignment parameters into a csv file
-def saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index, right_end_index,
-        emg_start_index="None", emg_end_index="None"):
-    # save file path
-    data_dir = 'D:\Data\Insole_Emg'
-    alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
-    alignment_file_path = os.path.join(data_dir, alignment_file)
-
-    # alignment parameters to save
-    columns = ['data_file_name', 'alignment_save_date', 'left_start_index', 'right_start_index', 'left_end_index', 'right_end_index',
-        'emg_start_index', 'emg_end_index']
-    save_parameters = [data_file_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), left_start_index, right_start_index,
-        left_end_index, right_end_index, emg_start_index, emg_end_index]
-
-    with open(alignment_file_path, 'a+') as file:
-        if os.stat(alignment_file_path).st_size == 0:  # if the file is new created
-            print("Created file.")
-            write = csv.writer(file)
-            write.writerow(columns)  # write the column fields
-            write.writerow(save_parameters)
-        else:
-            write = csv.writer(file)
-            write.writerow(save_parameters)
-
-## read the alignment parameters from a csv file
-def readAlignParameters(subject, data_file_name):
-    data_dir = 'D:\Data\Insole_Emg'
-    alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
-    alignment_file_path = os.path.join(data_dir, alignment_file)
-
-    alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
-    file_parameter = alignment_data.query('data_file_name == @data_file_name') # use @ to cite variable values
-    if file_parameter.empty:  # if no alignment parameter found
-        raise Exception(f"No alignment parameter found for data file: {data_file_name}")
-    else:
-        align_parameter = file_parameter.iloc[[-1]]  # extract the last row (apply the newest parameters)
-
-        left_start_timestamp = align_parameter['left_start_timestamp'].iloc[0]
-        left_end_timestamp = align_parameter['left_end_timestamp'].iloc[0]
-        right_start_timestamp = align_parameter['right_start_timestamp'].iloc[0]
-        right_end_timestamp = align_parameter['right_end_timestamp'].iloc[0]
-        emg_start_timestamp = align_parameter['emg_start_timestamp'].iloc[0]
-        emg_end_timestamp = align_parameter['emg_end_timestamp'].iloc[0]
-
-        return left_start_timestamp, right_start_timestamp, left_end_timestamp, right_end_timestamp, emg_start_timestamp, emg_end_timestamp

@@ -15,11 +15,11 @@ from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignmen
 ## initialization
 # subject = 'Test'
 # mode = 'up_down'
-# session = 2
+# session = 12
 
 subject = 'Shibo'
 mode = 'down_up'
-session = 2
+session = 28
 
 data_dir = 'D:\Data\Insole_Emg'
 data_file_name = f'subject_{subject}_session_{session}_{mode}'
@@ -54,6 +54,14 @@ recovered_right_data = inserted_right_data.interpolate(method='pchip', limit_dir
 # emg
 raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16', converters={0: str, 1: str, 2: str})  # change data type for faster reading
 wrong_timestamp_sync, wrong_timestamp_emg1, wrong_timestamp_emg2 = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)
+
+# for single emg device data
+# sample_counter = raw_emg_data.iloc[:, -1].to_frame()  # this column is the sample counter (timestamp) for SyncStation
+# sample_counter.columns = ["sample_count"]
+# counter_diff = sample_counter["sample_count"].diff().to_frame()
+# counter_diff.columns = ["count_difference"]
+# wrong_timestamp = counter_diff.query('count_difference != 1 & count_difference != -65535')  # exclude 65535 as it is when the counter restarts
+
 recovered_emg_data = raw_emg_data  # if there are no abnormal emg data numbers
 print(datetime.datetime.now() - now)
 
@@ -62,8 +70,8 @@ print(datetime.datetime.now() - now)
 Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, 0, -1)
 # check the number of emg data
 emg_timestamp = pd.to_datetime(recovered_emg_data[0], format='%Y-%m-%d_%H:%M:%S.%f')
-expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
-real_number = len(emg_timestamp)
+expected_number = (emg_timestamp.iloc[-10000] - emg_timestamp.iloc[10000]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
+real_number = len(emg_timestamp) - 20000
 print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
 
 ## align two insoles based on the force value
@@ -75,32 +83,34 @@ end_index = -1
 Two_Insoles_Alignment.plotBothInsoles(recovered_left_data, recovered_right_data, start_index, end_index)
 
 
-## align the beginning of insole data
+## align the beginning of two insoles
 # view the insole force plotted above to find an appropriate start index that matches most force pulses
-# usually use the first pulse as the referenece. if the result is undesired, just add or minus one on the index to adjust instead of selecting anather pulse
-left_start_index = 123
-right_start_index = 142
+# usually use the first pulse as the referenece. if the result is undesired, just add or minus one on the index to adjust, instead of selecting anather pulse
+# Note: it is the alignment later with emg data that will decide whether add one or minus one is better. But here to align only two insoles, you can do it arbitrarily.
+right_start_index = 97
+left_start_index = 83
 combine_begin_cropped, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginIndex(left_start_index,
     right_start_index, recovered_left_data, recovered_right_data)
 # check the following timestamps in combined_insole_data table when necessary
-print("left_start_timestamp:", recovered_left_data.loc[left_start_index, 3])
 print("right_start_timestamp:", recovered_right_data.loc[right_start_index, 3])
+print("left_start_timestamp:", recovered_left_data.loc[left_start_index, 3])
 # plot begin-cropped insole data for ending index alignment
 start_index = 0
 end_index = -1
 Two_Insoles_Alignment.plotBothInsoles(left_begin_cropped, right_begin_cropped, start_index, end_index)
 
 
-## align the ending of insole data
+## align the ending of two insoles
 # view the insole force plotted above to find an appropriate end index that matches most force pulses. usually use the last pulse as the referenece.
-# Note: scale the figure up to large enough in order to look into the alignment result more clearly
-left_end_index = 5610
-right_end_index = 5610
+# Note: scale the figure up to large enough in order to look into the alignment result more clearly.
+# it is the alignment later with emg data that will decide whether the end_index here should add or minus one to match the end of emg index better.
+right_end_index = 5667
+left_end_index = 5667
 left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndIndex(left_end_index, right_end_index,
     left_begin_cropped, right_begin_cropped)
 # display the eng_index before data cropping. this can be used to obtain the pulse number for insole/emg alignment
-print("left_end_index_before_cropping:", left_end_index + left_start_index)
 print("right_end_index_before_cropping:", right_end_index + right_start_index)
+print("left_end_index_before_cropping:", left_end_index + left_start_index)
 # plot insole and sync force data for insole/emg alignment.
 start_index = 0
 end_index = -1
@@ -108,11 +118,13 @@ Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data
 
 
 ## align the insole and emg data based on force value
-# view the sync force plotted above to find an appropriate start and end index for alignment of insoles and emg
-emg_start_index = 10213  # select the index belonging to the pulse number where the insole start_index is
-emg_end_index = 290690  # select the index belonging to the pulse number where the insole end_index is
+# view the sync force plotted above to find an appropriate start and end index for alignment of emg and insoles
+# Note:  you may need to adjust the start and end index of insoles (treat two insoles as one) in order to match the corresponding emg index.
+# Technically, the start index and end index of the insole pair should be decided separately.
+emg_start_index = 9281  # select the index belonging to the pulse number where the insole start_index is
+emg_end_index = 292604  # select the index belonging to the pulse number where the insole end_index is
 emg_aligned = recovered_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
-# convert the timestamp column to datetime type for insole data upsampling calculation
+# convert the timestamp column to datetime type
 emg_aligned[0] = pd.to_datetime(emg_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
 
 # plot the insole and emg alignment results
@@ -126,12 +138,15 @@ Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, ri
 
 ## save the aligned results
 # save the alignment parameters
-Two_Insoles_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
+Insole_Emg_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
     right_end_index, emg_start_index, emg_end_index)
 # save the aligned data
 Insole_Emg_Alignment.saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned)
 
 
+## read alignment parameters
+left_start, right_start, left_end, right_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode)
+print(left_start, right_start, left_end, right_end, emg_start, emg_end)
 
 
 
@@ -150,23 +165,8 @@ Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned_2, left_insole_upsampled, 
 
 
 
-
-
-
 ## test
-Insole_Emg_Alignment.plotInsoleSyncForce(emg_aligned, recovered_left_data, recovered_right_data, 0, -1)
-
-##
-# Read aligned data when needed
-left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
-# wrong timestamp from aligned data
-wrong_timestamp, wrong_timestamp1, wrong_timestamp2 = Insole_Emg_Recovery.findLostEmgData(emg_aligned)
-
-# sample_counter = emg_aligned.iloc[:, -1].to_frame()  # this column is the sample counter (timestamp) for SyncStation
-# sample_counter.columns = ["sample_counter"]
-# counter_diff = sample_counter["sample_counter"].diff().to_frame()
-# counter_diff.columns = ["counter_difference"]
-# wrong_timestamp = counter_diff.query('counter_difference != 1')  # exclude 65535 as it is when the counter restarts
+# Insole_Emg_Alignment.plotInsoleSyncForce(emg_aligned, recovered_left_data, recovered_right_data, 0, -1)
 
 
 ## recover emg signal

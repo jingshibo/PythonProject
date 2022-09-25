@@ -30,7 +30,7 @@ def labelSensorData(subject, modes, sessions, split_data):
             left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
             # upsampling, filtering and reordering data
             left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
-                left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
+                left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=False, quality_factor=10)
             # separate the gait event using timestamps
             gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
             # use the gait event timestamps to label emg data

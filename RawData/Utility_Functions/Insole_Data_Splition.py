@@ -23,8 +23,8 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
 
     # plot emg and insole force
     fig, axes = plt.subplots(nrows=4, ncols=1, sharex=True)
-    axes[0].plot(range(left_length), left_total_force.iloc[start_index:end_index], label="Left Insole Force")
-    axes[1].plot(range(right_length), right_total_force.iloc[start_index:end_index], label="Right Insole Force")
+    axes[0].plot(range(right_length), right_total_force.iloc[start_index:end_index], label="Right Insole Force")
+    axes[1].plot(range(left_length), left_total_force.iloc[start_index:end_index], label="Left Insole Force")
     axes[2].plot(range(emg_length), emg_data.iloc[start_index:end_index], label="Emg 1 Signal")
     axes[3].plot(range(emg_length), emg_data_2.iloc[start_index:end_index], label="Emg 2 Signal")
 
@@ -35,8 +35,8 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[1].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
 
     # add force baseline
-    axes[0].plot(range(left_length), left_length * [left_force_baseline], label="Left Force Baseline")
-    axes[1].plot(range(right_length), right_length * [right_force_baseline], label="Right Force Baseline")
+    axes[0].plot(range(right_length), right_length * [right_force_baseline], label="Right Force Baseline")
+    axes[1].plot(range(left_length), left_length * [left_force_baseline], label="Left Force Baseline")
 
     # find intersection point's x value
     left_x = np.array(range(left_length))
@@ -50,16 +50,16 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     right_cross_idx = np.argwhere(np.diff(np.sign(right_force - right_baseline))).flatten()
 
     # plot intersection point's x value
-    axes[0].plot(left_x[left_cross_idx], left_baseline[left_cross_idx], 'r')  # plot intersection points
-    for i, x_value in enumerate(left_cross_idx):  # annotate intersection points
-        axes[0].annotate(x_value, (left_x[left_cross_idx[i]], left_baseline[left_cross_idx[i]]), fontsize=10)
-    axes[1].plot(right_x[right_cross_idx], right_baseline[right_cross_idx], 'r')  # plot intersection points
+    axes[0].plot(right_x[right_cross_idx], right_baseline[right_cross_idx], 'r')  # plot intersection points
     for i, x_value in enumerate(right_cross_idx):  # annotate intersection points
-        axes[1].annotate(x_value, (right_x[right_cross_idx[i]], right_baseline[right_cross_idx[i]]), fontsize=10)
+        axes[0].annotate(x_value, (right_x[right_cross_idx[i]], right_baseline[right_cross_idx[i]]), fontsize=10)
+    axes[1].plot(left_x[left_cross_idx], left_baseline[left_cross_idx], 'r')  # plot intersection points
+    for i, x_value in enumerate(left_cross_idx):  # annotate intersection points
+        axes[1].annotate(x_value, (left_x[left_cross_idx[i]], left_baseline[left_cross_idx[i]]), fontsize=10)
 
     # plot parameters
-    axes[0].set(title="Left Insole Force", ylabel="force(kg)")
-    axes[1].set(title="Right Insole Force", ylabel="force(kg)")
+    axes[0].set(title="Right Insole Force", ylabel="force(kg)")
+    axes[1].set(title="Left Insole Force", ylabel="force(kg)")
     axes[2].set(title="Emg 1 Signal", ylabel="Emg Value")
     axes[3].set(title="Emg 2 Signal", xlabel="Sample Number", ylabel="Emg Value")
 

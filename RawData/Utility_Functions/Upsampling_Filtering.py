@@ -54,6 +54,8 @@ def filterInsole(upsampled_left_insole, upsampled_right_insole):
     left_insole_filtered.insert(0, "timestamp", upsampled_left_insole.iloc[:, 0])  # add timestamp column to the beginning again
     right_insole_filtered = pd.DataFrame(right_insole_filtered)
     right_insole_filtered.insert(0, "timestamp", upsampled_right_insole.iloc[:, 0])  # add timestamp column to the beginning again
+    left_insole_filtered.columns = list(range(0, left_insole_filtered.shape[1]))
+    right_insole_filtered.columns = list(range(0, right_insole_filtered.shape[1]))
     return left_insole_filtered, right_insole_filtered
 
 
@@ -63,7 +65,8 @@ def filterEmg(emg_measurements, notch=False, quality_factor=10):
     emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_measurements, axis=0)  # only filter the emg measurements
     emg_filtered = emg_bandpass_filtered
     if notch:  # to remove power line interference
-        b, a = signal.iircomb(50, quality_factor, fs=2000, ftype='notch')
+        b, a = signal.iirnotch(50, quality_factor, 2000)  # notch filter
+        # b, a = signal.iircomb(50, quality_factor, fs=2000, ftype='notch')  # comb filter
         emg_notch_filtered = signal.filtfilt(b, a, pd.DataFrame(emg_bandpass_filtered), axis=0)
         emg_filtered = emg_notch_filtered
     # compensate bad emg channels (median filtering)
@@ -72,10 +75,10 @@ def filterEmg(emg_measurements, notch=False, quality_factor=10):
 
 
 ## preprocess all sensor data
-def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole = False, notchEMG = False, quality_factor=10):
+def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering = False, notchEMG = False, quality_factor=10):
     # upsampling insole data
     left_insole_preprocessed, right_insole_preprocessed = upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
-    if filterInsole:
+    if insoleFiltering:
         left_insole_preprocessed, right_insole_preprocessed = filterInsole(left_insole_preprocessed, right_insole_preprocessed)
     # filtering emg data
     if emg_aligned.shape[1] >= 64 and emg_aligned.shape[1] < 128:  # if one sessantaquattro data

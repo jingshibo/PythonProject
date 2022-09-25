@@ -2,7 +2,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-
+import csv
+import datetime
 
 ## plot insole and sync force data for alignment (only two insole force images share axes)
 def plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, start_index, end_index):
@@ -17,15 +18,15 @@ def plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right
     ax2 = fig.add_subplot(3, 1, 2, sharex=ax1)  # only ax1 and ax2 share axes
     ax3 = fig.add_subplot(3, 1, 3)  # ax3 has independent axes
 
-    ax1.plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
-        label="Left Insole Force")
-    ax2.plot(range(len(right_total_force.iloc[start_index:end_index])), right_total_force.iloc[start_index:end_index],
+    ax1.plot(range(len(right_total_force.iloc[start_index:end_index])), right_total_force.iloc[start_index:end_index],
         label="Right Insole Force")
+    ax2.plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
+        label="Left Insole Force")
     ax3.plot(range(len(sync_force.iloc[start_index:end_index])), sync_force.iloc[start_index:end_index], label="Sync Station Force")
 
-    ax1.set(title="Left Insole Force", ylabel="force(kg)")
-    ax2.set(title="Right Insole Force", ylabel="force(kg)")
-    ax3.set(title="Emg Signal", xlabel="Sample Number", ylabel="Emg Value")
+    ax1.set(title="Right Insole Force", ylabel="force(kg)")
+    ax2.set(title="Left Insole Force", ylabel="force(kg)")
+    ax3.set(title="Sync Force Signal", xlabel="Sample Number", ylabel="force value")
 
     ax1.tick_params(labelbottom=True)  # show x-axis ticklabels
     ax2.tick_params(labelbottom=True)
@@ -50,16 +51,16 @@ def plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsamp
 
     # plot
     fig, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
-    axes[0].plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
-                 label="Left Insole Force")
-    axes[1].plot(range(len(right_total_force.iloc[start_index:end_index])),
+    axes[0].plot(range(len(right_total_force.iloc[start_index:end_index])),
                  right_total_force.iloc[start_index:end_index], label="Right Insole Force")
+    axes[1].plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
+                 label="Left Insole Force")
     axes[2].plot(range(len(emg_data.iloc[start_index:end_index])), emg_data.iloc[start_index:end_index],
                  label="Emg Signal")
 
-    axes[0].set(title="Left Insole Force", ylabel="force(kg)")
-    axes[1].set(title="Right Insole Force", ylabel="force(kg)")
-    axes[2].set(title="Emg Signal", xlabel="Sample Number", ylabel="Emg Value")
+    axes[0].set(title="Right Insole Force", ylabel="force(kg)")
+    axes[1].set(title="Left Insole Force", ylabel="force(kg)")
+    axes[2].set(title="Sync Force Signal", xlabel="Sample Number", ylabel="force Value")
 
     axes[0].tick_params(labelbottom=True)  # show x-axis ticklabels
     axes[1].tick_params(labelbottom=True)
@@ -72,7 +73,7 @@ def plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsamp
 ## align EMG and insoles based on timestamp
 def alignInsoleEmgTimestamp(raw_emg_data, left_insole_aligned, right_insole_aligned):
     # get the beginning and ending timestamp for both insoles.
-    left_insole_aligned[0] = pd.to_datetime(left_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f') # the column named 0 is the timestamp
+    left_insole_aligned[0] = pd.to_datetime(left_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')  # the column named 0 is the timestamp
     right_insole_aligned[0] = pd.to_datetime(right_insole_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
     # always select the earliest one as reference for emg alignment
     insole_begin_timestamp = min(left_insole_aligned.iloc[0, 0], right_insole_aligned.iloc[0, 0]) # select earliest one
@@ -84,6 +85,54 @@ def alignInsoleEmgTimestamp(raw_emg_data, left_insole_aligned, right_insole_alig
     emg_end_index = (pd.to_datetime(raw_emg_data[0]) - insole_end_timestamp).abs().idxmin() # obtain the closet ending timestamp
     emg_aligned = raw_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
     return emg_aligned
+
+
+## save the alignment parameters into a csv file
+def saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index, right_end_index,
+        emg_start_index="None", emg_end_index="None"):
+    # save file path
+    data_dir = 'D:\Data\Insole_Emg'
+    alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
+    alignment_file_path = os.path.join(data_dir, alignment_file)
+
+    # alignment parameters to save
+    columns = ['data_file_name', 'alignment_save_date', 'left_start_index', 'right_start_index', 'left_end_index', 'right_end_index',
+        'emg_start_index', 'emg_end_index']
+    save_parameters = [data_file_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), left_start_index, right_start_index,
+        left_end_index, right_end_index, emg_start_index, emg_end_index]
+
+    with open(alignment_file_path, 'a+') as file:
+        if os.stat(alignment_file_path).st_size == 0:  # if the file is new created
+            print("Creating File.")
+            write = csv.writer(file)
+            write.writerow(columns)  # write the column fields
+            write.writerow(save_parameters)
+        else:
+            write = csv.writer(file)
+            write.writerow(save_parameters)
+
+## read the alignment parameters from a csv file
+def readAlignParameters(subject, session, mode):
+    data_dir = 'D:\Data\Insole_Emg'
+    alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
+    alignment_file_path = os.path.join(data_dir, alignment_file)
+    data_file_name = f'subject_{subject}_session_{session}_{mode}'
+
+    alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
+    file_parameter = alignment_data.query('data_file_name == @data_file_name') # use @ to cite variable values
+    if file_parameter.empty:  # if no alignment parameter found
+        raise Exception(f"No alignment parameter found for data file: {data_file_name}")
+    else:
+        align_parameter = file_parameter.iloc[[-1]]  # extract the last row (apply the newest parameters)
+
+        left_start_index = align_parameter['left_start_index'].iloc[0]
+        left_end_index = align_parameter['left_end_index'].iloc[0]
+        right_start_index = align_parameter['right_start_index'].iloc[0]
+        right_end_index = align_parameter['right_end_index'].iloc[0]
+        emg_start_index = align_parameter['emg_start_index'].iloc[0]
+        emg_end_index = align_parameter['emg_end_index'].iloc[0]
+
+        return left_start_index, right_start_index, left_end_index, right_end_index, emg_start_index, emg_end_index
 
 
 ## save all sensor data after alignment into a csc file

@@ -34,7 +34,7 @@ if __name__ == '__main__':
             left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
             # upsampling and filtering data
             left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
-                left_insole_aligned, right_insole_aligned, emg_aligned, filterInsole=False, notchEMG=False, quality_factor=10)
+                left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=False, quality_factor=10)
             # recover mission emg channels
 
             # adjust electrode order to match the physical EMG grid
