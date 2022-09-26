@@ -91,8 +91,8 @@ def alignInsoleEmgTimestamp(raw_emg_data, left_insole_aligned, right_insole_alig
 def saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index, right_end_index,
         emg_start_index="None", emg_end_index="None"):
     # save file path
-    data_dir = 'D:\Data\Insole_Emg'
-    alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
+    data_dir = f'D:\Data\Insole_Emg\subject_{subject}'
+    alignment_file = f'subject_{subject}_align_parameters.csv'
     alignment_file_path = os.path.join(data_dir, alignment_file)
 
     # alignment parameters to save
@@ -112,11 +112,11 @@ def saveAlignParameters(subject, data_file_name, left_start_index, right_start_i
             write.writerow(save_parameters)
 
 ## read the alignment parameters from a csv file
-def readAlignParameters(subject, session, mode):
+def readAlignParameters(subject, session, mode, version):
     data_dir = 'D:\Data\Insole_Emg'
     alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
     alignment_file_path = os.path.join(data_dir, alignment_file)
-    data_file_name = f'subject_{subject}_session_{session}_{mode}'
+    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 
     alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
     file_parameter = alignment_data.query('data_file_name == @data_file_name') # use @ to cite variable values
@@ -136,13 +136,13 @@ def readAlignParameters(subject, session, mode):
 
 
 ## save all sensor data after alignment into a csc file
-def saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned):
-    data_dir = 'D:\Data\Insole_Emg'
-    data_file_name = f'subject_{subject}_session_{session}_{mode}'
+def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned):
+    data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}'
+    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 
-    left_insole_file = f'subject_{subject}\\aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
-    right_insole_file = f'subject_{subject}\\aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
-    emg_file = f'subject_{subject}\\aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
+    left_insole_file = f'aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
+    right_insole_file = f'aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
+    emg_file = f'aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
 
     left_insole_path = os.path.join(data_dir, left_insole_file)
     right_insole_path = os.path.join(data_dir, right_insole_file)
@@ -154,13 +154,13 @@ def saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_al
 
 
 ## read all sensor data after alignment from a csc file
-def readAlignedData(subject, session, mode):
-    data_dir = 'D:\Data\Insole_Emg'
-    data_file_name = f'subject_{subject}_session_{session}_{mode}'
+def readAlignedData(subject, session, mode, version):
+    data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}'
+    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 
-    left_insole_file = f'subject_{subject}\\aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
-    right_insole_file = f'subject_{subject}\\aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
-    emg_file = f'subject_{subject}\\aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
+    left_insole_file = f'aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
+    right_insole_file = f'aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
+    emg_file = f'aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
 
     left_insole_path = os.path.join(data_dir, left_insole_file)
     right_insole_path = os.path.join(data_dir, right_insole_file)

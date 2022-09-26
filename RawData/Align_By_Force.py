@@ -14,19 +14,21 @@ from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignmen
 
 ## initialization
 # subject = 'Test'
+# version = 0
 # mode = 'up_down'
 # session = 12
 
 subject = 'Shibo'
+version = 1
 mode = 'down_up'
 session = 28
 
-data_dir = 'D:\Data\Insole_Emg'
-data_file_name = f'subject_{subject}_session_{session}_{mode}'
+data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}'
+data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 
-left_insole_file = f'subject_{subject}\\raw_{mode}\left_insole\left_{data_file_name}.csv'
-right_insole_file = f'subject_{subject}\\raw_{mode}\\right_insole\\right_{data_file_name}.csv'
-emg_file = f'subject_{subject}\\raw_{mode}\emg\emg_{data_file_name}.csv'
+left_insole_file = f'raw_{mode}\left_insole\left_{data_file_name}.csv'
+right_insole_file = f'raw_{mode}\\right_insole\\right_{data_file_name}.csv'
+emg_file = f'raw_{mode}\emg\emg_{data_file_name}.csv'
 
 left_insole_path = os.path.join(data_dir, left_insole_file)
 right_insole_path = os.path.join(data_dir, right_insole_file)
@@ -141,11 +143,11 @@ Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, ri
 Insole_Emg_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
     right_end_index, emg_start_index, emg_end_index)
 # save the aligned data
-Insole_Emg_Alignment.saveAlignedData(subject, session, mode, left_insole_aligned, right_insole_aligned, emg_aligned)
+Insole_Emg_Alignment.saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned)
 
 
 ## read alignment parameters
-left_start, right_start, left_end, right_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode)
+left_start, right_start, left_end, right_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode, version)
 print(left_start, right_start, left_end, right_end, emg_start, emg_end)
 
 

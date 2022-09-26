@@ -11,7 +11,9 @@ from sklearn.preprocessing import LabelEncoder
 
 ## input emg data
 subject = "Shibo"
-emg_feature_data = Feature_Storage.readEmgFeatures(subject)
+version = 1  # which experiment data to process
+feature_set = 0  # which features to select
+emg_feature_data = Feature_Storage.readEmgFeatures(subject, version, feature_set)
 # if you need to use CNN model, you need to reshape the data
 emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_feature_data)
 
@@ -82,7 +84,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics='accura
 
 ## training model
 now = datetime.datetime.now()
-model.fit(x_train_norm, y_train, validation_split=0.1, epochs=1000, batch_size=1024, verbose=0)
+model.fit(x_train_norm, y_train, validation_split=0.1, epochs=1000, batch_size=1024, verbose= 0)
 print(datetime.datetime.now() - now)
 
 ## test model

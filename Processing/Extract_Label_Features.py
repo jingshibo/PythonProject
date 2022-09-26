@@ -11,28 +11,30 @@ import concurrent.futures
 
 
 ## read split parameters from json files
-def readSplitData(subject):
+def readSplitData(subject, version):
     split_parameters = Insole_Data_Splition.readSplitParameters(subject)
     # convert split results to dataframe
-    split_up_down_list = [pd.DataFrame(value) for session, value in split_parameters["up_to_down"].items()]
-    split_down_up_list = [pd.DataFrame(value) for session, value in split_parameters["down_to_up"].items()]
+    split_up_down_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_to_down"].items()}
+    split_down_up_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_to_up"].items()}
     # put split results into a dict
     split_data = {"up_down": split_up_down_list, "down_up": split_down_up_list}
     return split_data
 
 ## read, preprocess and label aligned sensor data
-def labelSensorData(subject, modes, sessions, split_data):
+def labelSensorData(subject, modes, sessions, version, split_data):
     now = datetime.datetime.now()
     combined_emg_labelled = {}
-    for mode in modes:
-        for session in sessions:
+
+    mode_session = zip(modes, sessions)
+    for mode, sessions_in_mode in mode_session:
+        for session in sessions_in_mode:
             # read aligned data
-            left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode)
+            left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version)
             # upsampling, filtering and reordering data
             left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
                 left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=False, quality_factor=10)
             # separate the gait event using timestamps
-            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
+            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], window_size=512)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict
@@ -68,17 +70,25 @@ if __name__ == '__main__':
     # basic information
 
     # subject = 'Shibo'
-    # modes = ['up_down', 'down_up']
-    # sessions = list(range(10))
+    # version = 1  # the data from which experiment version to process
+    # modes = ['up_down']
+    # sessions = [list(range(10))]
+
     subject = 'Shibo'
-    modes = ['up_down']
-    sessions = [0]
+    version = 1   # the data from which experiment version to process
+    modes = ['up_down', 'down_up']
+    up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+    sessions = [up_down_session, down_up_session]
 
     # Feature extraction
-    split_data = readSplitData(subject)
-    combined_emg_labelled = labelSensorData(subject, modes, sessions, split_data)
+    split_data = readSplitData(subject, version)
+    combined_emg_labelled = labelSensorData(subject, modes, sessions, version, split_data)
     emg_features = extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32)
-    Feature_Storage.saveEmgFeatures(subject, emg_features)
+
+    # store features
+    feature_set = 0  # there may be multiple sets of features to be calculated for comparison
+    Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
 
 ## balance emg data
 # banlanced_emg = {}
