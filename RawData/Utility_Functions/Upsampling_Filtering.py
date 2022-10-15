@@ -74,23 +74,33 @@ def filterEmg(emg_measurements, notch=False, quality_factor=10):
     return pd.DataFrame(emg_filtered)
 
 
+## rectify emg and get envelope
+def getEmgRectEnvelope(emg_reordered, cutoff=10):
+    emg_rectfied = emg_reordered.abs().to_numpy()
+    sos = signal.butter(4, cutoff, fs=2000, btype="lowpass", output='sos')
+    emg_envelope = signal.sosfiltfilt(sos, emg_rectfied, axis=0)  # only filter the emg measurements
+    return pd.DataFrame(emg_envelope)
+
 ## preprocess all sensor data
-def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering = False, notchEMG = False, quality_factor=10):
+def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, envelope_cutoff=10, insoleFiltering=False, notchEMG=False,
+        quality_factor=10):
     # upsampling insole data
     left_insole_preprocessed, right_insole_preprocessed = upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
     if insoleFiltering:
         left_insole_preprocessed, right_insole_preprocessed = filterInsole(left_insole_preprocessed, right_insole_preprocessed)
     # filtering emg data
     if emg_aligned.shape[1] >= 64 and emg_aligned.shape[1] < 128:  # if one sessantaquattro data
-        emg_filtered = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor)
+        emg_filtered = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor=quality_factor) # extract only emg measurement data
         emg_reordered = Data_Reshaping.reorderElectrodes(emg_filtered)
+        emg_envelope = getEmgRectEnvelope(emg_reordered, cutoff = envelope_cutoff)  # rectify and envelope EMG
     elif emg_aligned.shape[1] >= 128 and emg_aligned.shape[1] < 192:  # if two sessantaquattro data
-        emg1_preprocessed = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor)  # extract only emg measurement data
-        emg2_preprocessed = filterEmg(emg_aligned.iloc[:, 73:137], notchEMG, quality_factor)
+        emg1_preprocessed = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor=quality_factor)
+        emg2_preprocessed = filterEmg(emg_aligned.iloc[:, 73:137], notchEMG, quality_factor=quality_factor)
         emg1_reordered = Data_Reshaping.reorderElectrodes(emg1_preprocessed)
         emg2_reordered = Data_Reshaping.reorderElectrodes(emg2_preprocessed)
         emg_reordered = pd.concat([emg1_reordered, emg2_reordered], axis=1, ignore_index=True)
-    return left_insole_preprocessed, right_insole_preprocessed, emg_reordered
-
-
+        emg1_envelope = getEmgRectEnvelope(emg1_reordered, cutoff=envelope_cutoff)
+        emg2_envelope = getEmgRectEnvelope(emg2_reordered, cutoff=envelope_cutoff)
+        emg_envelope = pd.concat([emg1_envelope, emg2_envelope], axis=1, ignore_index=True)
+    return left_insole_preprocessed, right_insole_preprocessed, emg_reordered, emg_envelope
 

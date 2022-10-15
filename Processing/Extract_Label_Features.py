@@ -21,7 +21,7 @@ def readSplitData(subject, version):
     return split_data
 
 ## read, preprocess and label aligned sensor data
-def labelSensorData(subject, modes, sessions, version, split_data):
+def labelSensorData(subject, modes, sessions, version, split_data, envelope=False):
     now = datetime.datetime.now()
     combined_emg_labelled = {}
 
@@ -31,10 +31,14 @@ def labelSensorData(subject, modes, sessions, version, split_data):
             # read aligned data
             left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version)
             # upsampling, filtering and reordering data
-            left_insole_preprocessed, right_insole_preprocessed, emg_preprocessed = Upsampling_Filtering.preprocessSensorData(
-                left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=False, quality_factor=10)
+            left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_envelope = Upsampling_Filtering.preprocessSensorData(
+                left_insole_aligned, right_insole_aligned, emg_aligned, envelope_cutoff=10)
+            if envelope == True:  # if emg envelope is needed
+                emg_preprocessed = emg_envelope
+            else:
+                emg_preprocessed = emg_filtered
             # separate the gait event using timestamps
-            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], window_size=512)
+            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], window_size=512, offset=0)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict
@@ -53,8 +57,8 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
     combined_emg_features = []
     # calculate emg features using multiprocessing. there is balance of CPU number, not more is better as numpy auto parallel to some extent
     with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(Feature_Calculation.labelEmgFeatures, gait_event_label, gait_event_emg, window_size, increment) for
-            gait_event_label, gait_event_emg in combined_emg_labelled.items()]  # parallel calculate features in multiple gait events
+        futures = [executor.submit(Feature_Calculation.labelEmgFeatures, gait_event_label, gait_event_emg, window_size, increment)
+            for gait_event_label, gait_event_emg in combined_emg_labelled.items()]  # parallel calculate features in multiple gait events
         for future in concurrent.futures.as_completed(futures):
             combined_emg_features.append(future.result())
     print(datetime.datetime.now() - now)

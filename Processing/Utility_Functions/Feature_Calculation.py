@@ -103,9 +103,9 @@ def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
         for i in range(0, len(per_round_emg) - window_size + 1, increment):
             emg_window_data = per_round_emg[i:i + window_size, :]
             emg_window_features.append(calcuEmgFeatures(emg_window_data))
-        print("round time:", multiprocessing.current_process().name, datetime.datetime.now() - round_time)
+        print(f"round time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - round_time)
 
-    # the features are stored in the dict below, which can also be regarded as a process of labeling
+    # the features are stored in the dict below, which can also be regarded as labeling
     emg_feature_labelled[f"{gait_event_label}_features"] = np.array(emg_window_features)
     print(f"event time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - event_time)
     return emg_feature_labelled
