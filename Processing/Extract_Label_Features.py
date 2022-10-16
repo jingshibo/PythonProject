@@ -62,7 +62,7 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
         for future in concurrent.futures.as_completed(futures):
             combined_emg_features.append(future.result())
     print(datetime.datetime.now() - now)
-    # reorganize the calculated features with labelling
+    # reorganize and label the calculated features
     emg_features = {}
     for gait_event_features in combined_emg_features:
         gait_event_label = list(gait_event_features.keys())[0]
