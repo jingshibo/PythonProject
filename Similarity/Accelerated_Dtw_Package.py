@@ -48,12 +48,12 @@ def calcuDtwDistance(input_data, gait_reference_label, gait_reference_data):
     gait_group = [["LWLW", "LWSA", "LWSD", "LWSS"], ["SALW", "SASA", "SASS"], ["SDLW", "SDSD", "SDSS"], ["SSLW", "SSSA", "SSSD"]]  # 4 groups
     now = datetime.datetime.now()
     for gait_event_label, gait_event_data in input_data.items():  # the second-end elements in gait_event_data is the data
-        # comparing only the emg sequences within one of the 4 groups
+        # find and compare the emg sequences only within one of the 4 groups
         if (any(x in gait_reference_label for x in gait_group[0]) and any(x in gait_event_label for x in gait_group[0]) or any(
             x in gait_reference_label for x in gait_group[1]) and any(x in gait_event_label for x in gait_group[1]) or any(
             x in gait_reference_label for x in gait_group[2]) and any(x in gait_event_label for x in gait_group[2]) or any(
             x in gait_reference_label for x in gait_group[3]) and any(x in gait_event_label for x in gait_group[3])):
-            for i in range(1, len(gait_event_data)):  # comparing the emg data to a reference sequence
+            for i in range(1, len(gait_event_data)):  # comparing the emg data to a reference sequence (the first element in gait_reference_data)
                 distance, cost_matrix, accumulated_cost_matrix, path = accelerated_dtw(gait_reference_data[0], gait_event_data[i], dist='euclidean')
                 best_path = list(zip(path[0], path[1]))
                 dtw_distance.append(distance)
@@ -109,17 +109,17 @@ if __name__ == '__main__':
 
     # read dtw values
     # emg_1_dtw_data = Dtw_Storage.readEmgDtw(subject, version, 'emg_1_dtw_results')
-    # emg_2_dtw_data = Dtw_Storage.readEmgDtw(subject, version, 'emg_2_dtw_results')
+    # emg_2_dtw_data = Dtw_Storage.readEmgDtw(subject,  version, 'emg_2_dtw_results')
 
-##
-emg_1_average_value = {}
-for dtw_label, dtw_data in emg_1_dtw_results.items():
-    mean_value = sum(emg_1_dtw_results[dtw_label][0]) / len(emg_1_dtw_results[dtw_label][0])
-    emg_1_average_value[f'{dtw_label}'] = mean_value
-emg_2_average_value = {}
-for dtw_label, dtw_data in emg_2_dtw_results.items():
-    mean_value = sum(emg_2_dtw_results[dtw_label][0]) / len(emg_2_dtw_results[dtw_label][0])
-    emg_2_average_value[f'{dtw_label}'] = mean_value
+## calculate average values
+# emg_1_average_value = {}
+# for dtw_label, dtw_data in emg_1_dtw_results.items():
+#     mean_value = sum(emg_1_dtw_results[dtw_label][0]) / len(emg_1_dtw_results[dtw_label][0])
+#     emg_1_average_value[f'{dtw_label}'] = mean_value
+# emg_2_average_value = {}
+# for dtw_label, dtw_data in emg_2_dtw_results.items():
+#     mean_value = sum(emg_2_dtw_results[dtw_label][0]) / len(emg_2_dtw_results[dtw_label][0])
+#     emg_2_average_value[f'{dtw_label}'] = mean_value
 
 
 
