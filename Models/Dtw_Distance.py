@@ -18,6 +18,7 @@ sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
 split_data = Extract_Label_Features.readSplitData(subject, version)
+# obtain the envelope of emg data
 combined_emg_labelled = Extract_Label_Features.labelSensorData(subject, modes, sessions, version, split_data, envelope=True)
 
 
@@ -38,32 +39,48 @@ for gait_event_label, gait_event_emg in combined_emg_labelled.items():
     emg_2_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_2_mean_channels[f"{gait_event_label}_data"]) / len\
             (emg_2_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
     emg_2_mean_channels[f"{gait_event_label}_data"].insert(0, emg_2_mean_events[f"{gait_event_label}_data"])
-
+# plot summed series emg data
+pd.DataFrame(emg_1_mean_events).plot(subplots=True, layout=(4, 4))
+pd.DataFrame(emg_2_mean_events).plot(subplots=True, layout=(4, 4))
 
 ## Calculate the DTW distance between emg sequences
-input_data = emg_1_mean_channels
-gait_group = [["LWLW", "LWSA", "LWSD", "LWSS"], ["SALW", "SASA", "SASS"], ["SDLW", "SDSD", "SDSS"], ["SSLW", "SSSA", "SSSD"]]  # 4 groups
+def calcuDtwDistance(input_data):
+    dtw_distance = []
+    warp_paths = []
+    dtw_results = {}
+    gait_group = [["LWLW", "LWSA", "LWSD", "LWSS"], ["SALW", "SASA", "SASS"], ["SDLW", "SDSD", "SDSS"], ["SSLW", "SSSA", "SSSD"]]  # 4 groups
+    now = datetime.datetime.now()
+    for gait_reference_label, gait_reference_data in input_data.items():  # the first element in gait_reference_data is the reference
+        for gait_event_label, gait_event_data in input_data.items():  # the second-end elements in gait_event_data is the data
+            # comparing only the emg sequences within one of the 4 groups
+            if (any(x in gait_reference_label for x in gait_group[0]) and any(x in gait_event_label for x in gait_group[0]) or any(
+                x in gait_reference_label for x in gait_group[1]) and any(x in gait_event_label for x in gait_group[1]) or any(
+                x in gait_reference_label for x in gait_group[2]) and any(x in gait_event_label for x in gait_group[2]) or any(
+                x in gait_reference_label for x in gait_group[3]) and any(x in gait_event_label for x in gait_group[3])):
+                for i in range(1, len(gait_event_data)):  # comparing the emg data to a reference sequence
+                    distance, paths = dtw.warping_paths_fast(gait_reference_data[0], gait_event_data[i])
+                    best_path = dtw.best_path(paths)
+                    dtw_distance.append(distance)
+                    warp_paths.append(best_path)
+                dtw_results[f"reference_{gait_reference_label}_{gait_event_label}"] = (dtw_distance, warp_paths)
+                dtw_distance = []
+                warp_paths = []
+                print("reference:", gait_reference_label, ", data:", gait_event_label)
+    print(datetime.datetime.now() - now)
+    return dtw_results  # including distance and warp path
 
-dtw_distance = []
-warp_paths = []
-dtw_results = {}
-now = datetime.datetime.now()
-for gait_reference_label, gait_reference_data in input_data.items():
-    for gait_event_label, gait_event_data in input_data.items():  # comparing only the emg sequences within one of the 4 groups
-        if (any(x in gait_reference_label for x in gait_group[0]) and any(x in gait_event_label for x in gait_group[0]) or any(
-            x in gait_reference_label for x in gait_group[1]) and any(x in gait_event_label for x in gait_group[1]) or any(
-            x in gait_reference_label for x in gait_group[2]) and any(x in gait_event_label for x in gait_group[2]) or any(
-            x in gait_reference_label for x in gait_group[3]) and any(x in gait_event_label for x in gait_group[3])):
-            for i in range(1, len(gait_event_data)):
-                distance, paths = dtw.warping_paths_fast(gait_reference_data[0], gait_event_data[i])
-                best_path = dtw.best_path(paths)
-                dtw_distance.append(distance)
-                warp_paths.append(best_path)
-            dtw_results[f"reference_{gait_reference_label}_{gait_event_label}"] = (dtw_distance, warp_paths)
-            dtw_distance = []
-            warp_paths = []
-            print(gait_reference_label, gait_event_label)
-print(datetime.datetime.now() - now)
+emg_1_dtw_distance = calcuDtwDistance(emg_1_mean_channels)
+emg_2_dtw_distance = calcuDtwDistance(emg_2_mean_channels)
+
+##
+emg_1_average_value = {}
+for dtw_label, dtw_data in emg_1_dtw_distance.items():
+    mean_value = sum(emg_1_dtw_distance[dtw_label][0]) / len(emg_1_dtw_distance[dtw_label][0])
+    emg_1_average_value[f'{dtw_label}'] = mean_value
+emg_2_average_value = {}
+for dtw_label, dtw_data in emg_2_dtw_distance.items():
+    mean_value = sum(emg_2_dtw_distance[dtw_label][0]) / len(emg_2_dtw_distance[dtw_label][0])
+    emg_2_average_value[f'{dtw_label}'] = mean_value
 
 
 ## plot warp path between two emg sequences

@@ -8,7 +8,7 @@ import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
 from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
-from Models.Utility_Functions import Confusion_Matrix
+from Shape_Similarity.Utility_Functions import Confusion_Matrix
 
 ## input emg data
 subject = "Shibo"
