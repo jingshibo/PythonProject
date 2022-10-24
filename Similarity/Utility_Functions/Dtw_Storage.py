@@ -4,7 +4,7 @@ import numpy as np
 
 ## save emg features into json file
 def saveEmgDtw(subject, emg_dtw_results, version):
-    for emg_index, dtw_data in emg_dtw_results.items():  # save two emg grid data seperately
+    for emg_index, dtw_data in emg_dtw_results.items():  # save two emg grid data separately
         # store dtw values
         data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\dtw_similarity'
         dtw_file = f'subject_{subject}_Experiment_{version}_{emg_index}.json'

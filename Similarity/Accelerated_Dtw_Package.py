@@ -1,3 +1,8 @@
+'''
+using accelerated dtw package for DTW distance calculation
+'''
+
+
 ## import modules
 import pandas as pd
 import numpy as np

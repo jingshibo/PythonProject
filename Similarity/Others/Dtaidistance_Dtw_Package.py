@@ -5,7 +5,7 @@ import datetime
 import matplotlib.pyplot as plt
 
 from Processing import Extract_Label_Features
-from dtaidistance import dtw
+from dtaidistance import dtw  # this method seems to work worse than Accelerated DTW package
 from dtaidistance import dtw_visualisation as dtwvis
 
 ## input emg labelled series data
@@ -52,7 +52,7 @@ def calcuDtwDistance(input_data):
     now = datetime.datetime.now()
     for gait_reference_label, gait_reference_data in input_data.items():  # the first element in gait_reference_data is the reference
         for gait_event_label, gait_event_data in input_data.items():  # the second-end elements in gait_event_data is the data
-            # comparing only the emg sequences within one of the 4 groups
+            # only comparing the emg sequences within one of the 4 groups
             if (any(x in gait_reference_label for x in gait_group[0]) and any(x in gait_event_label for x in gait_group[0]) or any(
                 x in gait_reference_label for x in gait_group[1]) and any(x in gait_event_label for x in gait_group[1]) or any(
                 x in gait_reference_label for x in gait_group[2]) and any(x in gait_event_label for x in gait_group[2]) or any(
@@ -71,6 +71,15 @@ def calcuDtwDistance(input_data):
 
 emg_1_dtw_distance = calcuDtwDistance(emg_1_mean_channels)
 emg_2_dtw_distance = calcuDtwDistance(emg_2_mean_channels)
+
+
+## save dtw data
+subject = 'Shibo'
+version = 0   # the data from which experiment version to process
+from Similarity.Utility_Functions import Dtw_Storage
+
+emg_dtw_results = {"emg_1_dtw_results": emg_1_dtw_distance, "emg_2_dtw_results": emg_2_dtw_distance}
+Dtw_Storage.saveEmgDtw(subject, emg_dtw_results, version)
 
 ##
 emg_1_average_value = {}

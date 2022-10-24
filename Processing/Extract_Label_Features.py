@@ -91,8 +91,9 @@ if __name__ == '__main__':
     emg_features = extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32)
 
     # store features
-    feature_set = 0  # there may be multiple sets of features to be calculated for comparison
+    feature_set = 1  # there may be multiple sets of features to be calculated for comparison
     Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
+
 
 ## balance emg data
 # banlanced_emg = {}

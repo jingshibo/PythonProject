@@ -1,18 +1,24 @@
+'''
+using t-test to analyze the statistical significance of dtw results
+'''
+
+
 ## import modules
-import numpy as np
 from scipy import stats
 import pandas as pd
 from Similarity.Utility_Functions import Dtw_Storage
 import random
 
-##
+
+## basic information
 subject = 'Shibo'
 version = 1  # process the data from experiment version 1
 dtw_data_emg_1 = Dtw_Storage.readEmgDtw(subject, version, 'emg_1_dtw_results')
 dtw_data_emg_2 = Dtw_Storage.readEmgDtw(subject, version, 'emg_2_dtw_results')
 
+
 ## pick 50 samples for comparison
-def sampleDtwData(dtw_data):
+def sampleDtwData(dtw_data):  # so the result is not uniform. it changes everytime when you run it
     dtw_samples = {}
     for dtw_key, dtw_value in dtw_data.items():
         random_number = random.sample(range(len(dtw_value)), 50)
@@ -37,7 +43,7 @@ group_emg_2 = reGroupDtwData(dtw_sample_emg_2)
 
 
 ## t test
-def conductTtest(dtw_data):
+def tTest(dtw_data):
     tstats = {}
     pvalue_df = pd.DataFrame()  # save the t value into a table for each dict
     for dtw_key, dtw_table in dtw_data.items():
@@ -49,5 +55,53 @@ def conductTtest(dtw_data):
         tstats[reference_name] = pvalue_df  # save the t values to a dict
         pvalue_df = pd.DataFrame()  # clean the dataframe
     return tstats
-t_test_result_1 = conductTtest(group_emg_1)
-t_test_result_2 = conductTtest(group_emg_2)
+t_test_results_1 = tTest(group_emg_1)
+t_test_results_2 = tTest(group_emg_2)
+
+
+##
+import numpy as np
+import matplotlib.pyplot as plt
+data = [dtw_data_emg_1['reference_emg_SDSS_data_emg_SDSS_SDSS'][0:50],
+dtw_data_emg_1['reference_emg_SDSS_data_emg_SDLW_data'][0:50]]
+X = len(dtw_data_emg_1['reference_emg_SDSS_data_emg_SDSD_data'][0:50])
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+ax.bar(X + 0.00, data[0], color = 'b', width = 0.25)
+ax.bar(X + 0.25, data[1], color = 'g', width = 0.25)
+ax.bar(X + 0.50, data[2], color = 'r', width = 0.25)
+
+
+##
+# set width of bar
+barWidth = 0.25
+fig = plt.subplots(figsize=(12, 8))
+
+# set height of bar
+IT = dtw_data_emg_1['reference_emg_SDSS_data_emg_SDSS_data'][0:50]
+ECE = dtw_data_emg_1['reference_emg_SDSS_data_emg_SDLW_data'][0:50]
+ECT = dtw_data_emg_1['reference_emg_SDSS_data_emg_SDSD_data'][0:50]
+
+
+
+# Set position of bar on X axis
+br1 = np.arange(len(IT))
+br2 = [x + barWidth for x in br1]
+br3 = [x + barWidth for x in br2]
+
+
+# Make the plot
+plt.bar(br1, IT, color='r', width=barWidth, edgecolor='grey', label='SDSS-SDSS')
+plt.bar(br2, ECE, color='g', width=barWidth, edgecolor='grey', label='SDSS-SDLW')
+plt.bar(br3, ECT, color='b', width=barWidth, edgecolor='grey', label='SDSS-SDSD')
+
+
+
+# Adding Xticks
+plt.xlabel('repetitions', fontweight='bold', fontsize=15)
+plt.ylabel('dtw distance', fontweight='bold', fontsize=15)
+
+plt.title('DTW distance', fontweight='bold', fontsize=20)
+
+plt.legend()
+plt.show()

@@ -1,3 +1,8 @@
+'''
+plot the filtered emg data from each channel at each gait event
+'''
+
+
 ## modules
 from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
 from Processing import Extract_Label_Features
@@ -39,15 +44,15 @@ for gait_event_label, gait_event_emg in combined_emg_labelled.items():
     emg_2_mean_channels[f"{gait_event_label}_data"].insert(0, emg_2_mean_events[f"{gait_event_label}_data"])
 # plot summed series emg data
 pd.DataFrame(emg_1_mean_events).plot(subplots=True, layout=(4, 4))
-pd.DataFrame(emg_2_mean_events).plot(subplots=True, layout=(4, 4))
+# pd.DataFrame(emg_2_mean_events).plot(subplots=True, layout=(4, 4))
 
 
 ## organize channel summed emg data
 emd_data = emg_1_mean_channels
 start_index = 0  # note: the first image is the mean value for the entire dataset of the gait event (emg_1_mean_events)
-end_index = 30
-horizontal = 6
-vertical = 5
+end_index = 49
+horizontal = 7
+vertical = 7
 
 ## transit from LW
 (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")

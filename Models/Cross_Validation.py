@@ -13,17 +13,26 @@ from Models.Utility_Functions import Confusion_Matrix
 ## input emg data
 subject = "Shibo"
 version = 1  # which experiment data to process
-feature_set = 0  # which feature set to use
-emg_feature_data = Feature_Storage.readEmgFeatures(subject, version, feature_set)
+feature_set = 1  # which feature set to use
+emg_features = Feature_Storage.readEmgFeatures(subject, version, feature_set)
+# reorganize the data structure
+repetition_data = []
+for gait_event_label, gait_event_features in emg_features.items():
+    for repetition_label, repetition_features in gait_event_features.items():
+        repetition_data.append(np.array(repetition_features))  # convert 2d list into numpy
+    emg_features[gait_event_label] = repetition_data  # convert repetitions from dict into list
+    repetition_data = []
 # if you want to use CNN model, you need to reshape the data
-emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_feature_data)
-# abandon samples from some modes
-emg_feature_mode_reduced = copy.deepcopy(emg_feature_data)
-emg_feature_mode_reduced['emg_LWLW_features'] = emg_feature_mode_reduced['emg_LWLW_features'][
-int(emg_feature_data['emg_LWLW_features'].shape[0] / 4): int(emg_feature_data['emg_LWLW_features'].shape[0] * 3 / 4), :]
-emg_feature_mode_reduced.pop('emg_LW_features', None)
-emg_feature_mode_reduced.pop('emg_SD_features', None)
-emg_feature_mode_reduced.pop('emg_SA_features', None)
+emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_features)
+
+
+## abandon samples from some modes
+emg_feature_data = copy.deepcopy(emg_features)
+emg_feature_data['emg_LWLW_features'] = emg_feature_data['emg_LWLW_features'][
+int(len(emg_feature_data['emg_LWLW_features']) / 4): int(len(emg_feature_data['emg_LWLW_features']) * 3 / 4)]
+emg_feature_data.pop('emg_LW_features', None)
+emg_feature_data.pop('emg_SD_features', None)
+emg_feature_data.pop('emg_SA_features', None)
 #  class name to labels  # according to the alphabetical order
 class_all = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_LW_features': 4,
     'emg_SALW_features': 5, 'emg_SASA_features': 6, 'emg_SASS_features': 7, 'emg_SA_features': 8, 'emg_SDLW_features': 9,
@@ -33,23 +42,37 @@ class_reduced = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_featu
     'emg_SASA_features': 5, 'emg_SASS_features': 6, 'emg_SDLW_features': 7, 'emg_SDSD_features': 8, 'emg_SDSS_features': 9,
     'emg_SSLW_features': 10, 'emg_SSSA_features': 11, 'emg_SSSD_features': 12}
 
-# emg_feature_sample_reduced['emg_LW_features'] = emg_feature_sample_reduced['emg_LW_features'][
-# int(emg_feature_data['emg_LW_features'].shape[0] / 4): int(emg_feature_data['emg_LW_features'].shape[0] * 3 / 4), :]
-# emg_feature_sample_reduced['emg_SD_features'] = emg_feature_sample_reduced['emg_SD_features'][
-# int(emg_feature_data['emg_SD_features'].shape[0] / 2):, :]
-# emg_feature_sample_reduced['emg_SA_features'] = emg_feature_sample_reduced['emg_SA_features'][
-# int(emg_feature_data['emg_SA_features'].shape[0] / 2):, :]
+
+##
+def reshapeEmgFeatures(emg_feature_data):
+    emg_feature_reshaped = {}
+    emg_repetitions = []
+    rows = 13
+    columns = 5
+    features = -1
+    for gait_event_label, gait_event_emg in emg_feature_data.items():
+        for repetition_emg_features in gait_event_emg:
+            samples = len(repetition_emg_features)
+            emg_repetitions.append(np.reshape(np.transpose(repetition_emg_features), (rows, columns, features, samples), order='F'))
+        emg_feature_reshaped[gait_event_label] = emg_repetitions
+        emg_repetitions = []
+    return emg_feature_reshaped
+emg_feature_reshaped = reshapeEmgFeatures(emg_features)
+
+## get 20% from each class as test set
+group = {}
+for gait_event_label, gait_event_features in emg_feature_data.items():
+    emg_feature_x
+
 
 
 
 ## put all data into a dataset
 emg_feature_x = []
 emg_feature_y = []
-features = 8
-channels = 130
-class_number = len(emg_feature_mode_reduced.keys())
-for gait_event_label, gait_event_emg in emg_feature_mode_reduced.items():
-    emg_feature_x.extend(gait_event_emg[:, 0:features*channels])
+class_number = len(emg_feature_data.keys())
+for gait_event_label, gait_event_emg in emg_feature_data.items():
+    emg_feature_x.extend(gait_event_emg)
     emg_feature_y.extend([gait_event_label] * len(gait_event_emg))
 emg_feature_x = np.array(emg_feature_x)
 emg_feature_y = np.array(emg_feature_y)

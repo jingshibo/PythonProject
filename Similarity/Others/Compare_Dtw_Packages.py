@@ -1,3 +1,4 @@
+## import modules
 from dtw import accelerated_dtw
 from dtaidistance import dtw
 from dtaidistance import dtw_visualisation as dtwvis
@@ -7,8 +8,8 @@ import numpy as np
 
 
 ## dtaidistance package for two sequence comparison
-signal_1 = emg_1_mean_channels['emg_SSLW_data'][0]
-signal_2 = emg_1_mean_channels['emg_SSSA_data'][4]
+signal_1 = emg_1_mean_events['emg_SALW_data']
+signal_2 = emg_1_mean_channels['emg_SALW_data'][35]
 distance, paths = dtw.warping_paths_fast(signal_1, signal_2)
 print(distance)
 print(paths)
@@ -24,8 +25,8 @@ ax.axis('off')
 for [map_x, map_y] in best_path:
     ax.plot([map_x, map_y], [signal_1[map_x], signal_2[map_y]], linewidth=4)
 
-ax.plot(signal_1, '-ro', label='x', linewidth=4, markersize=20, markerfacecolor='lightcoral', markeredgecolor='lightcoral')
-ax.plot(signal_2, '-bo', label='y', linewidth=4, markersize=20, markerfacecolor='skyblue', markeredgecolor='skyblue')
+ax.plot(signal_1, '-ro', label='x', linewidth=2, markersize=5, markerfacecolor='lightcoral', markeredgecolor='lightcoral')
+ax.plot(signal_2, '-bo', label='y', linewidth=2, markersize=5, markerfacecolor='skyblue', markeredgecolor='skyblue')
 ax.set_title("DTWDistance", fontsize=28, fontweight="bold")
 plt.legend()
 
@@ -37,8 +38,8 @@ dtw_results = dtw.distance_matrix_fast(signal, block=((0, 1), (1, len(signal))),
 print(datetime.datetime.now() - now)
 
 ## dwt package: accelerated_dtw method
-signal_1 = emg_1_mean_channels['emg_SSLW_data'][0]
-signal_2 = emg_1_mean_channels['emg_SSSA_data'][4]
+signal_1 = emg_1_mean_events['emg_SALW_data']
+signal_2 = emg_1_mean_channels['emg_SALW_data'][35]
 d, cost_matrix, acc_cost_matrix, path = accelerated_dtw(signal_1, signal_2, dist='euclidean')
 
 # plot cost matrix
@@ -57,11 +58,15 @@ ax = plt.axes()
 fig.patch.set_visible(False)
 ax.axis('off')
 
-path_pair = zip(path[0], path[1])
-for [map_x, map_y] in path_pair:
+warp_path = zip(path[0], path[1])
+for [map_x, map_y] in warp_path:
     ax.plot([map_x, map_y], [signal_1[map_x], signal_2[map_y]], linewidth=4)
 
-ax.plot(signal_1, '-ro', label='x', linewidth=4, markersize=20, markerfacecolor='lightcoral', markeredgecolor='lightcoral')
-ax.plot(signal_2, '-bo', label='y', linewidth=4, markersize=20, markerfacecolor='skyblue', markeredgecolor='skyblue')
+ax.plot(signal_1, '-ro', label='x', linewidth=0.1, markersize=3, markerfacecolor='lightcoral', markeredgecolor='lightcoral')
+ax.plot(signal_2, '-bo', label='y', linewidth=0.1, markersize=3, markerfacecolor='skyblue', markeredgecolor='skyblue')
 ax.set_title("DTWDistance", fontsize=28, fontweight="bold")
 plt.legend()
+
+##
+warp_path = zip(path[0], path[1])
+dtwvis.plot_warping(signal_1, signal_2, warp_path)

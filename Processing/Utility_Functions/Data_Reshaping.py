@@ -22,10 +22,14 @@ def reorderElectrodes(emg_data):
 ## rearrange emg data to map 4d matrix
 def reshapeEmgFeatures(emg_feature_data):
     emg_feature_reshaped = {}
+    emg_repetitions = []
     rows = 13
     columns = 5
     features = -1
     for gait_event_label, gait_event_emg in emg_feature_data.items():
-        samples = len(gait_event_emg)
-        emg_feature_reshaped[gait_event_label] = np.reshape(np.transpose(gait_event_emg), (rows, columns, features, samples), order='F')
+        for repetition_emg_features in gait_event_emg:
+            samples = len(repetition_emg_features)
+            emg_repetitions.append(np.reshape(np.transpose(repetition_emg_features), (rows, columns, features, samples), order='F'))
+        emg_feature_reshaped[gait_event_label] = emg_repetitions
+        emg_repetitions = []
     return emg_feature_reshaped
