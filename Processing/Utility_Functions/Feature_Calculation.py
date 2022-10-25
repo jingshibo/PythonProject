@@ -116,7 +116,7 @@ def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
     return emg_feature_labelled
 
 
-# ## extract features for emg data in an experiment round, which contains multiple windows
+# ## old version
 # def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
 #     emg_feature_labelled = {}
 #     emg_window_features = []

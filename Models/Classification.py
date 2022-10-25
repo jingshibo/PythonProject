@@ -16,7 +16,7 @@ version = 1  # which experiment data to process
 feature_set = 0  # which feature set to use
 emg_feature_data = Feature_Storage.readEmgFeatures(subject, version, feature_set)
 # if you want to use CNN model, you need to reshape the data
-emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_feature_data)
+# emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_feature_data)
 # abandon samples from some modes
 emg_feature_mode_reduced = copy.deepcopy(emg_feature_data)
 emg_feature_mode_reduced['emg_LWLW_features'] = emg_feature_mode_reduced['emg_LWLW_features'][
@@ -45,13 +45,11 @@ class_reduced = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_featu
 ## put all data into a dataset
 emg_feature_x = []
 emg_feature_y = []
-features = 8
-channels = 130
 class_number = len(emg_feature_mode_reduced.keys())
 for gait_event_label, gait_event_emg in emg_feature_mode_reduced.items():
-    emg_feature_x.extend(gait_event_emg[:, 0:features*channels])
+    emg_feature_x.extend(gait_event_emg)
     emg_feature_y.extend([gait_event_label] * len(gait_event_emg))
-emg_feature_x = np.array(emg_feature_x)
+emg_feature_x = np.array(emg_feature_x)[:, 0:1040]
 emg_feature_y = np.array(emg_feature_y)
 
 
@@ -79,7 +77,7 @@ onehot_categories_y = tf.keras.utils.to_categorical(int_categories_y)
 
 
 ## shuffle data
-ratio = 0.7
+ratio = 0.3
 data_number = len(emg_feature_x)
 # Shuffles the indices
 idx = np.arange(data_number)

@@ -1,4 +1,4 @@
-##
+## import modules
 import datetime
 import copy
 import matplotlib.pyplot as plt
@@ -10,7 +10,8 @@ from sklearn.metrics import confusion_matrix
 from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
 from Models.Utility_Functions import Confusion_Matrix
 
-## input emg data
+
+## load emg feature data
 subject = "Shibo"
 version = 1  # which experiment data to process
 feature_set = 1  # which feature set to use
@@ -42,40 +43,65 @@ class_reduced = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_featu
     'emg_SASA_features': 5, 'emg_SASS_features': 6, 'emg_SDLW_features': 7, 'emg_SDSD_features': 8, 'emg_SDSS_features': 9,
     'emg_SSLW_features': 10, 'emg_SSSA_features': 11, 'emg_SSSD_features': 12}
 
-
-##
-def reshapeEmgFeatures(emg_feature_data):
-    emg_feature_reshaped = {}
-    emg_repetitions = []
-    rows = 13
-    columns = 5
-    features = -1
-    for gait_event_label, gait_event_emg in emg_feature_data.items():
-        for repetition_emg_features in gait_event_emg:
-            samples = len(repetition_emg_features)
-            emg_repetitions.append(np.reshape(np.transpose(repetition_emg_features), (rows, columns, features, samples), order='F'))
-        emg_feature_reshaped[gait_event_label] = emg_repetitions
-        emg_repetitions = []
-    return emg_feature_reshaped
-emg_feature_reshaped = reshapeEmgFeatures(emg_features)
-
-## get 20% from each class as test set
-group = {}
-for gait_event_label, gait_event_features in emg_feature_data.items():
-    emg_feature_x
+class_number = len(emg_feature_data.keys())  # number of classes
+window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 
 
+## create k-fold cross validation groups
+fold = 10  # 5-fold cross validation
+cross_validation_groups = {}  # 5 groups of cross validation set
+for i in range(fold):
+    train_set = {}  # store train set of all gait events for each group
+    test_set = {}  # store test set of all gait events for each group
+    for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
+        test_set[gait_event_label] = gait_event_features[int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i+1) / fold)]
+        del gait_event_features[int(len(gait_event_features) * i / fold):  int(len(gait_event_features) * (i+1) / fold)]  # remove test set from original set
+        train_set[gait_event_label] = gait_event_features
+    cross_validation_groups[f"group_{i}"] = {"train_set": train_set, "test_set": test_set}  # a pair of training and test set for one group
 
 
-## put all data into a dataset
-emg_feature_x = []
-emg_feature_y = []
-class_number = len(emg_feature_data.keys())
-for gait_event_label, gait_event_emg in emg_feature_data.items():
-    emg_feature_x.extend(gait_event_emg)
-    emg_feature_y.extend([gait_event_label] * len(gait_event_emg))
-emg_feature_x = np.array(emg_feature_x)
-emg_feature_y = np.array(emg_feature_y)
+## combine data of all gait events into a single dataset
+classification_groups = {}
+for group_number, group_value in cross_validation_groups.items():
+    # initialize training set and test set for each group
+    train_feature_x = []
+    train_feature_y = []
+    test_feature_x = []
+    test_feature_y = []
+    for set_type, set_value in group_value.items():
+        for gait_event_label, gait_event_features in set_value.items():
+            if set_type == 'train_set':  # combine all data into a dataset
+                train_feature_x.extend(np.concatenate(gait_event_features))
+                train_feature_y.extend([gait_event_label] * len(gait_event_features) * window_per_repetition)
+            elif set_type == 'test_set':  # keep the structure unchanged
+                test_feature_x.extend(np.concatenate(gait_event_features))
+                test_feature_y.extend([gait_event_label] * len(gait_event_features) * window_per_repetition)
+    # convert x from list to numpy
+    train_feature_x = np.array(train_feature_x)
+    test_feature_x = np.array(test_feature_x)
+    # normalization
+    train_norm_x = (train_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
+    test_norm_x = (test_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
+    # one-hot encode categories (according to the alphabetical order)
+    train_int_y = LabelEncoder().fit_transform(train_feature_y)
+    train_onehot_y = tf.keras.utils.to_categorical(train_int_y)
+    test_int_y = LabelEncoder().fit_transform(test_feature_y)
+    test_onehot_y = tf.keras.utils.to_categorical(test_int_y)
+    # put training data and test data into one group
+    classification_groups[group_number] = {"train_feature_x": train_norm_x, "train_int_y": train_int_y, "train_onehot_y": train_onehot_y,
+        "test_feature_x": test_norm_x, "test_int_y": test_int_y, "test_onehot_y": test_onehot_y}
+
+
+## shuffle training set
+for group_number, group_value in classification_groups.items():
+    data_number = len(group_value['train_feature_x'])
+    # Shuffles the indices
+    idx = np.arange(data_number)
+    np.random.shuffle(idx)
+    train_idx = idx[: int(data_number)]
+    # shuffle the data
+    group_value['train_feature_x'], group_value['train_int_y'], group_value['train_onehot_y'] = group_value['train_feature_x'][train_idx,
+    :], group_value['train_int_y'][train_idx], group_value['train_onehot_y'][train_idx, :]
 
 
 ## only use emg data before gait events
@@ -96,77 +122,3 @@ emg_feature_y = np.array(emg_feature_y)
 # emg_feature_x = emg_feature_tibialis_x
 
 
-## encode categories
-int_categories_y = LabelEncoder().fit_transform(emg_feature_y)  # according to the alphabetical order
-onehot_categories_y = tf.keras.utils.to_categorical(int_categories_y)
-
-
-## shuffle data
-ratio = 0.7
-data_number = len(emg_feature_x)
-# Shuffles the indices
-idx = np.arange(data_number)
-np.random.shuffle(idx)
-# Uses first 80 random indices for train
-train_idx = idx[: int(data_number * ratio)]
-# Uses the remaining indices for validation
-test_idx = idx[int(data_number * ratio):]
-# Generates train and validation sets
-x_train, y_train_onehot, y_train_int = emg_feature_x[train_idx, :], onehot_categories_y[train_idx, :], int_categories_y[train_idx]
-x_test, y_test_onehot, y_test_int = emg_feature_x[test_idx, :], onehot_categories_y[test_idx, :], int_categories_y[test_idx]
-
-
-## normalization
-x_train_norm = (x_train - np.mean(x_train, axis=0)) / np.std(x_train, axis=0)
-x_test_norm = (x_test - np.mean(x_train, axis=0)) / np.std(x_train, axis=0)
-
-
-## model
-model = tf.keras.models.Sequential(name="my_model")  # optional name
-model.add(tf.keras.layers.InputLayer(input_shape=(np.shape(x_train_norm)[1]))) # It can also be replaced by: model.add(tf.keras.Input(shape=(28,28)))
-model.add(tf.keras.layers.Dense(200))  # or activation=tf.nn.relu
-model.add(tf.keras.layers.BatchNormalization())
-model.add(tf.keras.layers.ReLU())
-model.add(tf.keras.layers.Dropout(0.5))
-model.add(tf.keras.layers.Dense(200))
-model.add(tf.keras.layers.BatchNormalization())
-model.add(tf.keras.layers.ReLU())
-model.add(tf.keras.layers.Dropout(0.5))
-model.add(tf.keras.layers.Dense(200))  # or activation=tf.nn.softmax
-model.add(tf.keras.layers.BatchNormalization())
-model.add(tf.keras.layers.ReLU())
-model.add(tf.keras.layers.Dropout(0.5))
-model.add(tf.keras.layers.Dense(class_number))
-model.add(tf.keras.layers.Softmax())
-
-# view model
-model.summary()
-model.layers
-
-
-## model configuration
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics='accuracy')
-# model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')
-
-## training model
-now = datetime.datetime.now()
-model.fit(x_train_norm, y_train_onehot, validation_split=0.2, epochs=200, batch_size=1024, verbose='auto')
-print(datetime.datetime.now() - now)
-
-## test model
-predictions = model.predict([x_test_norm])  # return predicted probabilities
-y_pred = np.argmax(predictions, axis=-1)  # return predicted labels
-test_loss, test_acc = model.evaluate(x_test_norm, y_test_onehot)  # return loss and accuracy values
-
-
-## plot confusion matrix
-cm = confusion_matrix(y_true=y_test_int, y_pred=y_pred)
-# the labels in the classes list should correspond to the one hot labels
-# class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'LW', 'SALW', 'SASA', 'SASS', 'SA', 'SDLW', 'SDSD', 'SDSS', 'SD', 'SSLW', 'SSSA', 'SSSD']
-class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
-Confusion_Matrix.plotConfusionMatrix(cm, class_labels)
-
-##
-sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 15}, yticklabels=class_labels, xticklabels=class_labels)
-##
-plt.imshow(cm)
