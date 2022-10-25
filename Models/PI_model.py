@@ -9,11 +9,13 @@ from Models.Utility_Functions import Confusion_Matrix
 
 ##
 results = []
-for group_number, group_value in classification_groups.items():
+for group_number, group_value in shuffled_groups.items():
+    for locomotion_type, locomotion_training in group_value["train_set"]:
+
     # data
-    train_set_x = group_value['train_feature_x'][:, 0:1300]
+    train_set_x = group_value['train_feature_x'][:, 0:1040]
     train_set_y = group_value['train_onehot_y']
-    test_set_x = group_value['test_feature_x'][:, 0:1300]
+    test_set_x = group_value['test_feature_x'][:, 0:1040]
     test_set_y = group_value['test_onehot_y']
     # model
     model = tf.keras.models.Sequential(name="ann_model")  # optional name
@@ -94,14 +96,22 @@ for result in majority_results:
     accuracy.append(numCorrect / len(true_y) * 100)
     cm.append(confusion_matrix(y_true=true_y, y_pred=predict_y))
 mean_accuracy = sum(accuracy) / len(accuracy)
+sum_cm = np.sum(np.array(cm), axis=0)
+print(mean_accuracy)
 
-## plot comfusion matrix
-    cm = confusion_matrix(y_true=group_value['test_int_y'], y_pred=predict_y)
-    # the labels in the classes list should correspond to the one hot labels
-    # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'LW', 'SALW', 'SASA', 'SASS', 'SA', 'SDLW', 'SDSD', 'SDSS', 'SD', 'SSLW', 'SSSA', 'SSSD']
-    class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
-    Confusion_Matrix.plotConfusionMatrix(cm, class_labels)
 
-    # sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 15}, yticklabels=class_labels, xticklabels=class_labels)
-    # ##
-    # plt.imshow(cm)
+## plot confusion matrix
+cm_recall = (np.around(sum_cm.T / np.sum(sum_cm, axis=1) * 100, decimals=1)).T
+# the labels in the classes list should correspond to the one hot labels
+# class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'LW', 'SALW', 'SASA', 'SASS', 'SA', 'SDLW', 'SDSD', 'SDSS', 'SD', 'SSLW', 'SSSA', 'SSSD']
+class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
+Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels)
+
+# sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 15}, yticklabels=class_labels, xticklabels=class_labels)
+# ##
+# plt.imshow(cm)
+
+##
+x1 = np.arange(9.0).reshape((3, 3))
+x2 = np.arange(1, 4.0)
+x1 / x2

@@ -61,7 +61,7 @@ for i in range(fold):
 
 
 ## combine data of all gait events into a single dataset
-classification_groups = {}
+normalized_groups = {}
 for group_number, group_value in cross_validation_groups.items():
     # initialize training set and test set for each group
     train_feature_x = []
@@ -88,12 +88,13 @@ for group_number, group_value in cross_validation_groups.items():
     test_int_y = LabelEncoder().fit_transform(test_feature_y)
     test_onehot_y = tf.keras.utils.to_categorical(test_int_y)
     # put training data and test data into one group
-    classification_groups[group_number] = {"train_feature_x": train_norm_x, "train_int_y": train_int_y, "train_onehot_y": train_onehot_y,
+    normalized_groups[group_number] = {"train_feature_x": train_norm_x, "train_int_y": train_int_y, "train_onehot_y": train_onehot_y,
         "test_feature_x": test_norm_x, "test_int_y": test_int_y, "test_onehot_y": test_onehot_y}
 
 
 ## shuffle training set
-for group_number, group_value in classification_groups.items():
+shffuled_group = copy.deepcopy(normalized_groups)
+for group_number, group_value in shffuled_group.items():
     data_number = len(group_value['train_feature_x'])
     # Shuffles the indices
     idx = np.arange(data_number)
