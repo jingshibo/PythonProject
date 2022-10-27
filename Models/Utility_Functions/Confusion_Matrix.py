@@ -11,11 +11,10 @@ def plotConfusionMatrix(cm, classes, normalize=False, title='confusion matrix', 
     plt.yticks(tick_marks, classes)
 
     if normalize:
-        cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis],3) # keep three decimals
+        cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], 3)  # calculate cm recall
         print("normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
-    print(cm)
 
     thresh = cm.max() / 2
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
@@ -24,3 +23,4 @@ def plotConfusionMatrix(cm, classes, normalize=False, title='confusion matrix', 
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    return cm

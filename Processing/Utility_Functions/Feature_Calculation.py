@@ -18,10 +18,10 @@ def calcuEmgFeatures(emg_window_data):
     # waveform length
     WL = np.sum(np.abs(np.diff(emg_window_data, axis=0)), axis=0)
 
-    # skewness
-    SK = skew(emg_window_data, axis=0)
-    # kurtosis
-    KU = kurtosis(emg_window_data, axis=0)
+    # # skewness
+    # SK = skew(emg_window_data, axis=0)
+    # # kurtosis
+    # KU = kurtosis(emg_window_data, axis=0)
 
     # slope sign changes
     SSC = np.zeros((sample_number - 4, channel_number))  # preallocate memory
@@ -90,7 +90,7 @@ def calcuEmgFeatures(emg_window_data):
         AR_3[i] = ar_para[3]
         AR_4[i] = ar_para[4]
 
-    return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3, SK, KU, AR_4])
+    return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3, AR_4])
     # return np.concatenate([MAV, RMS, WL, SSCn, ZCn, SK, KU])
 
 

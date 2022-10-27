@@ -1,6 +1,7 @@
 ## import modules
 import datetime
 import copy
+import random
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -54,6 +55,8 @@ for i in range(fold):
     train_set = {}  # store train set of all gait events for each group
     test_set = {}  # store test set of all gait events for each group
     for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
+        # shuffle the list (important)
+        random.shuffle(gait_event_features)
         test_set[gait_event_label] = gait_event_features[int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i+1) / fold)]
         del gait_event_features[int(len(gait_event_features) * i / fold):  int(len(gait_event_features) * (i+1) / fold)]  # remove test set from original set
         train_set[gait_event_label] = gait_event_features
@@ -107,23 +110,23 @@ for group_number, group_value in transition_grouped.items():
 
 
 ## normalize dataset
-normalized_group = copy.deepcopy(classification_groups)
+normalized_groups = copy.deepcopy(classification_groups)
 for group_number, group_value in classification_groups.items():
     for set_type, set_value in group_value.items():
         if set_type == 'train_set':
             for transition_type, transition_value in set_value.items():
-                normalized_group[group_number][set_type][transition_type]['feature_norm_x'] = (transition_value['feature_x'] - np.mean(
+                normalized_groups[group_number][set_type][transition_type]['feature_norm_x'] = (transition_value['feature_x'] - np.mean(
                     transition_value['feature_x'], axis=0)) / np.std(transition_value['feature_x'], axis=0)
         elif set_type == 'test_set':
             for transition_type, transition_value in set_value.items():
-                train_x = normalized_group[group_number]['train_set'][transition_type]['feature_x']
-                normalized_group[group_number][set_type][transition_type]['feature_norm_x'] = (transition_value['feature_x'] - np.mean(
+                train_x = normalized_groups[group_number]['train_set'][transition_type]['feature_x']
+                normalized_groups[group_number][set_type][transition_type]['feature_norm_x'] = (transition_value['feature_x'] - np.mean(
                     train_x, axis=0)) / np.std(train_x, axis=0)
 
 
 ## shuffle training set
-shuffled_group = copy.deepcopy(normalized_group)
-for group_number, group_value in shuffled_group.items():
+shuffled_groups = copy.deepcopy(normalized_groups)
+for group_number, group_value in shuffled_groups.items():
     for set_type, set_value in group_value.items():
         if set_type == 'train_set':
             for transition_type, transition_value in set_value.items():
