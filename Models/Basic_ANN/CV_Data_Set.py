@@ -42,7 +42,7 @@ def crossValidationSet(fold, emg_feature_data):
         test_set = {}  # store test set of all gait events for each group
         for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
             # shuffle the list (important)
-            random.shuffle(gait_event_features)
+            random.Random(4).shuffle(gait_event_features)  # 4 is a seed
             # separate the training and test set
             test_set[gait_event_label] = gait_event_features[
             int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i + 1) / fold)]

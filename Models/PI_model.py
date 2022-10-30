@@ -35,7 +35,7 @@ for group_number, group_value in shuffled_groups.items():
         model.add(tf.keras.layers.Softmax())
         # view model
         model.summary()
-        model.layers
+
         # model configuration
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics='accuracy')
         # model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')
@@ -51,10 +51,10 @@ for group_number, group_value in shuffled_groups.items():
         # test model
         predictions = model.predict(test_set_x)  # return predicted probabilities
         predict_y = np.argmax(predictions, axis=-1)  # return predicted labels
-        test_loss, test_accuracy = model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
+        test_loss, accuracy = model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
 
-        predict_results[transition_type] = {"true_value": group_value['test_set'][transition_type]['feature_int_y'],
-            "predict_value": predict_y, "predict_accuracy": test_accuracy}
+        predict_results[transition_type] = {"model": model, "true_value": group_value['test_set'][transition_type]['feature_int_y'],
+            "predict_value": predict_y, "predict_accuracy": accuracy}
     group_results.append(predict_results)
 
 ## majority vote
@@ -74,7 +74,7 @@ for each_group in group_results:
         bin_transitions[transition_type] = {"true_value": true_y, "predict_value": predict_y}
     bin_results.append(bin_transitions)
 
-##
+#
 majority_results = []
 for each_group in bin_results:
     majority_transitions = {}
@@ -89,9 +89,9 @@ for each_group in bin_results:
         majority_transitions[transition_type] = {"true_value": np.array(true_y), "predict_value": np.array(predict_y)}
     majority_results.append(majority_transitions)
 
-## accuracy
-test_accuracy = []
-test_cm = []
+# accuracy
+accuracy = []
+cm = []
 for each_group in majority_results:
     transition_cm = {}
     transition_accuracy = {}
@@ -101,25 +101,25 @@ for each_group in majority_results:
         numCorrect = np.count_nonzero(true_y == predict_y)
         transition_accuracy[transition_type] = numCorrect / len(true_y) * 100
         transition_cm[transition_type] = confusion_matrix(y_true=true_y, y_pred=predict_y)
-    test_accuracy.append(transition_accuracy)
-    test_cm.append(transition_cm)
+    accuracy.append(transition_accuracy)
+    cm.append(transition_cm)
 
-## avarage value
-accuracy = {'transition_LW':0, 'transition_SA':0, 'transition_SD':0, 'transition_SS':0}
-for value in test_accuracy:
-    accuracy['transition_LW'] = accuracy['transition_LW'] + value['transition_LW']
-    accuracy['transition_SA'] = accuracy['transition_SA'] + value['transition_SA']
-    accuracy['transition_SD'] = accuracy['transition_SD'] + value['transition_SD']
-    accuracy['transition_SS'] = accuracy['transition_SS'] + value['transition_SS']
-for key, value in accuracy.items():
-    accuracy[key] = value / len(test_accuracy)
+# avarage value
+mean_accuracy = {'transition_LW': 0, 'transition_SA': 0, 'transition_SD': 0, 'transition_SS': 0}
+for value in accuracy:
+    mean_accuracy['transition_LW'] = mean_accuracy['transition_LW'] + value['transition_LW']
+    mean_accuracy['transition_SA'] = mean_accuracy['transition_SA'] + value['transition_SA']
+    mean_accuracy['transition_SD'] = mean_accuracy['transition_SD'] + value['transition_SD']
+    mean_accuracy['transition_SS'] = mean_accuracy['transition_SS'] + value['transition_SS']
+for key, value in mean_accuracy.items():
+    mean_accuracy[key] = value / len(accuracy)
 
-cm = {'transition_LW':np.zeros((4, 4)), 'transition_SA':np.zeros((3, 3)), 'transition_SD':np.zeros((3, 3)), 'transition_SS':np.zeros((3, 3))}
-for value in test_cm:
-    cm['transition_LW'] = cm['transition_LW'] + value['transition_LW']
-    cm['transition_SA'] = cm['transition_SA'] + value['transition_SA']
-    cm['transition_SD'] = cm['transition_SD'] + value['transition_SD']
-    cm['transition_SS'] = cm['transition_SS'] + value['transition_SS']
-for key, value in cm.items():
-    cm[key] = (np.around(value.T / np.sum(value, axis=1) * 100, decimals=1)).T
-
+cm_recall = {'transition_LW': np.zeros((4, 4)), 'transition_SA': np.zeros((3, 3)), 'transition_SD': np.zeros((3, 3)),
+    'transition_SS': np.zeros((3, 3))}
+for value in cm:
+    cm_recall['transition_LW'] = cm_recall['transition_LW'] + value['transition_LW']
+    cm_recall['transition_SA'] = cm_recall['transition_SA'] + value['transition_SA']
+    cm_recall['transition_SD'] = cm_recall['transition_SD'] + value['transition_SD']
+    cm_recall['transition_SS'] = cm_recall['transition_SS'] + value['transition_SS']
+for key, value in cm_recall.items():
+    cm_recall[key] = (np.around(value.T / np.sum(value, axis=1) * 100, decimals=1)).T

@@ -9,7 +9,11 @@ from Models.Utility_Functions import Confusion_Matrix
 
 
 ## training model
+
 def classifyUsingAnnModel(shuffled_groups):
+    '''
+    A basic 4 layer ANN model
+    '''
     results = []
     for group_number, group_value in shuffled_groups.items():
         # one muscle / bipolar data
@@ -37,22 +41,21 @@ def classifyUsingAnnModel(shuffled_groups):
         test_set_y = group_value['test_onehot_y']
         class_number = len(set(group_value['train_int_y']))
 
-
         # layer parameters
-        regularization = tf.keras.regularizers.L2(0.0001)
-        initializer = tf.keras.initializers.GlorotUniform()
+        regularization = tf.keras.regularizers.L2(0.00001)
+        initializer = tf.keras.initializers.HeNormal()
         # model structure
         model = tf.keras.models.Sequential(name="ann_model")  # optional name
         model.add(tf.keras.layers.InputLayer(input_shape=(train_set_x.shape[1]))) # It can also be replaced by: model.add(tf.keras.Input(shape=(28,28)))
-        model.add(tf.keras.layers.Dense(1000, kernel_regularizer=regularization, kernel_initializer=initializer))  # or activation=tf.nn.relu
+        model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))  # or activation=tf.nn.relu
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.ReLU())
         model.add(tf.keras.layers.Dropout(0.5))
-        model.add(tf.keras.layers.Dense(500, kernel_regularizer=regularization, kernel_initializer=initializer))
+        model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.ReLU())
         model.add(tf.keras.layers.Dropout(0.5))
-        model.add(tf.keras.layers.Dense(200, kernel_regularizer=regularization, kernel_initializer=initializer))
+        model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.ReLU())
         model.add(tf.keras.layers.Dropout(0.5))
@@ -60,15 +63,11 @@ def classifyUsingAnnModel(shuffled_groups):
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.ReLU())
         model.add(tf.keras.layers.Dropout(0.5))
-        model.add(tf.keras.layers.Dense(50, kernel_regularizer=regularization, kernel_initializer=initializer))
-        model.add(tf.keras.layers.BatchNormalization())
-        model.add(tf.keras.layers.ReLU())
-        model.add(tf.keras.layers.Dropout(0.5))
         model.add(tf.keras.layers.Dense(class_number))
         model.add(tf.keras.layers.Softmax())  # or activation=tf.nn.softmax
         # view model
         model.summary()
-        model.layers
+
 
         # model parameters
         num_epochs = 100
@@ -83,19 +82,22 @@ def classifyUsingAnnModel(shuffled_groups):
 
         # train model
         now = datetime.datetime.now()
-        model.fit(train_set_x, train_set_y, validation_split=0.1, epochs=num_epochs, batch_size=batch_size, verbose='auto')
+        model.fit(train_set_x, train_set_y, validation_split=0.1, epochs=num_epochs, batch_size=batch_size, shuffle=True, verbose='auto')
         print(datetime.datetime.now() - now)
         # test model
         predictions = model.predict(test_set_x)  # return predicted probabilities
         predict_y = np.argmax(predictions, axis=-1)  # return predicted labels
         test_loss, test_accuracy = model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
 
-        results.append({"true_value": group_value['test_int_y'], "predict_value": predict_y, "predict_accuracy": test_accuracy})
+        results.append({"model": model, "true_value": group_value['test_int_y'], "predict_value": predict_y, "predict_accuracy": test_accuracy})
     return results
 
 
 ## majority vote
 def majorityVoteResults(classify_results, window_per_repetition):
+    '''
+    The majority vote results for each transition repetition
+    '''
     bin_results = []
     for result in classify_results:
         true_y = []
@@ -124,13 +126,16 @@ def majorityVoteResults(classify_results, window_per_repetition):
 
 ## accuracy
 def averageAccuracy(majority_results):
+    '''
+    The accuracy for each cross validation group and average value across groups
+    '''
     cm = []
     accuracy = []
     for result in majority_results:
         true_y = result['true_value']
         predict_y = result['predict_value']
-        numCorrect = np.count_nonzero(true_y == predict_y)
-        accuracy.append(numCorrect / len(true_y) * 100)
+        num_Correct = np.count_nonzero(true_y == predict_y)
+        accuracy.append(num_Correct / len(true_y) * 100)
         cm.append(confusion_matrix(y_true=true_y, y_pred=predict_y))
     mean_accuracy = sum(accuracy) / len(accuracy)
     sum_cm = np.sum(np.array(cm), axis=0)
@@ -139,6 +144,9 @@ def averageAccuracy(majority_results):
 
 ## plot confusion matrix
 def confusionMatrix(sum_cm, recall=False):
+    '''
+    plot overall confusion matrix recall values
+    '''
     plt.figure()
     # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
     # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'LW', 'SALW', 'SASA', 'SASS', 'SA', 'SDLW', 'SDSD', 'SDSS', 'SD', 'SSLW', 'SSSA', 'SSSD']
