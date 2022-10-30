@@ -1,7 +1,10 @@
+'''
+build an ANN model and get the majority vote results (accuracy and confusion matrix)
+'''
+
 ## import modules
 import datetime
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import tensorflow as tf
 from sklearn.metrics import confusion_matrix
@@ -9,10 +12,9 @@ from Models.Utility_Functions import Confusion_Matrix
 
 
 ## training model
-
 def classifyUsingAnnModel(shuffled_groups):
     '''
-    A basic 4 layer ANN model
+    A basic 4-layer ANN model
     '''
     results = []
     for group_number, group_value in shuffled_groups.items():
@@ -46,7 +48,7 @@ def classifyUsingAnnModel(shuffled_groups):
         initializer = tf.keras.initializers.HeNormal()
         # model structure
         model = tf.keras.models.Sequential(name="ann_model")  # optional name
-        model.add(tf.keras.layers.InputLayer(input_shape=(train_set_x.shape[1]))) # It can also be replaced by: model.add(tf.keras.Input(shape=(28,28)))
+        model.add(tf.keras.layers.InputLayer(input_shape=(train_set_x.shape[1])))  # or replaced by: model.add(tf.keras.Input(shape=(28,28)))
         model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))  # or activation=tf.nn.relu
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.ReLU())
@@ -99,7 +101,7 @@ def majorityVoteResults(classify_results, window_per_repetition):
     The majority vote results for each transition repetition
     '''
     bin_results = []
-    for result in classify_results:
+    for result in classify_results:  # reunite the samples from the same transition
         true_y = []
         predict_y = []
         for key, value in result.items():
@@ -112,7 +114,7 @@ def majorityVoteResults(classify_results, window_per_repetition):
         bin_results.append({"true_value": true_y, "predict_value": predict_y})
 
     majority_results = []
-    for result in bin_results:
+    for result in bin_results:  # use majority vote to get a consensus result
         true_y = []
         predict_y = []
         for key, value in result.items():

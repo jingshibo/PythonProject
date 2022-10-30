@@ -1,3 +1,7 @@
+'''
+create a k-fold cross validation set from the extracted emg features
+'''
+
 ## import modules
 import copy
 import random
@@ -16,7 +20,7 @@ def loadEmgFeature(subject, version, feature_set):
         repetition_data = []
         for repetition_label, repetition_features in gait_event_features.items():
             repetition_data.append(np.array(repetition_features))  # convert 2d list into numpy
-        emg_features[gait_event_label] = repetition_data  # move repetition data from dict into list
+        emg_features[gait_event_label] = repetition_data  # convert repetition data from dict into list
     # if you want to use CNN model, you need to reshape the data
     emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_features)
     return emg_features, emg_feature_reshaped
@@ -27,7 +31,7 @@ def removeSomeMode(emg_features):
     emg_feature_data = copy.deepcopy(emg_features)
     # emg_feature_data = emg_features
     emg_feature_data['emg_LWLW_features'] = emg_feature_data['emg_LWLW_features'][
-    int(len(emg_feature_data['emg_LWLW_features']) / 4): int(len(emg_feature_data['emg_LWLW_features']) * 3 / 4)]  # remove half LWLW mode
+    int(len(emg_feature_data['emg_LWLW_features']) / 4): int(len(emg_feature_data['emg_LWLW_features']) * 3 / 4)]  # remove half of LWLW mode
     emg_feature_data.pop('emg_LW_features', None)
     emg_feature_data.pop('emg_SD_features', None)
     emg_feature_data.pop('emg_SA_features', None)
@@ -63,16 +67,14 @@ def combineIntoDataset(cross_validation_groups, window_per_repetition):
         test_feature_x = []
         test_feature_y = []
         for set_type, set_value in group_value.items():
-            for gait_event_label, gait_event_features in set_value.items():
-                if set_type == 'train_set':  # combine all data into a dataset
+            if set_type == 'train_set':  # combine all data into a dataset
+                for gait_event_label, gait_event_features in set_value.items():
                     train_feature_x.extend(np.concatenate(gait_event_features))
                     train_feature_y.extend([gait_event_label] * len(gait_event_features) * window_per_repetition)
-                elif set_type == 'test_set':  # keep the structure unchanged
+            elif set_type == 'test_set':  # keep the structure unchanged
+                for gait_event_label, gait_event_features in set_value.items():
                     test_feature_x.extend(np.concatenate(gait_event_features))
                     test_feature_y.extend([gait_event_label] * len(gait_event_features) * window_per_repetition)
-        # convert x from list to numpy
-        train_feature_x = np.array(train_feature_x)
-        test_feature_x = np.array(test_feature_x)
         # normalization
         train_norm_x = (train_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
         test_norm_x = (test_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
