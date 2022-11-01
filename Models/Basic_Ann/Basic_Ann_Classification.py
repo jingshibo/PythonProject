@@ -31,9 +31,9 @@ now = datetime.datetime.now()
 model_results = Ann_Model.classifyUsingAnnModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 majority_results = Ann_Model.majorityVoteResults(model_results, window_per_repetition)
-mean_accuracy, sum_cm = Ann_Model.averageAccuracy(majority_results)
+average_accuracy, sum_cm = Ann_Model.averageAccuracy(majority_results)
 cm_recall = Ann_Model.confusionMatrix(sum_cm, recall=True)
-print(cm_recall, '\n', mean_accuracy)
+print(cm_recall, '\n', average_accuracy)
 
 
 ## save trained models

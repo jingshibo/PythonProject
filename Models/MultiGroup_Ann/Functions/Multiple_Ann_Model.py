@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix
 from Models.Utility_Functions import Confusion_Matrix
 from scipy.linalg import block_diag
 
-##
+## training model
 def classifyMultipleAnnModel(shuffled_groups):
     '''
     train multiple 4-layer ANN models for each group of dataset (grouped based on prior information)
@@ -27,15 +27,15 @@ def classifyMultipleAnnModel(shuffled_groups):
             # model structure
             model = tf.keras.models.Sequential(name="ann_model")  # optional name
             model.add(tf.keras.layers.InputLayer(input_shape=(train_set_x.shape[1])))  # or replaced by: model.add(tf.keras.Input(shape=(28,28)))
-            model.add(tf.keras.layers.Dense(200, kernel_regularizer=regularization, kernel_initializer=initializer))
+            model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.ReLU())
             model.add(tf.keras.layers.Dropout(0.5))
-            model.add(tf.keras.layers.Dense(200, kernel_regularizer=regularization, kernel_initializer=initializer))
+            model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.ReLU())
             model.add(tf.keras.layers.Dropout(0.5))
-            model.add(tf.keras.layers.Dense(200, kernel_regularizer=regularization, kernel_initializer=initializer))
+            model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.ReLU())
             model.add(tf.keras.layers.Dropout(0.5))
@@ -74,7 +74,62 @@ def classifyMultipleAnnModel(shuffled_groups):
     return group_results
 
 
-## majority vote
+## training model
+def classifyTransferAnnModel(shuffled_groups, models):
+    '''
+    transfer a pretrained model to train four separate dataset individually. The parameter: models are the pretrained models
+    '''
+    group_results = []
+    for number, (group_number, group_value) in enumerate(shuffled_groups.items()):
+        predict_results = {}
+        for transition_type, transition_train_data in group_value["train_set"].items():
+            # training data
+            train_set_x = transition_train_data['feature_x'][:, 0:1040]
+            train_set_y = transition_train_data['feature_onehot_y']
+            class_number = len(set(transition_train_data['feature_int_y']))
+
+            # model
+            pretrained_model = tf.keras.Model(inputs=models[number].input, outputs=models[number].layers[-3].output)
+            x = tf.keras.layers.Dense(class_number, name='dense_new')(pretrained_model.layers[-1].output)
+            output = tf.keras.layers.Softmax()(x)
+            transferred_model = tf.keras.Model(inputs=models[number].input, outputs=output)
+            for layer in transferred_model.layers[:-2]:
+                layer.trainable = True  # all layers are trainable
+            # view model
+            transferred_model.summary()
+
+            # model parameters
+            num_epochs = 100
+            decay_epochs = 30
+            batch_size = 512
+            decay_steps = decay_epochs * len(train_set_y) / batch_size
+            # model configuration
+            lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=decay_steps,
+                decay_rate=0.3)
+            opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule, epsilon=1e-08)
+            transferred_model.compile(optimizer=opt, loss='categorical_crossentropy', metrics='accuracy')
+            # model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')
+
+            # training model
+            now = datetime.datetime.now()
+            transferred_model.fit(train_set_x, train_set_y, validation_split=0.1, epochs=num_epochs, batch_size=batch_size, shuffle=True, verbose='auto')
+            print(datetime.datetime.now() - now)
+
+            # test data
+            test_set_x = group_value['test_set'][transition_type]['feature_x'][:, 0:1040]
+            test_set_y = group_value['test_set'][transition_type]['feature_onehot_y']
+            # test model
+            predictions = transferred_model.predict(test_set_x)  # return predicted probabilities
+            predict_y = np.argmax(predictions, axis=-1)  # return predicted labels
+            test_loss, accuracy = transferred_model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
+
+            predict_results[transition_type] = {"model": transferred_model, "true_value": group_value['test_set'][transition_type]['feature_int_y'],
+                "predict_value": predict_y, "predict_accuracy": accuracy}
+        group_results.append(predict_results)
+    return group_results
+
+
+## majority vote results
 def majorityVoteResults(group_results, window_per_repetition):
     # reunite the samples belonging to the same transition
     bin_results = []
@@ -109,7 +164,7 @@ def majorityVoteResults(group_results, window_per_repetition):
         majority_results.append(majority_transitions)
     return majority_results
 
-# accuracy
+## calculate accuracy and cm values for each group
 def getAccuracyPerGroup(majority_results):
     accuracy = []
     cm = []
@@ -126,7 +181,8 @@ def getAccuracyPerGroup(majority_results):
         cm.append(transition_cm)
     return accuracy, cm
 
-## average value
+
+## calculate average accuracy
 def averageAccuracy(accuracy, cm):
     transition_groups = list(accuracy[0].keys())  # list all transition types
     # average accuracy across groups
@@ -136,51 +192,21 @@ def averageAccuracy(accuracy, cm):
             average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
     for transition_type, transition_accuracy in average_accuracy.items():
         average_accuracy[transition_type] = transition_accuracy / len(accuracy)
-    # overall cm across groups
+    # overall cm among groups
     sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list
     for group_values in cm:
         for transition_type, transition_cm in group_values.items():
             sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
     return average_accuracy, sum_cm
 
-    ## plot confusion matrix
+
+## plot confusion matrix
 def confusionMatrix(sum_cm, recall=False):
-    '''
-    plot overall confusion matrix recall values
-    '''
-    # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
+    # create a diagonal matrix from multiple arrays.
     list_cm = [cm for label, cm in sum_cm.items()]
-    overall_cm = block_diag(*list_cm)  # create a diagonal matrix from multiple arrays.
-    plt.figure()
+    overall_cm = block_diag(*list_cm)
+    # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
     class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
+    plt.figure()
     cm_recall = Confusion_Matrix.plotConfusionMatrix(overall_cm, class_labels, normalize=recall)
     return cm_recall
-
-
-
-
-
-
-
-
-
-
-    # mean_accuracy = {'transition_LW': 0, 'transition_SA': 0, 'transition_SD': 0, 'transition_SS': 0}
-    # for value in accuracy:
-    #     mean_accuracy['transition_LW'] = mean_accuracy['transition_LW'] + value['transition_LW']
-    #     mean_accuracy['transition_SA'] = mean_accuracy['transition_SA'] + value['transition_SA']
-    #     mean_accuracy['transition_SD'] = mean_accuracy['transition_SD'] + value['transition_SD']
-    #     mean_accuracy['transition_SS'] = mean_accuracy['transition_SS'] + value['transition_SS']
-    # for key, value in mean_accuracy.items():
-    #     mean_accuracy[key] = value / len(accuracy)
-    #
-    # cm_recall = {'transition_LW': np.zeros((4, 4)), 'transition_SA': np.zeros((3, 3)), 'transition_SD': np.zeros((3, 3)),
-    #     'transition_SS': np.zeros((3, 3))}
-    # for value in cm:
-    #     cm_recall['transition_LW'] = cm_recall['transition_LW'] + value['transition_LW']
-    #     cm_recall['transition_SA'] = cm_recall['transition_SA'] + value['transition_SA']
-    #     cm_recall['transition_SD'] = cm_recall['transition_SD'] + value['transition_SD']
-    #     cm_recall['transition_SS'] = cm_recall['transition_SS'] + value['transition_SS']
-    # for key, value in cm_recall.items():
-    #     cm_recall[key] = (np.around(value.T / np.sum(value, axis=1) * 100, decimals=1)).T
-    # return mean_accuracy, cm_recall

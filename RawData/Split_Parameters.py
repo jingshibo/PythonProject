@@ -503,6 +503,7 @@ split_parameters = {
     'experiment_1': {
         'up_to_down': {
             'session10': {
+                'SSSS': [],  # specifically for standing condition, this is the starting of walking
                 'SSLW': [31100, 73891, 116692, 159200, 202234],
                 'LW_1': [32000, 74853, 117524, 160130, 203088],
                 'LWLW_1': [33775, 76550, 119162, 161660, 204607],
