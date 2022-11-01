@@ -1,5 +1,5 @@
 '''
-Pretrain a ann model using all training set first. Then transfer the pretrained model to train four separate dataset individually.
+load pretrained models from the disk. Then train the pretrained model again using four separate groups of dataset individually.
 '''
 
 
@@ -30,7 +30,7 @@ combined_groups = Grouped_CV_Dataset.combineIntoDataset(transition_grouped, wind
 normalized_groups = Grouped_CV_Dataset.normalizeDataset(combined_groups)
 shuffled_groups = Grouped_CV_Dataset.shuffleTrainingSet(normalized_groups)
 
-## load trained model
+## load pretrained model
 fold = 5
 type = 1  # pre-trained model type
 models = []
