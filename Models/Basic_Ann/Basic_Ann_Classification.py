@@ -3,7 +3,7 @@ classify using a basic 4 layer ann model, get the majority vote results (accurac
 '''
 
 ## import modules
-from Models.Basic_Ann.Functions import Ann_Model, CV_Dataset
+from Models.Basic_Ann.Functions import Ann_Model, Ann_Dataset
 import datetime
 import os
 
@@ -15,15 +15,15 @@ version = 1  # which experiment data to process
 feature_set = 1  # which feature set to use
 
 # read feature data
-emg_features, emg_feature_reshaped = CV_Dataset.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = CV_Dataset.removeSomeMode(emg_features)
+emg_features, emg_feature_reshaped = Ann_Dataset.loadEmgFeature(subject, version, feature_set)
+emg_feature_data = Ann_Dataset.removeSomeMode(emg_features)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 
 # get shuffled cross validation data set
 fold = 5  # 5-fold cross validation
-cross_validation_groups = CV_Dataset.crossValidationSet(fold, emg_feature_data)
-normalized_groups = CV_Dataset.combineIntoDataset(cross_validation_groups, window_per_repetition)
-shuffled_groups = CV_Dataset.shuffleTrainingSet(normalized_groups)
+cross_validation_groups = Ann_Dataset.crossValidationSet(fold, emg_feature_data)
+normalized_groups = Ann_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
+shuffled_groups = Ann_Dataset.shuffleTrainingSet(normalized_groups)
 
 
 ## classify using an ann model

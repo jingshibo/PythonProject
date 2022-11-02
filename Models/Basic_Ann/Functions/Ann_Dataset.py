@@ -2,7 +2,6 @@
 create a k-fold cross validation set from the extracted emg features
 '''
 
-
 ## import modules
 import copy
 import random
@@ -40,9 +39,8 @@ def removeSomeMode(emg_features):
 
 
 ## create k-fold cross validation groups
-def divideTransferDataset(fold, emg_feature_data):
-    pre_train_groups = {}  # 5 groups of cross validation set
-    transfer_train_groups = {}  # 5 groups of cross validation set
+def crossValidationSet(fold, emg_feature_data):
+    cross_validation_groups = {}  # 5 groups of cross validation set
     for i in range(fold):
         train_set = {}  # store train set of all gait events for each group
         test_set = {}  # store test set of all gait events for each group
@@ -55,24 +53,12 @@ def divideTransferDataset(fold, emg_feature_data):
             del gait_event_features[  # remove test set from original set
             int(len(gait_event_features) * i / fold):  int(len(gait_event_features) * (i + 1) / fold)]
             train_set[gait_event_label] = gait_event_features
-        pre_train_set = {}
-        transfer_train_set = {}
-        for gait_event_label, gait_event_features in train_set.items():
-            # shuffle the list
-            random.Random(4).shuffle(gait_event_features)  # 4 is a seed
-            # separate the pre_train and transfer_train set
-            transfer_train_set[gait_event_label] = gait_event_features[
-            int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i + 1) / fold)]
-            del gait_event_features[  # remove transfer_train set from train set
-            int(len(gait_event_features) * i / fold):  int(len(gait_event_features) * (i + 1) / fold)]
-            pre_train_set[gait_event_label] = gait_event_features
-        pre_train_groups[f"group_{i}"] = {"train_set": pre_train_set, "test_set": test_set}  # a pair of pretrain and test set for one group
-        transfer_train_groups[f"group_{i}"] = {"train_set": transfer_train_set, "test_set": test_set}  # a pair of transfer train and test set for one group
-    return pre_train_groups,  transfer_train_groups
+        cross_validation_groups[f"group_{i}"] = {"train_set": train_set, "test_set": test_set}  # a pair of training and test set for one group
+    return cross_validation_groups
 
 
 ## combine data of all gait events into a single dataset
-def combineIntoDataset(cross_validation_groups, window_per_repetition):
+def combineNormalizedDataset(cross_validation_groups, window_per_repetition):
     normalized_groups = {}
     for group_number, group_value in cross_validation_groups.items():
         # initialize training set and test set for each group
@@ -132,8 +118,8 @@ if __name__ == '__main__':
 
     # reorganize data
     fold = 5  # 5-fold cross validation
-    cross_validation_groups = divideTransferDataset(fold, emg_feature_data)
-    normalized_groups = combineIntoDataset(cross_validation_groups, window_per_repetition)
+    cross_validation_groups = crossValidationSet(fold, emg_feature_data)
+    normalized_groups = combineNormalizedDataset(cross_validation_groups, window_per_repetition)
     shuffled_groups = shuffleTrainingSet(normalized_groups)
 
     #  class name to labels (according to the alphabetical order)

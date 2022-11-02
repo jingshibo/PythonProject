@@ -1,5 +1,5 @@
 '''
-build an ANN model and get the majority vote results (accuracy and confusion matrix)
+build an ANN model and get the majority vote results within groups (based on prior information)
 '''
 
 ## import modules

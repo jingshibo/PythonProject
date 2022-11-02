@@ -3,7 +3,38 @@ import copy
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder
-from Models.Basic_Ann.Functions import CV_Dataset   # for importing emg feature data
+from Models.Basic_Ann.Functions import Ann_Dataset   # for importing emg feature data
+import random
+
+
+## divide the dataset specifically for transfer learning
+def divideTransferDataset(fold, emg_feature_data, transfer_data_percent):
+    pre_train_groups = {}  # 5 groups of cross validation set
+    transfer_train_groups = {}  # 5 groups of cross validation set
+    for i in range(fold):
+        train_set = {}  # store train set of all gait events for each group
+        test_set = {}  # store test set of all gait events for each group
+        for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
+            # shuffle the list (important)
+            random.Random(4).shuffle(gait_event_features)  # 4 is a seed
+            # separate the training and test set
+            test_set[gait_event_label] = gait_event_features[
+            int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i + 1) / fold)]
+            del gait_event_features[  # remove test set from original set
+            int(len(gait_event_features) * i / fold):  int(len(gait_event_features) * (i + 1) / fold)]
+            train_set[gait_event_label] = gait_event_features
+        pre_train_set = {}
+        transfer_train_set = {}
+        for gait_event_label, gait_event_features in train_set.items():
+            # shuffle the list
+            random.Random(4).shuffle(gait_event_features)  # 4 is a seed
+            # separate the pre_train and transfer_train set
+            transfer_train_set[gait_event_label] = gait_event_features[0: int(len(gait_event_features) * transfer_data_percent)]
+            del gait_event_features[0:  int(len(gait_event_features) * transfer_data_percent)]  # remove transfer_train set from train set
+            pre_train_set[gait_event_label] = gait_event_features
+        pre_train_groups[f"group_{i}"] = {"train_set": pre_train_set, "test_set": test_set}  # a pair of pretrain and test set for one group
+        transfer_train_groups[f"group_{i}"] = {"train_set": transfer_train_set, "test_set": test_set}  # a pair of transfer train and test set for one group
+    return pre_train_groups,  transfer_train_groups
 
 
 ## divide into 4 transition groups
@@ -101,11 +132,11 @@ if __name__ == '__main__':
     feature_set = 1  # which feature set to use
 
     # read feature data
-    emg_features, emg_feature_reshaped = CV_Dataset.loadEmgFeature(subject, version, feature_set)
-    emg_feature_data = CV_Dataset.removeSomeMode(emg_features)
+    emg_features, emg_feature_reshaped = Ann_Dataset.loadEmgFeature(subject, version, feature_set)
+    emg_feature_data = Ann_Dataset.removeSomeMode(emg_features)
     window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
     fold = 5  # 5-fold cross validation
-    cross_validation_groups = CV_Dataset.crossValidationSet(fold, emg_feature_data)
+    cross_validation_groups = Ann_Dataset.crossValidationSet(fold, emg_feature_data)
 
     # reorganize data
     transition_grouped = separateGroups(cross_validation_groups)
