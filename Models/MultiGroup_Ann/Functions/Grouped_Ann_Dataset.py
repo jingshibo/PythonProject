@@ -3,7 +3,6 @@ import copy
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder
-from Models.Basic_Ann.Functions import Ann_Dataset   # for importing emg feature data
 import random
 
 
@@ -124,26 +123,8 @@ def shuffleTrainingSet(normalized_groups):
     return shuffled_groups
 
 
-##  obtain grouped k-fold cross-validation dataset
+##
 if __name__ == '__main__':
-    # basic information
-    subject = "Shibo"
-    version = 1  # which experiment data to process
-    feature_set = 1  # which feature set to use
-
-    # read feature data
-    emg_features, emg_feature_reshaped = Ann_Dataset.loadEmgFeature(subject, version, feature_set)
-    emg_feature_data = Ann_Dataset.removeSomeMode(emg_features)
-    window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
-    fold = 5  # 5-fold cross validation
-    cross_validation_groups = Ann_Dataset.crossValidationSet(fold, emg_feature_data)
-
-    # reorganize data
-    transition_grouped = separateGroups(cross_validation_groups)
-    combined_groups = combineIntoDataset(transition_grouped, window_per_repetition)
-    normalized_groups = normalizeDataset(combined_groups)
-    shuffled_groups = shuffleTrainingSet(normalized_groups)
-
     #  class name to labels (according to the alphabetical order)
     class_all = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_LW_features': 4,
         'emg_SALW_features': 5, 'emg_SASA_features': 6, 'emg_SASS_features': 7, 'emg_SA_features': 8, 'emg_SDLW_features': 9,

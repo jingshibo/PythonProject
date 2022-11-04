@@ -1,11 +1,8 @@
 ## import modules
 import datetime
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from sklearn.metrics import confusion_matrix
-from Models.Utility_Functions import Confusion_Matrix
-from scipy.linalg import block_diag
+
 
 ## training model
 def classifyMultipleAnnModel(shuffled_groups):
@@ -17,7 +14,7 @@ def classifyMultipleAnnModel(shuffled_groups):
         predict_results = {}
         for transition_type, transition_train_data in group_value["train_set"].items():
             # training data
-            train_set_x = transition_train_data['feature_x'][:, 0:1040]
+            train_set_x = transition_train_data['feature_norm_x'][:, 0:1040]
             train_set_y = transition_train_data['feature_onehot_y']
             class_number = len(set(transition_train_data['feature_int_y']))
 
@@ -47,7 +44,7 @@ def classifyMultipleAnnModel(shuffled_groups):
             # model parameters
             num_epochs = 100
             decay_epochs = 30
-            batch_size = 1024
+            batch_size = 512
             decay_steps = decay_epochs * len(train_set_y) / batch_size
             # model configuration
             lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=decay_steps, decay_rate=0.3)
@@ -61,7 +58,7 @@ def classifyMultipleAnnModel(shuffled_groups):
             print(datetime.datetime.now() - now)
 
             # test data
-            test_set_x = group_value['test_set'][transition_type]['feature_x'][:, 0:1040]
+            test_set_x = group_value['test_set'][transition_type]['feature_norm_x'][:, 0:1040]
             test_set_y = group_value['test_set'][transition_type]['feature_onehot_y']
             # test model
             predictions = model.predict(test_set_x)  # return predicted probabilities
@@ -84,7 +81,7 @@ def classifyTransferAnnModel(shuffled_groups, models):
         predict_results = {}
         for transition_type, transition_train_data in group_value["train_set"].items():
             # training data
-            train_set_x = transition_train_data['feature_x'][:, 0:1040]
+            train_set_x = transition_train_data['feature_norm_x'][:, 0:1040]
             train_set_y = transition_train_data['feature_onehot_y']
             class_number = len(set(transition_train_data['feature_int_y']))
 
@@ -116,7 +113,7 @@ def classifyTransferAnnModel(shuffled_groups, models):
             print(datetime.datetime.now() - now)
 
             # test data
-            test_set_x = group_value['test_set'][transition_type]['feature_x'][:, 0:1040]
+            test_set_x = group_value['test_set'][transition_type]['feature_norm_x'][:, 0:1040]
             test_set_y = group_value['test_set'][transition_type]['feature_onehot_y']
             # test model
             predictions = transferred_model.predict(test_set_x)  # return predicted probabilities
@@ -129,84 +126,3 @@ def classifyTransferAnnModel(shuffled_groups, models):
     return group_results
 
 
-## majority vote results
-def majorityVoteResults(group_results, window_per_repetition):
-    # reunite the samples belonging to the same transition
-    bin_results = []
-    for each_group in group_results:
-        bin_transitions = {}
-        for transition_type, transition_results in each_group.items():
-            true_y = []
-            predict_y = []
-            for key, value in transition_results.items():
-                if key == 'true_value':
-                    for i in range(0, len(value), window_per_repetition):
-                        true_y.append(value[i: i+window_per_repetition])
-                elif key == 'predict_value':
-                    for i in range(0, len(value), window_per_repetition):
-                        predict_y.append(value[i: i+window_per_repetition])
-            bin_transitions[transition_type] = {"true_value": true_y, "predict_value": predict_y}
-        bin_results.append(bin_transitions)
-
-    # use majority vote to get a consensus result for each repetition
-    majority_results = []
-    for each_group in bin_results:
-        majority_transitions = {}
-        for transition_type, transition_results in each_group.items():
-            true_y = []
-            predict_y = []
-            for key, value in transition_results.items():
-                if key == 'true_value':
-                    true_y = [np.bincount(i).argmax() for i in value]
-                elif key == 'predict_value':
-                    predict_y = [np.bincount(i).argmax() for i in value]
-            majority_transitions[transition_type] = {"true_value": np.array(true_y), "predict_value": np.array(predict_y)}
-        majority_results.append(majority_transitions)
-    return majority_results
-
-## calculate accuracy and cm values for each group
-def getAccuracyPerGroup(majority_results):
-    accuracy = []
-    cm = []
-    for each_group in majority_results:
-        transition_cm = {}
-        transition_accuracy = {}
-        for transition_type, transition_result in each_group.items():
-            true_y = transition_result['true_value']
-            predict_y = transition_result['predict_value']
-            numCorrect = np.count_nonzero(true_y == predict_y)
-            transition_accuracy[transition_type] = numCorrect / len(true_y) * 100
-            transition_cm[transition_type] = confusion_matrix(y_true=true_y, y_pred=predict_y)
-        accuracy.append(transition_accuracy)
-        cm.append(transition_cm)
-    return accuracy, cm
-
-
-## calculate average accuracy
-def averageAccuracy(accuracy, cm):
-    transition_groups = list(accuracy[0].keys())  # list all transition types
-    # average accuracy across groups
-    average_accuracy = {transition: 0 for transition in transition_groups}  # initialize average accuracy list
-    for group_values in accuracy:
-        for transition_type, transition_accuracy in group_values.items():
-            average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
-    for transition_type, transition_accuracy in average_accuracy.items():
-        average_accuracy[transition_type] = transition_accuracy / len(accuracy)
-    # overall cm among groups
-    sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list
-    for group_values in cm:
-        for transition_type, transition_cm in group_values.items():
-            sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
-    return average_accuracy, sum_cm
-
-
-## plot confusion matrix
-def confusionMatrix(sum_cm, recall=False):
-    # create a diagonal matrix from multiple arrays.
-    list_cm = [cm for label, cm in sum_cm.items()]
-    overall_cm = block_diag(*list_cm)
-    # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
-    class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
-    plt.figure()
-    cm_recall = Confusion_Matrix.plotConfusionMatrix(overall_cm, class_labels, normalize=recall)
-    return cm_recall
