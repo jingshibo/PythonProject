@@ -1,3 +1,7 @@
+'''
+plot confusion matrix. normalize means calculate and plot the recall matrix.
+'''
+
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools

@@ -1,6 +1,10 @@
+'''
+create a dataset for a single cnn model with normalization and shuffling
+'''
+
+
 ## import modules
 import copy
-import random
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder

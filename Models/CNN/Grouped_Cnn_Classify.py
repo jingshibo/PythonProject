@@ -1,15 +1,12 @@
 '''
-Using prior information to group the data into four categories. For each category using a separate ann model to classify.
+Using prior information to group the data into four categories. For each category using a separate cnn model to classify.
 '''
 
 
 ## import modules
-from Models.Basic_Ann.Functions import Ann_Dataset
-from Models.MultiGroup_Ann.Functions import Multiple_Ann_Model, Grouped_Ann_Dataset
-from Models.CNN.Functions import Grouped_Cnn_Dataset
+from Models.Utility_Functions import Data_Generation, MV_Results_ByGroup
+from Models.CNN.Functions import Grouped_Cnn_Dataset, Cnn_Model
 import datetime
-import tensorflow as tf
-import os
 
 
 ## read and cross validate dataset
@@ -20,17 +17,30 @@ feature_set = 1  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
-emg_features, emg_feature_reshaped = Ann_Dataset.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Ann_Dataset.removeSomeMode(emg_feature_reshaped)
+emg_features, emg_feature_2d = Data_Generation.loadEmgFeature(subject, version, feature_set)
+emg_feature_data = Data_Generation.removeSomeMode(emg_feature_2d)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[-1]  # how many windows there are for each event repetition
-cross_validation_groups = Ann_Dataset.crossValidationSet(fold, emg_feature_data)
+cross_validation_groups = Data_Generation.crossValidationSet(fold, emg_feature_data)
 
 # reorganize data
-transition_grouped = Grouped_Ann_Dataset.separateGroups(cross_validation_groups)
+transition_grouped = Data_Generation.separateGroups(cross_validation_groups)
 combined_groups = Grouped_Cnn_Dataset.combineIntoDataset(transition_grouped, window_per_repetition)
 normalized_groups = Grouped_Cnn_Dataset.normalizeDataset(combined_groups)
 shuffled_groups = Grouped_Cnn_Dataset.shuffleTrainingSet(normalized_groups)
 
 
 ## classify using multiple cnn models
+now = datetime.datetime.now()
+model_results = Cnn_Model.classifyMultipleCnnModel(shuffled_groups)
+print(datetime.datetime.now() - now)
 
+# majority vote results
+majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, window_per_repetition)
+accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
+average_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
+cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
+
+# mean accuracy for all groups
+overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
+                    average_accuracy['transition_SS']) / 4.5  # ## save trained models
+print(overall_accuracy)

@@ -1,15 +1,12 @@
 '''
-Pretrain a ann model using the pre_train dataset first. Then train the pretrained model again using the transfer_train dataset.
+Pretrain an ann model using the pre_train dataset first. Then train the pretrained model by group using the transfer_train dataset.
 '''
 
 
 ## import modules
-from Models.Basic_Ann.Functions import Ann_Dataset, Ann_Model
-from Models.MultiGroup_Ann.Functions import Multiple_Ann_Model, Grouped_Ann_Dataset
+from Models.Utility_Functions import Data_Generation, MV_Results, MV_Results_ByGroup
+from Models.Basic_Ann.Functions import Ann_Dataset, Ann_Model, Grouped_Ann_Dataset
 import datetime
-import os
-import tensorflow as tf
-
 
 ## read and cross validate dataset
 # basic information
@@ -17,14 +14,13 @@ subject = "Shibo"
 version = 1  # which experiment data to process
 feature_set = 1  # which feature set to use
 
-
 # read feature data
-emg_features, emg_feature_reshaped = Ann_Dataset.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Ann_Dataset.removeSomeMode(emg_features)
+emg_features, emg_feature_reshaped = Data_Generation.loadEmgFeature(subject, version, feature_set)
+emg_feature_data = Data_Generation.removeSomeMode(emg_features)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 fold = 5  # 5-fold cross validation
-transfer_data_percent = 0.9  # percentage of dataset specifically for transfer learning divided from training set
-pretrain_dataset,  transfer_train_dataset = Grouped_Ann_Dataset.divideTransferDataset(fold, emg_feature_data, transfer_data_percent)
+transfer_data_percent = 0.5  # percentage of dataset specifically for transfer learning divided from training set
+pretrain_dataset,  transfer_train_dataset = Data_Generation.divideTransferDataset(fold, emg_feature_data, transfer_data_percent)
 
 
 ## pre train model
@@ -38,34 +34,34 @@ pretrain_model_results = Ann_Model.classifyUsingAnnModel(pretrain_shuffled_group
 print(datetime.datetime.now() - now)
 
 # majority vote results
-pretrain_majority_results = Ann_Model.majorityVoteResults(pretrain_model_results, window_per_repetition)
-pretrain_average_accuracy, pretrain_sum_cm = Ann_Model.averageAccuracy(pretrain_majority_results)
-pretrain_cm_recall = Ann_Model.confusionMatrix(pretrain_sum_cm, recall=True)
+pretrain_majority_results = MV_Results.majorityVoteResults(pretrain_model_results, window_per_repetition)
+pretrain_average_accuracy, pretrain_sum_cm = MV_Results.averageAccuracy(pretrain_majority_results)
+pretrain_cm_recall = MV_Results.confusionMatrix(pretrain_sum_cm, recall=True)
 print(pretrain_cm_recall, '\n', pretrain_average_accuracy)
 
 
 ## transfer train model
 # transfer_train data
-transfer_transition_grouped = Grouped_Ann_Dataset.separateGroups(transfer_train_dataset)
+transfer_transition_grouped = Data_Generation.separateGroups(transfer_train_dataset)
 transfer_combined_groups = Grouped_Ann_Dataset.combineIntoDataset(transfer_transition_grouped, window_per_repetition)
 transfer_normalized_groups = Grouped_Ann_Dataset.normalizeDataset(transfer_combined_groups)
 transfer_shuffled_groups = Grouped_Ann_Dataset.shuffleTrainingSet(transfer_normalized_groups)
 
-# extract pretrained models
+# read pretrained models
 models = []
 for model_result in pretrain_model_results:
     models.append(model_result['model'])
 
 # classify using an transferred ann model
 now = datetime.datetime.now()
-transfer_model_results = Multiple_Ann_Model.classifyTransferAnnModel(transfer_shuffled_groups, models)
+transfer_model_results = Ann_Model.classifyTransferAnnModel(transfer_shuffled_groups, models)
 print(datetime.datetime.now() - now)
 
 # majority vote results
-transfer_majority_results = Multiple_Ann_Model.majorityVoteResults(transfer_model_results, window_per_repetition)
-transfer_accuracy, transfer_cm = Multiple_Ann_Model.getAccuracyPerGroup(transfer_majority_results)
-transfer_average_accuracy, transfer_sum_cm = Multiple_Ann_Model.averageAccuracy(transfer_accuracy, transfer_cm)
-transfer_cm_recall = Multiple_Ann_Model.confusionMatrix(transfer_sum_cm, recall=True)
+transfer_majority_results = MV_Results_ByGroup.majorityVoteResults(transfer_model_results, window_per_repetition)
+transfer_accuracy, transfer_cm = MV_Results_ByGroup.getAccuracyPerGroup(transfer_majority_results)
+transfer_average_accuracy, transfer_sum_cm = MV_Results_ByGroup.averageAccuracy(transfer_accuracy, transfer_cm)
+transfer_cm_recall = MV_Results_ByGroup.confusionMatrix(transfer_sum_cm, recall=True)
 print(transfer_average_accuracy, transfer_cm_recall)
 
 # mean accuracy for all groups

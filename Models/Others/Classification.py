@@ -1,3 +1,7 @@
+'''
+A basic classification example
+'''
+
 ##
 import datetime
 import copy

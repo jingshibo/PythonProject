@@ -1,60 +1,12 @@
 '''
-create a k-fold cross validation set from the extracted emg features
+create a dataset for a single ann model with normalization and shuffling
 '''
 
 ## import modules
 import copy
-import random
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder
-from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
-
-
-## load emg feature data
-def loadEmgFeature(subject, version, feature_set):
-    # load emg feature data
-    emg_features = Feature_Storage.readEmgFeatures(subject, version, feature_set)
-    # reorganize the data structure
-    for gait_event_label, gait_event_features in emg_features.items():
-        repetition_data = []
-        for repetition_label, repetition_features in gait_event_features.items():
-            repetition_data.append(np.array(repetition_features))  # convert 2d list into numpy
-        emg_features[gait_event_label] = repetition_data  # convert repetition data from dict into list
-    # if you want to use CNN model, you need to reshape the data
-    emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_features)
-    return emg_features, emg_feature_reshaped
-
-
-## abandon samples from some modes
-def removeSomeMode(emg_features):
-    emg_feature_data = copy.deepcopy(emg_features)
-    # emg_feature_data = emg_features
-    emg_feature_data['emg_LWLW_features'] = emg_feature_data['emg_LWLW_features'][
-    int(len(emg_feature_data['emg_LWLW_features']) / 4): int(len(emg_feature_data['emg_LWLW_features']) * 3 / 4)]  # remove half of LWLW mode
-    emg_feature_data.pop('emg_LW_features', None)
-    emg_feature_data.pop('emg_SD_features', None)
-    emg_feature_data.pop('emg_SA_features', None)
-    return emg_feature_data
-
-
-## create k-fold cross validation groups
-def crossValidationSet(fold, emg_feature_data):
-    cross_validation_groups = {}  # 5 groups of cross validation set
-    for i in range(fold):
-        train_set = {}  # store train set of all gait events for each group
-        test_set = {}  # store test set of all gait events for each group
-        for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
-            # shuffle the list (important)
-            random.Random(4).shuffle(gait_event_features)  # 4 is a seed
-            # separate the training and test set
-            test_set[gait_event_label] = gait_event_features[
-            int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i + 1) / fold)]
-            del gait_event_features[  # remove test set from original set
-            int(len(gait_event_features) * i / fold):  int(len(gait_event_features) * (i + 1) / fold)]
-            train_set[gait_event_label] = gait_event_features
-        cross_validation_groups[f"group_{i}"] = {"train_set": train_set, "test_set": test_set}  # a pair of training and test set for one group
-    return cross_validation_groups
 
 
 ## combine data of all gait events into a single dataset
@@ -104,24 +56,8 @@ def shuffleTrainingSet(normalized_groups):
     return shuffled_groups
 
 
-##  obtain k-fold cross-validation dataset
+##
 if __name__ == '__main__':
-    # basic information
-    subject = "Shibo"
-    version = 1  # which experiment data to process
-    feature_set = 1  # which feature set to use
-
-    # read feature data
-    emg_features, emg_feature_reshaped = loadEmgFeature(subject, version, feature_set)
-    emg_feature_data = removeSomeMode(emg_features)
-    window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
-
-    # reorganize data
-    fold = 5  # 5-fold cross validation
-    cross_validation_groups = crossValidationSet(fold, emg_feature_data)
-    normalized_groups = combineNormalizedDataset(cross_validation_groups, window_per_repetition)
-    shuffled_groups = shuffleTrainingSet(normalized_groups)
-
     #  class name to labels (according to the alphabetical order)
     class_all = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_LW_features': 4,
         'emg_SALW_features': 5, 'emg_SASA_features': 6, 'emg_SASS_features': 7, 'emg_SA_features': 8, 'emg_SDLW_features': 9,
