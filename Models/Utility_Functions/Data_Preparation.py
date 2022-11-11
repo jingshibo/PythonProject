@@ -1,6 +1,6 @@
 '''
-load extracted emg features and create a cross validation dataset as well as group separation. also include the function for transfer
-learning dataset.
+load extracted emg features and create a cross validation dataset as well as group separation. it also includes the function for
+producing the transfer learning dataset.
 '''
 
 
@@ -9,6 +9,7 @@ from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
 import random
 import numpy as np
 import copy
+
 
 ## load emg feature data
 def loadEmgFeature(subject, version, feature_set):

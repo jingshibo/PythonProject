@@ -56,7 +56,7 @@ def shuffleTrainingSet(normalized_groups):
         for set_type, set_value in group_value.items():
             if set_type == 'train_set':
                 for transition_type, transition_value in set_value.items():
-                    data_number = len(transition_value['feature_x'])
+                    data_number = len(transition_value['feature_norm_x'])
                     # Shuffles the indices
                     idx = np.arange(data_number)
                     np.random.shuffle(idx)

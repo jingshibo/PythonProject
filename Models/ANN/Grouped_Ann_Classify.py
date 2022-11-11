@@ -1,12 +1,12 @@
 '''
-Using prior information to group the data into four categories. For each category using a separate "many to one" GRU model to classify.
+Using prior information to group the data into four categories. For each category using a separate ann model to classify.
 '''
+
 
 ## import modules
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Models.GRU.Functions import Grouped_Gru_Dataset, Gru_Model
+from Models.ANN.Functions import Grouped_Ann_Dataset, Ann_Model
 import datetime
-
 
 ## read and cross validate dataset
 # basic information
@@ -23,19 +23,26 @@ cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_
 
 # reorganize data
 transition_grouped = Data_Preparation.separateGroups(cross_validation_groups)
-combined_groups = Grouped_Gru_Dataset.combineIntoDataset(transition_grouped, window_per_repetition)
-normalized_groups = Grouped_Gru_Dataset.normalizeDataset(combined_groups, window_per_repetition)
-shuffled_groups = Grouped_Gru_Dataset.shuffleTrainingSet(normalized_groups)
+combined_groups = Grouped_Ann_Dataset.combineIntoDataset(transition_grouped, window_per_repetition)
+normalized_groups = Grouped_Ann_Dataset.normalizeDataset(combined_groups)
+shuffled_groups = Grouped_Ann_Dataset.shuffleTrainingSet(normalized_groups)
 
-## classify using multiple "many to one" GRU model models
+## classify using multiple ann models
 now = datetime.datetime.now()
-model_results = Gru_Model.classifyMultipleGruModel(shuffled_groups, window_per_repetition)
+model_results = Ann_Model.classifyMultipleAnnModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
-# average results among transition groups (for "many to one" GRU model, no majority vote is needed)
-majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, 1) # this is not for majority vote rather it is for data conversion
+## majority vote results
+majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, window_per_repetition)
 accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
 print(overall_accuracy)
+
+## save trained models
+# type = 1  # define the type of trained model to save
+# for number, model in enumerate(model_results):
+#     model_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\models_{type}\cross_validation_set_{number}'
+#     if os.path.isfile(model_dir) is False:  # check if the location is a file or directory. Only save when it is a directory
+#         model['model'].save(model_dir)  # save the model to the directory
 

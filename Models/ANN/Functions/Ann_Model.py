@@ -156,7 +156,7 @@ def classifyMultipleAnnModel(shuffled_groups):
             test_loss, accuracy = model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
 
             predict_results[transition_type] = {"model": model, "true_value": group_value['test_set'][transition_type]['feature_int_y'],
-                "predict_value": predict_y, "predict_accuracy": accuracy}
+                "predict_softmax": predictions, "predict_value": predict_y, "predict_accuracy": accuracy}
         group_results.append(predict_results)
     return group_results
 
@@ -186,12 +186,12 @@ def classifyTransferAnnModel(shuffled_groups, models):
             transferred_model.summary()
 
             # model parameters
-            num_epochs = 100
-            decay_epochs = 30
+            num_epochs = 50
+            decay_epochs = 20
             batch_size = 512
             decay_steps = decay_epochs * len(train_set_y) / batch_size
             # model configuration
-            lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=decay_steps, decay_rate=0.3)
+            lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.001, decay_steps=decay_steps, decay_rate=0.3)
             opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule, epsilon=1e-08)
             transferred_model.compile(optimizer=opt, loss='categorical_crossentropy', metrics='accuracy')
             # model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')
@@ -210,7 +210,7 @@ def classifyTransferAnnModel(shuffled_groups, models):
             test_loss, accuracy = transferred_model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
 
             predict_results[transition_type] = {"model": transferred_model, "true_value": group_value['test_set'][transition_type]['feature_int_y'],
-                "predict_value": predict_y, "predict_accuracy": accuracy}
+                "predict_softmax": predictions, "predict_value": predict_y, "predict_accuracy": accuracy}
         group_results.append(predict_results)
     return group_results
 

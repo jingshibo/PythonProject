@@ -1,11 +1,8 @@
-'''
-classify using a "many to one" GRU model, get the results with or without prior information.
-'''
-
 ## import modules
-from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Models.GRU.Functions import Gru_Dataset, Gru_Model
+from Models.Utility_Functions import Data_Preparation, MV_Results, MV_Results_ByGroup
+from Models.ConvLstm.Functions import ConvLstm_Dataset, ConvLstm_Model
 import datetime
+import os
 
 
 ## read and cross validate dataset
@@ -17,17 +14,17 @@ fold = 5  # 5-fold cross validation
 
 # read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
-window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
-cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
+emg_feature_data = Data_Preparation.removeSomeMode(emg_feature_2d)
+window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[-1]  # how many windows there are for each event repetition
 
 # reorganize data
-normalized_groups = Gru_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
-shuffled_groups = Gru_Dataset.shuffleTrainingSet(normalized_groups)
+cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
+normalized_groups = ConvLstm_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
+shuffled_groups = ConvLstm_Dataset.shuffleTrainingSet(normalized_groups)
 
-## classify using a "many to one" GRU model
+## classify using a single ConvLstm model
 now = datetime.datetime.now()
-model_results = Gru_Model.classifyGtuLastOneModel(shuffled_groups)
+model_results = ConvLstm_Model.classifyConvLstmLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 # the "many to one" RNN model does not need majority vote method because each repetition brings only one classification result
 accuracy_without_prior = []
@@ -42,4 +39,3 @@ accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
 print(overall_accuracy)
-

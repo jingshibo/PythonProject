@@ -3,9 +3,11 @@ classify using a basic cnn model, get the majority vote results with or without 
 '''
 
 ## import modules
-from Models.Utility_Functions import Data_Generation, MV_Results, MV_Results_ByGroup
+from Models.Utility_Functions import Data_Preparation, MV_Results, MV_Results_ByGroup
 from Models.CNN.Functions import Cnn_Dataset, Cnn_Model
 import datetime
+import os
+
 
 ## read and cross validate dataset
 # basic information
@@ -15,12 +17,12 @@ feature_set = 1  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
-emg_features, emg_feature_2d = Data_Generation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Generation.removeSomeMode(emg_feature_2d)
+emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
+emg_feature_data = Data_Preparation.removeSomeMode(emg_feature_2d)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[-1]  # how many windows there are for each event repetition
 
 # reorganize data
-cross_validation_groups = Data_Generation.crossValidationSet(fold, emg_feature_data)
+cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 normalized_groups = Cnn_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
 shuffled_groups = Cnn_Dataset.shuffleTrainingSet(normalized_groups)
 
@@ -41,11 +43,13 @@ print(cm_recall, '\n', average_accuracy)
 reorganized_results = MV_Results_ByGroup.reorganizeModelResults(model_results)
 majority_results = MV_Results_ByGroup.majorityVoteResults(reorganized_results, window_per_repetition)
 accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
-average_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
+average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
-
-# mean accuracy for all groups
-overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
-                    average_accuracy['transition_SS']) / 4.5  # ## save trained models
 print(overall_accuracy)
 
+## save trained models
+type = 2  # define the type of trained model to save
+for number, model in enumerate(model_results):
+    model_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\models_{type}\cross_validation_set_{number}'
+    if os.path.isfile(model_dir) is False:  # check if the location is a file or directory. Only save when it is a directory
+        model['model'].save(model_dir)  # save the model to the directory
