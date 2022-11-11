@@ -13,7 +13,7 @@ import pandas as pd
 
 ## reorganize the non-grouped model classification results into different groups when prior information is used
 def reorganizeModelResults(model_results):
-    # convert numpy to pandas for grouping
+    # convert numpy to pandas for easier grouping operation
     for result in model_results:
         result['true_value'] = pd.DataFrame(result['true_value'])
         result['predict_softmax'] = pd.DataFrame(result['predict_softmax'])
@@ -26,7 +26,7 @@ def reorganizeModelResults(model_results):
         # get grouped true value and predict value
         true_value_list = []
         for i in range(len(categories)):
-            true_value_list.append(grouped_true_label.get_group(i))  # get grouped value
+            true_value_list.append(grouped_true_label.get_group(i))  # get the group of value i
         predict_prob_list = []
         for i in true_value_list:
             predict_prob_list.append((result['predict_softmax'].iloc[i.index.to_numpy().tolist(), :]))
@@ -111,19 +111,25 @@ def getAccuracyPerGroup(majority_results):
 ## calculate average accuracy
 def averageAccuracy(accuracy, cm):
     transition_groups = list(accuracy[0].keys())  # list all transition types
-    # average accuracy across groups
+    # average accuracy for each transition type
     average_accuracy = {transition: 0 for transition in transition_groups}  # initialize average accuracy list
     for group_values in accuracy:
         for transition_type, transition_accuracy in group_values.items():
             average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
     for transition_type, transition_accuracy in average_accuracy.items():
         average_accuracy[transition_type] = transition_accuracy / len(accuracy)
+
+    # overall accuracy for all transition types
+    overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
+                        average_accuracy['transition_SS']) / 4.5
+
     # overall cm among groups
     sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list
     for group_values in cm:
         for transition_type, transition_cm in group_values.items():
             sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
-    return average_accuracy, sum_cm
+
+    return average_accuracy, overall_accuracy, sum_cm
 
 
 ## plot confusion matrix

@@ -4,7 +4,7 @@ load models pretrained using all dataset. Then train the pretrained model again 
 
 
 ## import modules
-from Models.Utility_Functions import Data_Generation, MV_Results_ByGroup
+from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Models.Basic_Ann.Functions import Grouped_Ann_Dataset, Ann_Model
 import datetime
 import tensorflow as tf
@@ -18,13 +18,13 @@ feature_set = 1  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
-emg_features, emg_feature_reshaped = Data_Generation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Generation.removeSomeMode(emg_features)
+emg_features, emg_feature_reshaped = Data_Preparation.loadEmgFeature(subject, version, feature_set)
+emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
-cross_validation_groups = Data_Generation.crossValidationSet(fold, emg_feature_data)
+cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 
 # reorganize data
-transition_grouped = Grouped_Ann_Dataset.separateGroups(cross_validation_groups)
+transition_grouped = Data_Preparation.separateGroups(cross_validation_groups)
 combined_groups = Grouped_Ann_Dataset.combineIntoDataset(transition_grouped, window_per_repetition)
 normalized_groups = Grouped_Ann_Dataset.normalizeDataset(combined_groups)
 shuffled_groups = Grouped_Ann_Dataset.shuffleTrainingSet(normalized_groups)
@@ -60,6 +60,11 @@ accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
 average_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
 print(average_accuracy, cm_recall)
+
+## mean accuracy for all groups
+overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] +
+                    average_accuracy['transition_SD'] + average_accuracy['transition_SS']) / 4.5
+print(overall_accuracy)
 
 # ## save trained models
 # type = 1  # define the type of trained model to save

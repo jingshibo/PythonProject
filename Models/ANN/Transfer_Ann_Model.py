@@ -4,8 +4,8 @@ Pretrain an ann model using the pre_train dataset first. Then train the pretrain
 
 
 ## import modules
-from Models.Utility_Functions import Data_Generation, MV_Results, MV_Results_ByGroup
-from Models.Basic_Ann.Functions import Ann_Dataset, Ann_Model, Grouped_Ann_Dataset
+from Models.Utility_Functions import Data_Preparation, MV_Results, MV_Results_ByGroup
+from Models.ANN.Functions import Ann_Dataset, Ann_Model, Grouped_Ann_Dataset
 import datetime
 
 ## read and cross validate dataset
@@ -15,12 +15,12 @@ version = 1  # which experiment data to process
 feature_set = 1  # which feature set to use
 
 # read feature data
-emg_features, emg_feature_reshaped = Data_Generation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Generation.removeSomeMode(emg_features)
+emg_features, emg_feature_reshaped = Data_Preparation.loadEmgFeature(subject, version, feature_set)
+emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 fold = 5  # 5-fold cross validation
-transfer_data_percent = 0.5  # percentage of dataset specifically for transfer learning divided from training set
-pretrain_dataset,  transfer_train_dataset = Data_Generation.divideTransferDataset(fold, emg_feature_data, transfer_data_percent)
+transfer_data_percent = 0.7  # percentage of dataset specifically for transfer learning divided from training set
+pretrain_dataset,  transfer_train_dataset = Data_Preparation.divideTransferDataset(fold, emg_feature_data, transfer_data_percent)
 
 
 ## pre train model
@@ -42,7 +42,7 @@ print(pretrain_cm_recall, '\n', pretrain_average_accuracy)
 
 ## transfer train model
 # transfer_train data
-transfer_transition_grouped = Data_Generation.separateGroups(transfer_train_dataset)
+transfer_transition_grouped = Data_Preparation.separateGroups(transfer_train_dataset)
 transfer_combined_groups = Grouped_Ann_Dataset.combineIntoDataset(transfer_transition_grouped, window_per_repetition)
 transfer_normalized_groups = Grouped_Ann_Dataset.normalizeDataset(transfer_combined_groups)
 transfer_shuffled_groups = Grouped_Ann_Dataset.shuffleTrainingSet(transfer_normalized_groups)
@@ -60,14 +60,9 @@ print(datetime.datetime.now() - now)
 # majority vote results
 transfer_majority_results = MV_Results_ByGroup.majorityVoteResults(transfer_model_results, window_per_repetition)
 transfer_accuracy, transfer_cm = MV_Results_ByGroup.getAccuracyPerGroup(transfer_majority_results)
-transfer_average_accuracy, transfer_sum_cm = MV_Results_ByGroup.averageAccuracy(transfer_accuracy, transfer_cm)
+transfer_average_accuracy, transfer_overall_accuracy, transfer_sum_cm = MV_Results_ByGroup.averageAccuracy(transfer_accuracy, transfer_cm)
 transfer_cm_recall = MV_Results_ByGroup.confusionMatrix(transfer_sum_cm, recall=True)
-print(transfer_average_accuracy, transfer_cm_recall)
-
-# mean accuracy for all groups
-overall_accuracy = (transfer_average_accuracy['transition_LW'] * 1.5 + transfer_average_accuracy['transition_SA'] +
-                    transfer_average_accuracy['transition_SD'] + transfer_average_accuracy['transition_SS']) / 4.5
-print(overall_accuracy)
+print(transfer_overall_accuracy)
 
 
 ## view trained models
