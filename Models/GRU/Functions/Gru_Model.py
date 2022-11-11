@@ -49,7 +49,6 @@ def classifyGtuLastOneModel(shuffled_groups):
         # view model
         model.summary()
 
-
         # model parameters
         num_epochs = 50
         decay_epochs = 30

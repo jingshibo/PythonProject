@@ -1,9 +1,11 @@
-## import modules
-from Models.Utility_Functions import Data_Preparation, MV_Results, MV_Results_ByGroup
-from Models.ConvLstm.Functions import ConvLstm_Dataset, ConvLstm_Model
-import datetime
-import os
+'''
+classify using a basic cnn model, get the majority vote results with or without prior information.
+'''
 
+## import modules
+from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
+from Models.ConvLstm.Functions import CnnGru_Model, ConvLstm_Dataset
+import datetime
 
 ## read and cross validate dataset
 # basic information
@@ -22,11 +24,12 @@ cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_
 normalized_groups = ConvLstm_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
 shuffled_groups = ConvLstm_Dataset.shuffleTrainingSet(normalized_groups)
 
-## classify using a single ConvLstm model
+
+## classify using a single cnn model
 now = datetime.datetime.now()
-model_results = ConvLstm_Model.classifyConvLstmLastOneModel(shuffled_groups)
+model_results = CnnGru_Model.classifyCnnGruLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
-# the "many to one" RNN model does not need majority vote method because each repetition brings only one classification result
+# the "many to one" CNN-RNN model does not need majority vote method because each repetition brings only one classification result
 accuracy_without_prior = []
 for result in model_results:
     accuracy_without_prior.append(result['predict_accuracy'])
@@ -39,4 +42,3 @@ accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
 print(overall_accuracy)
-
