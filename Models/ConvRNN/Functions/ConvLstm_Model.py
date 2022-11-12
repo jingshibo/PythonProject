@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import tensorflow as tf
 
-## a "many to one" ConvLstm model that returns only the last output
+## a "many to one" ConvRNN model that returns only the last output
 def classifyConvLstmLastOneModel(shuffled_groups):
     results = []
     for group_number, group_value in shuffled_groups.items():
@@ -20,7 +20,7 @@ def classifyConvLstmLastOneModel(shuffled_groups):
 
         # model structure
         inputs = tf.keras.Input(shape=(train_set_x.shape[1], train_set_x.shape[2], train_set_x.shape[3], train_set_x.shape[4]))
-        x = tf.keras.layers.ConvLSTM2D(filters=32, kernel_size=(3, 3), dropout=0.1, padding='same', dilation_rate=1, return_sequences=False)(inputs)
+        x = tf.keras.layers.ConvLSTM2D(filters=32, kernel_size=(3, 3), dropout=0.5, padding='same', dilation_rate=1, return_sequences=False)(inputs)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=1, padding="same")(x)
 
@@ -42,7 +42,7 @@ def classifyConvLstmLastOneModel(shuffled_groups):
         batch_size = 1024
         decay_steps = decay_epochs * len(train_set_y) / batch_size
         # model configuration
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.003, decay_steps=decay_steps, decay_rate=0.3)
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.001, decay_steps=decay_steps, decay_rate=0.3)
         opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule, epsilon=1e-08)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics='accuracy')
         # model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')
@@ -61,7 +61,7 @@ def classifyConvLstmLastOneModel(shuffled_groups):
     return results
 
 
-## a "many to many" ConvLstm model that returns only the sequence
+## a "many to many" ConvRNN model that returns only the sequence
 def classifyConvLstmSequenceModel(shuffled_groups):
     results = []
     for group_number, group_value in shuffled_groups.items():

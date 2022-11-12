@@ -1,6 +1,6 @@
 ## import modules
 from Models.Utility_Functions import Data_Preparation, MV_Results, MV_Results_ByGroup
-from Models.ConvLstm.Functions import ConvLstm_Dataset, ConvLstm_Model
+from Models.ConvRNN.Functions import ConvLstm_Dataset, ConvLstm_Model
 import datetime
 import os
 
@@ -22,7 +22,7 @@ cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_
 normalized_groups = ConvLstm_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
 shuffled_groups = ConvLstm_Dataset.shuffleTrainingSet(normalized_groups)
 
-## classify using a single ConvLstm model
+## classify using a single ConvRNN model
 now = datetime.datetime.now()
 model_results = ConvLstm_Model.classifyConvLstmLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)

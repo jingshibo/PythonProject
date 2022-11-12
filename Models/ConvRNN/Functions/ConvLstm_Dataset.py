@@ -1,5 +1,5 @@
 '''
-create a dataset for a single ConvLstm model with normalization and shuffling
+create a dataset for a single ConvRNN model with normalization and shuffling
 '''
 
 

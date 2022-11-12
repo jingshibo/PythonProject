@@ -1,11 +1,9 @@
-'''
-classify using a basic cnn model, get the majority vote results with or without prior information.
-'''
-
 ## import modules
-from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Models.ConvLstm.Functions import CnnGru_Model, ConvLstm_Dataset
+from Models.Utility_Functions import Data_Preparation, MV_Results, MV_Results_ByGroup
+from Models.ConvRNN.Functions import ConvLstm_Dataset, CnnGru_Model
 import datetime
+import os
+
 
 ## read and cross validate dataset
 # basic information
@@ -24,20 +22,20 @@ cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_
 normalized_groups = ConvLstm_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
 shuffled_groups = ConvLstm_Dataset.shuffleTrainingSet(normalized_groups)
 
-
-## classify using a single cnn model
+## classify using a "many to many" CNNGRU model
 now = datetime.datetime.now()
-model_results = CnnGru_Model.classifyCnnGruLastOneModel(shuffled_groups)
+model_results = CnnGru_Model.classifyCnnGruSequenceModel(shuffled_groups)
 print(datetime.datetime.now() - now)
-# the "many to one" CNN-RNN model does not need majority vote method because each repetition brings only one classification result
-accuracy_without_prior = []
-for result in model_results:
-    accuracy_without_prior.append(result['predict_accuracy'])
-# calculate average accuracy without prior information
-print('average accuracy without prior:', sum(accuracy_without_prior) / len(accuracy_without_prior))
+# majority vote results
+majority_results = MV_Results.majorityVoteResults(model_results, window_per_repetition)
+average_accuracy, sum_cm = MV_Results.averageAccuracy(majority_results)
+cm_recall = MV_Results.confusionMatrix(sum_cm, recall=True)
+print(cm_recall, '\n', average_accuracy)
 
-## results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
+
+## majority vote results using prior information
 reorganized_results = MV_Results_ByGroup.reorganizeModelResults(model_results)
+majority_results = MV_Results_ByGroup.majorityVoteResults(reorganized_results, window_per_repetition)
 accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_results)
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
