@@ -21,7 +21,7 @@ def classifyCnnGruLastOneModel(shuffled_groups):
         # model structure
         # first, process each image with a cnn model
         cnn_inputs = tf.keras.Input(shape=(train_set_x.shape[2], train_set_x.shape[3], train_set_x.shape[4]))
-        x = tf.keras.layers.Conv2D(32, 5, dilation_rate=1, padding='same', data_format='channels_last')(cnn_inputs)
+        x = tf.keras.layers.Conv2D(32, 3, dilation_rate=1, padding='same', data_format='channels_last')(cnn_inputs)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.ReLU()(x)
         x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=1, padding="same")(x)
@@ -31,12 +31,12 @@ def classifyCnnGruLastOneModel(shuffled_groups):
         # then, process the features extracted from cnn model using a gru model
         gru_inputs = tf.keras.Input(shape=(train_set_x.shape[1], train_set_x.shape[2], train_set_x.shape[3], train_set_x.shape[4]))
         x = tf.keras.layers.TimeDistributed(cnn_model)(gru_inputs)  # call the cnn model built above at each timestep
-        # x = tf.keras.layers.GRU(1000, return_sequences=True, dropout=0.1)(x)
+        x = tf.keras.layers.GRU(1000, return_sequences=True, dropout=0.1)(x)
         x = tf.keras.layers.GRU(1000, return_sequences=False, dropout=0.1)(x)
         x = tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.ReLU()(x)
-        x = tf.keras.layers.Dropout(0.1)(x)
+        x = tf.keras.layers.Dropout(0.5)(x)
         x = tf.keras.layers.Dense(class_number)(x)
         gru_outputs = tf.keras.layers.Softmax()(x)
         model = tf.keras.Model(inputs=gru_inputs, outputs=gru_outputs, name="gru_model")
@@ -69,7 +69,7 @@ def classifyCnnGruLastOneModel(shuffled_groups):
     return results
 
 
-## a "many to many" CnnGru model that returns only the sequence
+## a "many to many" CnnGru model that returns the sequence output
 def classifyCnnGruSequenceModel(shuffled_groups):
     results = []
     for group_number, group_value in shuffled_groups.items():

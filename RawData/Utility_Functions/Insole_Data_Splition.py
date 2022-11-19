@@ -6,8 +6,8 @@ import json
 
 ## plot split line in order to seperate the gait cycle
 # plot the left and right insole data, select an appropriate baseline to help identify the gait events
-def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, start_index, end_index,
-                  left_force_baseline, right_force_baseline, emg1_missing_indicator, emg2_missing_indicator):
+def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, start_index, end_index, left_force_baseline,
+        right_force_baseline, emg1_missing_indicator=None, emg2_missing_indicator=None):
     left_total_force = left_insole_dataframe.iloc[:, 192]  # extract total force column
     right_total_force = right_insole_dataframe.iloc[:, 192]
     left_length = len(left_total_force.iloc[start_index:end_index])
@@ -29,14 +29,14 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[3].plot(range(emg_length), emg_data_2.iloc[start_index:end_index], label="Emg 2 Signal")
 
     # add missing emg data indicator to both insole plots (the values are set to 1 at the place where the emg data lost)
-    axes[0].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
-    axes[0].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
-    axes[1].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
-    axes[1].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
+    # axes[0].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
+    # axes[0].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
+    # axes[1].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
+    # axes[1].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
 
     # add force baseline
-    # axes[0].plot(range(right_length), right_length * [right_force_baseline], label="Right Force Baseline")
-    # axes[1].plot(range(left_length), left_length * [left_force_baseline], label="Left Force Baseline")
+    axes[0].plot(range(right_length), right_length * [right_force_baseline], label="Right Force Baseline")
+    axes[1].plot(range(left_length), left_length * [left_force_baseline], label="Left Force Baseline")
 
     # find intersection point's x value
     left_x = np.array(range(left_length))
@@ -50,12 +50,12 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     right_cross_idx = np.argwhere(np.diff(np.sign(right_force - right_baseline))).flatten()
 
     # plot intersection point's x value
-    # axes[0].plot(right_x[right_cross_idx], right_baseline[right_cross_idx], 'r')  # plot intersection points
-    # for i, x_value in enumerate(right_cross_idx):  # annotate intersection points
-    #     axes[0].annotate(x_value, (right_x[right_cross_idx[i]], right_baseline[right_cross_idx[i]]), fontsize=10)
-    # axes[1].plot(left_x[left_cross_idx], left_baseline[left_cross_idx], 'r')  # plot intersection points
-    # for i, x_value in enumerate(left_cross_idx):  # annotate intersection points
-    #     axes[1].annotate(x_value, (left_x[left_cross_idx[i]], left_baseline[left_cross_idx[i]]), fontsize=10)
+    axes[0].plot(right_x[right_cross_idx], right_baseline[right_cross_idx], 'r')  # plot intersection points
+    for i, x_value in enumerate(right_cross_idx):  # annotate intersection points
+        axes[0].annotate(x_value, (right_x[right_cross_idx[i]], right_baseline[right_cross_idx[i]]), fontsize=10)
+    axes[1].plot(left_x[left_cross_idx], left_baseline[left_cross_idx], 'r')  # plot intersection points
+    for i, x_value in enumerate(left_cross_idx):  # annotate intersection points
+        axes[1].annotate(x_value, (left_x[left_cross_idx[i]], left_baseline[left_cross_idx[i]]), fontsize=10)
 
     # plot parameters
     axes[0].set(title="Right Insole Force", ylabel="force(kg)")
@@ -71,6 +71,8 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[1].legend(loc="upper right")
     axes[2].legend(loc="upper right")
     axes[3].legend(loc="upper right")
+
+    return left_cross_idx, right_cross_idx
 
 # save the split parameters into a json file
 def saveSplitParameters(subject, split_data):

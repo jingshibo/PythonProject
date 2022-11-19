@@ -42,3 +42,4 @@ accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
 print(overall_accuracy)
+
