@@ -48,7 +48,7 @@ if __name__ == '__main__':
             # adjust electrode order to match the physical EMG grid
             emg_reordered = Data_Reshaping.reorderElectrodes(emg_preprocessed)
             # separate the gait event with labelling
-            gait_event_key = Data_Separation.seperateGait(split_data[mode][session], window_size=512)
+            gait_event_key = Data_Separation.seperateGait(split_data[mode][session], start_position=512)
             # use the gait event timestamp to label emg data
             labelled_emg_data = Data_Separation.seperateEmgdata(emg_reordered, gait_event_key)
             # combine emg data from all sessions together

@@ -19,9 +19,9 @@ from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignmen
 # session = 12
 
 subject = 'Shibo'
-version = 3
+version = 4
 mode = 'down_up'
-session = 9
+session = 8
 
 data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}'
 data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
@@ -67,14 +67,16 @@ wrong_timestamp_sync, wrong_timestamp_emg1, wrong_timestamp_emg2 = Insole_Emg_Re
 recovered_emg_data = raw_emg_data  # if there are no abnormal emg data numbers
 print(datetime.datetime.now() - now)
 
+
 ## view raw emg and insole data
 # plot emg and insole data
-Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, 0, -1)
+Insole_Emg_Alignment.plotAllSensorData(recovered_emg_data, recovered_left_data, recovered_right_data, 0, -1)
 # check the number of emg data
 emg_timestamp = pd.to_datetime(recovered_emg_data[0], format='%Y-%m-%d_%H:%M:%S.%f')
 expected_number = (emg_timestamp.iloc[-10000] - emg_timestamp.iloc[10000]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
 real_number = len(emg_timestamp) - 20000
 print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
+
 
 ## align two insoles based on the force value
 # concat two insole data into one dataframe to check timestamps when necessary
@@ -89,8 +91,8 @@ Two_Insoles_Alignment.plotBothInsoles(recovered_left_data, recovered_right_data,
 # view the insole force plotted above to find an appropriate start index that matches most force pulses
 # usually use the first pulse as the referenece. if the result is undesired, just add or minus one on the index to adjust, instead of selecting anather pulse
 # Note: it is the alignment later with emg data that will decide whether add one or minus one is better. But here to align only two insoles, you can do it arbitrarily.
-right_start_index = 140
-left_start_index = 211
+right_start_index = 165
+left_start_index = 191
 combine_begin_cropped, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginIndex(left_start_index,
     right_start_index, recovered_left_data, recovered_right_data)
 # check the following timestamps in combined_insole_data table when necessary
@@ -106,8 +108,8 @@ Two_Insoles_Alignment.plotBothInsoles(left_begin_cropped, right_begin_cropped, s
 # view the insole force plotted above to find an appropriate end index that matches most force pulses. usually use the last pulse as the referenece.
 # Note: scale the figure up to large enough in order to look into the alignment result more clearly.
 # it is the alignment later with emg data that will decide whether the end_index here should add or minus one to match the end of emg index better.
-right_end_index = 5442
-left_end_index = 5442
+right_end_index = 5853
+left_end_index = 5853
 left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndIndex(left_end_index, right_end_index,
     left_begin_cropped, right_begin_cropped)
 # display the eng_index before data cropping. this can be used to obtain the pulse number for insole/emg alignment
@@ -123,8 +125,8 @@ Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data
 # view the sync force plotted above to find an appropriate start and end index for alignment of emg and insoles
 # Note:  you may need to adjust the start and end index of insoles (treat two insoles as one) in order to match the corresponding emg index.
 # Usually use the position of sync force as the true value, which is more accurate. The start index and end index of the insole pair should be decided separately.
-emg_start_index = 13963  # select the index belonging to the pulse number where the insole start_index is
-emg_end_index = 285985  # select the index belonging to the pulse number where the insole end_index is
+emg_start_index = 13716  # select the index belonging to the pulse number where the insole start_index is
+emg_end_index = 306307  # select the index belonging to the pulse number where the insole end_index is
 emg_aligned = recovered_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
 # convert the timestamp column to datetime type
 emg_aligned[0] = pd.to_datetime(emg_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
@@ -151,7 +153,6 @@ left_start, right_start, left_end, right_end, emg_start, emg_end = Insole_Emg_Al
 print(right_start, left_start, right_end, left_end, emg_start, emg_end)
 
 
-
 ## align insole and EMG based on timestamps (if there is no sync force to use)
 emg_aligned_2 = Insole_Emg_Alignment.alignInsoleEmgTimestamp(recovered_emg_data, left_insole_aligned, right_insole_aligned)
 # upsampling and filtering aligned data
@@ -164,7 +165,6 @@ end_index = -1
 # plot the emg and insole data to check the alignment result
 Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned_2, left_insole_upsampled, right_insole_upsampled, start_index, end_index,
     sync_force=False, emg_columns=range(3, 67))
-
 
 
 ## test

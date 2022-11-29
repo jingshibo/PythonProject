@@ -31,7 +31,7 @@ def classifyCnnGruLastOneModel(shuffled_groups):
         # then, process the features extracted from cnn model using a gru model
         gru_inputs = tf.keras.Input(shape=(train_set_x.shape[1], train_set_x.shape[2], train_set_x.shape[3], train_set_x.shape[4]))
         x = tf.keras.layers.TimeDistributed(cnn_model)(gru_inputs)  # call the cnn model built above at each timestep
-        x = tf.keras.layers.GRU(1000, return_sequences=True, dropout=0.1)(x)
+        # x = tf.keras.layers.GRU(1000, return_sequences=True, dropout=0.1)(x)
         x = tf.keras.layers.GRU(1000, return_sequences=False, dropout=0.1)(x)
         x = tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer)(x)
         x = tf.keras.layers.BatchNormalization()(x)
@@ -50,7 +50,7 @@ def classifyCnnGruLastOneModel(shuffled_groups):
         batch_size = 1024
         decay_steps = decay_epochs * len(train_set_y) / batch_size
         # model configuration
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.001, decay_steps=decay_steps, decay_rate=0.3)
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.003, decay_steps=decay_steps, decay_rate=0.3)
         opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule, epsilon=1e-08)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics='accuracy')
         # model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')

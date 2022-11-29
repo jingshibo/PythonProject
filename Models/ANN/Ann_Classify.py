@@ -12,12 +12,12 @@ import os
 ## read and cross validate dataset
 # basic information
 subject = "Shibo"
-version = 1  # which experiment data to process
+version = 4  # which experiment data to process
 feature_set = 1  # which feature set to use
 
 # read feature data
 emg_features, emg_feature_reshaped = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
+emg_feature_data = Data_Preparation.removeSomeSamples(emg_features, start_index=0, end_index=32)  # remove some gait modes, and some feature data in each repetition
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 
 # get shuffled cross validation data set
@@ -32,7 +32,8 @@ now = datetime.datetime.now()
 model_results = Ann_Model.classifyUsingAnnModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
-# majority vote results
+
+## majority vote results
 majority_results = MV_Results.majorityVoteResults(model_results, window_per_repetition)
 average_accuracy, sum_cm = MV_Results.averageAccuracy(majority_results)
 cm_recall = MV_Results.confusionMatrix(sum_cm, recall=True)

@@ -19,7 +19,7 @@ fold = 5  # 5-fold cross validation
 
 # read feature data
 emg_features, emg_feature_reshaped = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
+emg_feature_data = Data_Preparation.removeSomeSamples(emg_features)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 

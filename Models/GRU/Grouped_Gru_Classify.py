@@ -12,12 +12,12 @@ import datetime
 # basic information
 subject = "Shibo"
 version = 1  # which experiment data to process
-feature_set = 1  # which feature set to use
+feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
 emg_features, emg_feature_reshaped = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
+emg_feature_data = Data_Preparation.removeSomeSamples(emg_features, start_index=16, end_index=32)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 
@@ -33,7 +33,7 @@ model_results = Gru_Model.classifyMultipleGruLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
 # average results among transition groups (for "many to one" GRU model, no majority vote is needed)
-majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, 1) # this is not for majority vote rather it is for data conversion
+majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, 1)  # this is not for majority vote rather it is for data conversion
 accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)

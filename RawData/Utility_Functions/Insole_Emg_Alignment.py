@@ -5,6 +5,52 @@ import os
 import csv
 import datetime
 
+## plot emg, insole, sync force data in one figure
+def plotAllSensorData(recovered_emg_data, recovered_left_data, recovered_right_data, start_index=0, end_index=-1):
+    left_total_force = recovered_left_data.loc[:, 195]  # extract total force column
+    right_total_force = recovered_right_data.loc[:, 195]
+    sync_force = recovered_emg_data.iloc[:, -3]  # extract load cell column
+    if recovered_emg_data.shape[1] >= 64 and recovered_emg_data.shape[1] < 128:  # if one emg device
+        emg_data = recovered_emg_data.iloc[:, 3:67].sum(axis=1)
+        emg_data_2 = emg_data
+    elif recovered_emg_data.shape[1] >= 128 and recovered_emg_data.shape[1] < 192:  # if two emg device
+        emg_data = recovered_emg_data.iloc[:, 3:67].sum(axis=1)
+        emg_data_2 = recovered_emg_data.iloc[:, 73:137].sum(axis=1)
+
+    # plot
+    fig = plt.figure()
+
+    ax1 = fig.add_subplot(5, 1, 1)
+    ax2 = fig.add_subplot(5, 1, 2, sharex=ax1)  # only ax1 and ax2 share axes
+    ax3 = fig.add_subplot(5, 1, 3)  # ax3 has independent axes
+    ax4 = fig.add_subplot(5, 1, 4, sharex=ax3)
+    ax5 = fig.add_subplot(5, 1, 5, sharex=ax3)
+
+    ax1.plot(range(len(right_total_force.iloc[start_index:end_index])), right_total_force.iloc[start_index:end_index],
+        label="Right Insole Force")
+    ax2.plot(range(len(left_total_force.iloc[start_index:end_index])), left_total_force.iloc[start_index:end_index],
+        label="Left Insole Force")
+    ax3.plot(range(len(sync_force.iloc[start_index:end_index])), sync_force.iloc[start_index:end_index], label="Sync Station Force")
+    ax4.plot(range(len(emg_data.iloc[start_index:end_index])), emg_data.iloc[start_index:end_index], label="Emg Device 1")
+    ax5.plot(range(len(emg_data_2.iloc[start_index:end_index])), emg_data_2.iloc[start_index:end_index], label="Emg Device 2")
+
+    ax1.set(ylabel="force(kg)")
+    ax2.set(ylabel="force(kg)")
+    ax3.set(ylabel="force value")
+    ax4.set(ylabel="emg value")
+    ax5.set(xlabel="Sample Number", ylabel="emg value")
+
+    ax1.tick_params(labelbottom=True)  # show x-axis ticklabels
+    ax2.tick_params(labelbottom=True)
+    ax3.tick_params(labelbottom=True)
+    ax4.tick_params(labelbottom=True)
+
+    ax1.legend(loc="upper right")
+    ax2.legend(loc="upper right")
+    ax3.legend(loc="upper right")
+    ax4.legend(loc="upper right")
+    ax5.legend(loc="upper right")
+
 ## plot insole and sync force data for alignment (only two insole force images share axes)
 def plotInsoleSyncForce(recovered_emg_data, recovered_left_data, recovered_right_data, start_index, end_index):
     left_total_force = recovered_left_data.loc[:, 195]  # extract total force column

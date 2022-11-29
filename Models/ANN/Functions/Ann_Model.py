@@ -16,7 +16,7 @@ def classifyUsingAnnModel(shuffled_groups):
     '''
     results = []
     for group_number, group_value in shuffled_groups.items():
-        # one muscle / bipolar data
+        # one muscle input data
         # train_tibialis_x = group_value['train_feature_x'][:, 0: 65]
         # test_tibialis_x = group_value['test_feature_x'][:, 0: 65]
         # train_rectus_x = group_value['train_feature_x'][:, 65: 130]
@@ -26,13 +26,15 @@ def classifyUsingAnnModel(shuffled_groups):
         #     test_tibialis_x = np.concatenate((test_tibialis_x, group_value['test_feature_x'][:, 0 + 130 * i: 65 + 130 * i]), axis=1)
         #     train_rectus_x = np.concatenate((train_rectus_x, group_value['train_feature_x'][:, 65 + 130 * i: 130 + 130 * i]), axis=1)
         #     test_rectus_x = np.concatenate((test_rectus_x, group_value['test_feature_x'][:, 65 + 130 * i: 130 + 130 * i]), axis=1)
-        # train_bipolar_x = group_value['train_feature_x'][:, 33].reshape(len(emg_feature_y), 1)
+        # bipolar input data
+        # train_bipolar_x = group_value['train_feature_x'][:, 33].reshape(len(group_value['train_int_y']), 1)
         # for i in range(1, 16):
         #     emg_feature_bipolar_x = np.concatenate((emg_feature_bipolar_x, group_value[:, 33+65*i].reshape(len(emg_feature_y), 1)), axis=1)
         # train_set_x = train_rectus_x[:, 0:520]
         # train_set_y = group_value['train_onehot_y']
         # test_set_x = test_rectus_x[:, 0:520]
         # test_set_y = group_value['test_onehot_y']
+        # class_number = len(set(group_value['train_int_y']))
 
         # input data
         train_set_x = group_value['train_feature_x'][:, 0:1040]

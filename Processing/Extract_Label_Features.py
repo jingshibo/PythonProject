@@ -38,7 +38,7 @@ def labelSensorData(subject, modes, sessions, version, split_data, envelope=Fals
             else:
                 emg_preprocessed = emg_filtered
             # separate the gait event using timestamps
-            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], window_size=512, offset=0)
+            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position=-512, end_position=512)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict
@@ -79,10 +79,10 @@ if __name__ == '__main__':
     # sessions = [list(range(10))]
 
     subject = 'Shibo'
-    version = 1   # the data from which experiment version to process
+    version = 4   # the data from which experiment version to process
     modes = ['up_down', 'down_up']
-    up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-    down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+    up_down_session = [0, 7, 8, 9, 10]
+    down_up_session = [0, 1, 2, 3, 4, 5]
     sessions = [up_down_session, down_up_session]
 
     # Feature extraction
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     emg_features = extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32)
 
     # store features
-    feature_set = 1  # there may be multiple sets of features to be calculated for comparison
+    feature_set = 2  # there may be multiple sets of features to be calculated for comparison
     Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
 
 

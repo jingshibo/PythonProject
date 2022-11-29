@@ -79,18 +79,17 @@ def calcuEmgFeatures(emg_window_data):
     AR_1 = np.zeros(channel_number)
     AR_2 = np.zeros(channel_number)
     AR_3 = np.zeros(channel_number)
-    AR_4 = np.zeros(channel_number)
 
-    num_coeff = 4
+    num_coeff = 3
     for i in np.arange(0, channel_number):
         ar_model = AutoReg(emg_window_data[:, i], lags=num_coeff).fit()
         ar_para = ar_model.params  # ar_para[0] is the constant
         AR_1[i] = ar_para[1]
         AR_2[i] = ar_para[2]
         AR_3[i] = ar_para[3]
-        AR_4[i] = ar_para[4]
 
-    return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3, AR_4])
+
+    return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3])
     # return np.concatenate([MAV, RMS, WL, SSCn, ZCn, SK, KU])
 
 

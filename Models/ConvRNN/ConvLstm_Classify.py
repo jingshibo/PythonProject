@@ -9,12 +9,12 @@ import os
 # basic information
 subject = "Shibo"
 version = 1  # which experiment data to process
-feature_set = 1  # which feature set to use
+feature_set = 2  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeMode(emg_feature_2d)
+emg_feature_data = Data_Preparation.removeSomeSamples(emg_feature_2d)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[-1]  # how many windows there are for each event repetition
 
 # reorganize data

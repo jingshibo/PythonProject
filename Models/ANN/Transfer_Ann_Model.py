@@ -16,7 +16,7 @@ feature_set = 1  # which feature set to use
 
 # read feature data
 emg_features, emg_feature_reshaped = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeMode(emg_features)
+emg_feature_data = Data_Preparation.removeSomeSamples(emg_features)
 window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[0]  # how many windows there are for each event repetition
 fold = 5  # 5-fold cross validation
 transfer_data_percent = 0.7  # percentage of dataset specifically for transfer learning divided from training set

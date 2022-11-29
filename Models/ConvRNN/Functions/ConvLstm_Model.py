@@ -20,7 +20,7 @@ def classifyConvLstmLastOneModel(shuffled_groups):
 
         # model structure
         inputs = tf.keras.Input(shape=(train_set_x.shape[1], train_set_x.shape[2], train_set_x.shape[3], train_set_x.shape[4]))
-        x = tf.keras.layers.ConvLSTM2D(filters=32, kernel_size=(3, 3), dropout=0.5, padding='same', dilation_rate=1, return_sequences=False)(inputs)
+        x = tf.keras.layers.ConvLSTM2D(filters=32, kernel_size=(3, 3), dropout=0.2, padding='same', dilation_rate=2, return_sequences=False)(inputs)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=1, padding="same")(x)
 
