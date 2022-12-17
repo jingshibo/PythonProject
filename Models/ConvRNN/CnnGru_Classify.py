@@ -11,7 +11,7 @@ import datetime
 # basic information
 subject = "Shibo"
 version = 1  # which experiment data to process
-feature_set = 0  # which feature set to use
+feature_set = 2  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
@@ -37,7 +37,7 @@ for result in model_results:
 print('average accuracy without prior:', sum(accuracy_without_prior) / len(accuracy_without_prior))
 
 ## results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
-reorganized_results = MV_Results_ByGroup.reorganizeModelResults(model_results)
+reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
 accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_results)
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
 cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)

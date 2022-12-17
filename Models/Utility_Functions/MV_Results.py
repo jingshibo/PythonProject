@@ -61,8 +61,8 @@ def averageAccuracy(majority_results):
 ## plot confusion matrix
 def confusionMatrix(sum_cm, recall=False):
     # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
-    # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD', 'SSSS']
-    class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
+    class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD', 'SSSS']
+    # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
     plt.figure()
     cm_recall = Confusion_Matrix.plotConfusionMatrix(sum_cm, class_labels, normalize=recall)
     return cm_recall

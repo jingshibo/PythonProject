@@ -13,22 +13,18 @@ def select1dFeatureChannels(group_value, channel_to_calculate):
         test_emg1_x = np.concatenate((test_emg1_x, group_value['test_feature_x'][:, :, 0 + 130 * i: 65 + 130 * i]), axis=-1)
         train_emg2_x = np.concatenate((train_emg2_x, group_value['train_feature_x'][:, :, 65 + 130 * i: 130 + 130 * i]), axis=-1)
         test_emg2_x = np.concatenate((test_emg2_x, group_value['test_feature_x'][:, :, 65 + 130 * i: 130 + 130 * i]), axis=-1)
+    train_set_y = group_value['train_onehot_y'][:, 0, :]
+    test_set_y = group_value['test_onehot_y'][:, 0, :]
 
     if channel_to_calculate == 'emg_1':
         train_set_x = train_emg1_x[:, :, 0: 65 * num_features]
-        train_set_y = group_value['train_onehot_y'][:, 0, :]
         test_set_x = test_emg1_x[:, :, 0: 65 * num_features]
-        test_set_y = group_value['test_onehot_y'][:, 0, :]
     elif channel_to_calculate == 'emg_2':
         train_set_x = train_emg2_x[:, :, 0: 65 * num_features]
-        train_set_y = group_value['train_onehot_y'][:, 0, :]
         test_set_x = test_emg2_x[:, :, 0: 65 * num_features]
-        test_set_y = group_value['test_onehot_y'][:, 0, :]
     elif channel_to_calculate == 'emg_all':
         train_set_x = group_value['train_feature_x'][:, :, 0: 130 * num_features]
-        train_set_y = group_value['train_onehot_y'][:, 0, :]
         test_set_x = group_value['test_feature_x'][:, :, 0: 130 * num_features]
-        test_set_y = group_value['test_onehot_y'][:, 0, :]
     elif channel_to_calculate == 'emg_bipolar':
         pass
         # bipolar input data

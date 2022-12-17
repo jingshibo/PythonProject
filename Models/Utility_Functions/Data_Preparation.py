@@ -27,7 +27,7 @@ def loadEmgFeature(subject, version, feature_set):
 
 
 ## abandon samples from some modes
-def removeSomeSamples(emg_features, start_index=16, end_index=32):
+def removeSomeSamples(emg_features, start_index=0, end_index=-1):
     emg_feature_data = copy.deepcopy(emg_features)
     # remove some modes
     emg_feature_data['emg_LWLW_features'] = emg_feature_data['emg_LWLW_features'][
@@ -35,17 +35,18 @@ def removeSomeSamples(emg_features, start_index=16, end_index=32):
     emg_feature_data.pop('emg_LW_features', None)
     emg_feature_data.pop('emg_SD_features', None)
     emg_feature_data.pop('emg_SA_features', None)
-    emg_feature_data.pop('emg_SSSS_features', None)
+    # emg_feature_data.pop('emg_SSSS_features', None)
 
     # remove some feature data from each repetition
-    if emg_feature_data['emg_LWSA_features'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
-        for transition_type, transition_features in emg_feature_data.items():
-            for count, value in enumerate(transition_features):
-                transition_features[count] = value[start_index: end_index + 1, :]  # only keep the feature data between start index and end index
-    elif emg_feature_data['emg_LWSA_features'][0].ndim == 4:  # if emg data is 2d (4 dimension matrix)
-        for transition_type, transition_features in emg_feature_data.items():
-            for count, value in enumerate(transition_features):
-                transition_features[count] = value[:, :, :, start_index: end_index + 1]  # only keep the feature data between start index and end index
+    if start_index != 0 and end_index != -1:  # no sample is removed if 'start_index != 0 and end_index != -1'
+        if emg_feature_data['emg_LWSA_features'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
+            for transition_type, transition_features in emg_feature_data.items():
+                for count, value in enumerate(transition_features):
+                    transition_features[count] = value[start_index: end_index + 1, :]  # only keep the feature data between start index and end index
+        elif emg_feature_data['emg_LWSA_features'][0].ndim == 4:  # if emg data is 2d (4 dimension matrix)
+            for transition_type, transition_features in emg_feature_data.items():
+                for count, value in enumerate(transition_features):
+                    transition_features[count] = value[:, :, :, start_index: end_index + 1]  # only keep the feature data between start index and end index
 
     return emg_feature_data
 
@@ -57,7 +58,7 @@ def crossValidationSet(fold, emg_feature_data):
         test_set = {}  # store test set of all gait events for each group
         for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
             # shuffle the list (important)
-            random.Random(5).shuffle(gait_event_features)  # 4 is a seed
+            random.Random(5).shuffle(gait_event_features)  # 5 is a seed
             # separate the training and test set
             test_set[gait_event_label] = gait_event_features[
             int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i + 1) / fold)]

@@ -4,6 +4,7 @@ import numpy as np
 import os
 import json
 
+
 ## plot split line in order to seperate the gait cycle
 # plot the left and right insole data, select an appropriate baseline to help identify the gait events
 def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, start_index, end_index, left_force_baseline,
@@ -29,10 +30,11 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[3].plot(range(emg_length), emg_data_2.iloc[start_index:end_index], label="Emg 2 Signal")
 
     # add missing emg data indicator to both insole plots (the values are set to 1 at the place where the emg data lost)
-    # axes[0].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
-    # axes[0].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
-    # axes[1].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
-    # axes[1].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
+    if emg1_missing_indicator is not None and emg2_missing_indicator is not None:
+        axes[0].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
+        axes[0].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
+        axes[1].plot(range(emg_length), emg1_missing_indicator.iloc[start_index:end_index], label="emg1 missing data")
+        axes[1].plot(range(emg_length), emg2_missing_indicator.iloc[start_index:end_index], label="emg2 missing data")
 
     # add force baseline
     axes[0].plot(range(right_length), right_length * [right_force_baseline], label="Right Force Baseline")
@@ -74,6 +76,7 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
 
     return left_cross_idx, right_cross_idx
 
+
 # save the split parameters into a json file
 def saveSplitParameters(subject, split_data):
     data_dir = 'D:\Data\Insole_Emg'
@@ -82,6 +85,7 @@ def saveSplitParameters(subject, split_data):
 
     with open(split_path, 'w') as json_file:
         json.dump(split_data, json_file, indent=8)
+
 
 # read the split parameters from a json file
 def readSplitParameters(subject):

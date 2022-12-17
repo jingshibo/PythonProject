@@ -8,6 +8,8 @@ from sklearn.preprocessing import LabelEncoder
 ## combine data of all gait events into a single dataset
 def combineNormalizedDataset(cross_validation_groups, window_per_repetition):
     normalized_groups = {}
+    # window_per_repetition = cross_validation_groups['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
+
     for group_number, group_value in cross_validation_groups.items():
         # initialize training set and test set for each group
         train_feature_x = []

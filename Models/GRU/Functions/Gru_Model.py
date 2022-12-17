@@ -11,7 +11,7 @@ def classifyGtuLastOneModel(shuffled_groups):
     for group_number, group_value in shuffled_groups.items():
 
         # select channels to calculate
-        channel_to_compute = 'emg_2'
+        channel_to_compute = 'emg_all'
         train_set_x, train_set_y, test_set_x, test_set_y = Channel_Selection.select1dFeatureChannels(group_value, channel_to_compute)
         class_number = len(set(group_value['train_int_y'][:, 0]))
 
@@ -21,7 +21,7 @@ def classifyGtuLastOneModel(shuffled_groups):
 
         # model structure
         model = tf.keras.models.Sequential(name="gru_model")  # optional name
-        model.add(tf.keras.layers.GRU(1000, return_sequences=True, dropout=0.5, input_shape=(train_set_x.shape[1], train_set_x.shape[2])))
+        model.add(tf.keras.layers.GRU(1000, return_sequences=True, dropout=0.5, input_shape=(None, train_set_x.shape[2])))
         model.add(tf.keras.layers.GRU(1000, return_sequences=False, dropout=0.5))
         model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))
         model.add(tf.keras.layers.BatchNormalization())
