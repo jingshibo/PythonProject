@@ -1,8 +1,7 @@
 ## import modules
-from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Model_Sliding.Functions import Sliding_Gru_Dataset, Sliding_Gru_Model, Sliding_Results_ByGroup
+from Models.Utility_Functions import Data_Preparation
+from Model_Sliding.Functions import Sliding_Gru_Dataset, Sliding_Gru_Model, Sliding_Results_ByGroup, Sliding_Evaluation_ByGroup
 import datetime
-
 
 ## read emg data
 # basic information
@@ -24,83 +23,60 @@ normalized_groups = Sliding_Gru_Dataset.combineNormalizedDataset(emg_sliding_fea
 shuffled_groups = Sliding_Gru_Dataset.shuffleTrainingSet(normalized_groups)
 print(datetime.datetime.now() - now)
 
-
 ## classify using a "many to one" GRU model
 now = datetime.datetime.now()
 model_results = Sliding_Gru_Model.classifySlidingGtuLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
-
-##
-import matplotlib.pyplot as plt
-accuracy = []
-for result in model_results:
-    for shift_number, shift_value in result.items():
-        accuracy.append(shift_value['predict_accuracy'])
-plt.plot(accuracy)
-
-
-## results using sliding windows
+## predict results using sliding windows (category + delay)
 # regroup the model results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
 regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
 # reorganize the regrouped model results based on the timestamps
 reorganized_softmax, reorganized_prediction, reorganized_truevalues = Sliding_Results_ByGroup.reorganizePredictValues(regrouped_results)
+#  find the first timestamps at which the softmax value is larger than the threshold
+first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reorganized_softmax, threshold=0.995)
+# query the prediction based on timestamps from the reorganized_prediction table
+sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reorganized_prediction, first_timestamps, increment=16, shift=4)
 
-
-##
-import numpy as np
-import copy
-threshold = 0.995
-first_timestamps_above_threshold = copy.deepcopy(reorganized_softmax)
-for group_value in first_timestamps_above_threshold:
-    for transition_type, transition_value in group_value.items():
-        #  for each repetition, find the first timestamp at which the softmax value is larger than the threshold
-        largest_softmax = np.transpose(np.amax(transition_value, axis=2))  # for each timestamp, return the largest softmax value among all categories
-        first_timestamp = np.argmax(largest_softmax > threshold, axis=0)  # for each repetition, return the first timestamp at which the softmax value is above the threshold
-
-        # dedicated addressing the special case when a repetition has all the softmax values (from all timestamps) below the threshold
-        first_softmax = largest_softmax[first_timestamp.tolist(), list(range(largest_softmax.shape[1]))]  # find the first softmax value above the threshold for each repetition
-        threshold_test = first_softmax / threshold  # calculate the ratio to show if there are any repetitions with all the softmax values below the threshold
-        repetition_low_softmax = np.transpose(np.squeeze(np.argwhere(threshold_test < 1)))  # return the index of the repetition with all softmax values below the threshold
-        first_timestamp[repetition_low_softmax.tolist()] = -1  # change the timestamp index  to -1, for the repetition with all softmax values below the threshold
-
-        group_value[transition_type] = first_timestamp
-
-
-## query the prediction based on timestamps from the reorganized_prediction table
-delay_unit = 16 * 4  # 16 is the window increment value(ms), 4 is the shift number
-sliding_prediction = copy.deepcopy(reorganized_prediction)
-for group_number, group_value in enumerate(first_timestamps_above_threshold):
-    for transition_type, transition_value in group_value.items():
-        # get the prediction results based on the timestamp information
-        predict_result = sliding_prediction[group_number][transition_type][transition_value.tolist(), list(range(transition_value.shape[0]))]
-        # predict result AND delay value (the first row is prediction results, the second row is the delay value)
-        sliding_prediction[group_number][transition_type] = np.array([predict_result, transition_value * delay_unit])
-
-        # dedicated addressing the special case when the delay value is negative (due to the -1 timestamp value assigned)
-        negative_indices = np.argwhere(sliding_prediction[group_number][transition_type][1, :] < 0)
-        # negative delay value means there is no results with probabilities higher than the threshold in this repetition
-        if negative_indices.size > 0:
-            for column in np.nditer(negative_indices):
-                prediction = np.bincount(reorganized_prediction[group_number][transition_type][:, column]).argmax()  # use the most common prediction as the result
-                delay_value = delay_unit * (reorganized_prediction[group_number][transition_type].shape[0] - 1)  # use the maximum delay value instead
-                sliding_prediction[group_number][transition_type][0, column] = prediction
-                sliding_prediction[group_number][transition_type][1, column] = delay_value
-
-
-##
-a = np.array([[11, 12, 13, 14, 15, 16, 17, 15],
-                [13, 19, 14, 15, 16, 17, 18, 19]])
-for x in np.nditer(negative_indices):
-    print(x, end=' ')
-
-##
-accuracy_with_prior, cm_with_prior = Sliding_Results_ByGroup.getAccuracyPerGroup(regrouped_results)
-average_accuracy, overall_accuracy, sum_cm = Sliding_Results_ByGroup.averageAccuracy(accuracy_with_prior, cm_with_prior)
-cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
+## evaluate the prediction accuracy
+accuracy_bygroup, cm_bygroup = Sliding_Evaluation_ByGroup.getAccuracyPerGroup(sliding_prediction, reorganized_truevalues)
+average_accuracy, overall_accuracy, sum_cm = Sliding_Evaluation_ByGroup.averageAccuracy(accuracy_bygroup, cm_bygroup)
+cm_recall = Sliding_Evaluation_ByGroup.confusionMatrix(sum_cm, recall=True)
 print(overall_accuracy)
 
+## evaluate the prediction delay
+import numpy as np
+import copy
 
+integrated_information = copy.deepcopy(reorganized_truevalues)
+for group_number, group_value in enumerate(sliding_prediction):
+    for transition_type, transition_value in group_value.items():
+        # put true and predict information into a single array (order: predict_category, true_category, category_difference, delay_value)
+        combined_array = np.array([transition_value[0, :], reorganized_truevalues[group_number][transition_type],
+            reorganized_truevalues[group_number][transition_type] - transition_value[0, :], transition_value[1, :]])
+        unequal_columns = np.where(combined_array[2, :] != 0)[0]  # the column index where the predict values differ from the true values
+
+        # remove the columns with the true values and predict values that are unequal
+        if unequal_columns.size > 0:
+            integrated_information[group_number][transition_type] = np.delete(combined_array, unequal_columns, 1)
+        else:
+            integrated_information[group_number][transition_type] = combined_array
+        # only keep the true_value row and delay_value row
+        integrated_information[group_number][transition_type] = np.delete(integrated_information[group_number][transition_type], [0, 2], 0)
+
+## calculate the mean and std values of delay for each category
+a = np.array([])
+for group_value in integrated_information:
+    for transition_type, transition_value in group_value.items():
+        a = np.concatenate((a, transition_value), axis=1)
+
+
+
+## only calculate the delay for those with correct prediction results
+import numpy as np
+x = np.array([1,0,2,2,3,3,4,5,6,7,8])
+a = np.where(x != 0)[0]
+# a = combined_array[2, :]
 
 
 ## the problem is that it takes up a lot memories
