@@ -134,7 +134,7 @@ def averageAccuracy(accuracy, cm):
 
     # overall accuracy for all transition types
     overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
-                        average_accuracy['transition_SS']) / 4.5
+                        average_accuracy['transition_SS'] * 1.5) / 5
 
     # overall cm among groups
     sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list

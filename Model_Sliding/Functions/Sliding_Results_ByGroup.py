@@ -75,7 +75,7 @@ def regroupModelResults(model_results):
     return regrouped_results
 
 
-## reorganize softmax results according to timestamps
+## reorganize softmax results based on the timestamps
 def reorganizePredictValues(regrouped_results):
     # put softmax values and predict_results (from different timestamps) together, into the corresponding transition type
     # and reorganize true values in order to match the structure of predicted values
@@ -92,11 +92,11 @@ def reorganizePredictValues(regrouped_results):
                 softmax_transition[transition_type].append(transition_value['predict_softmax'])
                 predict_transition[transition_type].append(transition_value['predict_value'])
                 true_transition[transition_type] = transition_value['true_value']
-        softmax_values.append(softmax_transition)
-        predict_results.append(predict_transition)
-        true_results.append(true_transition)
+        softmax_values.append(softmax_transition)  # the softmax value (of all categories) for each timestamps in each repetition
+        predict_results.append(predict_transition)  # the predict result for each timestamps in each repetition
+        true_results.append(true_transition)  # the true value for each repetition
 
-    # convert softmax list into numpy array
+    # convert softmax list into numpy array (structure: [samples, timestamp, categories])
     softmax_reorganized = []
     for each_group in softmax_values:
         softmax = {}
@@ -105,7 +105,7 @@ def reorganizePredictValues(regrouped_results):
                 softmax[transition_type] = np.stack(transition_value, axis=1)
         softmax_reorganized.append(softmax)
 
-    # convert predict list into numpy array
+    # convert predict list into numpy array (structure: [timestamp, samples])
     predict_reorganized = []
     for each_group in predict_results:
         predict = {}
@@ -140,26 +140,3 @@ def getAccuracyPerGroup(regrouped_results):
         cm.append(shift_cm)
     return accuracy, cm
 
-
-## calculate average accuracy
-def averageAccuracy(accuracy, cm):
-    transition_groups = list(accuracy[0].keys())  # list all transition types
-    # average accuracy for each transition type
-    average_accuracy = {transition: 0 for transition in transition_groups}  # initialize average accuracy list
-    for group_values in accuracy:
-        for transition_type, transition_accuracy in group_values.items():
-            average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
-    for transition_type, transition_accuracy in average_accuracy.items():
-        average_accuracy[transition_type] = transition_accuracy / len(accuracy)
-
-    # overall accuracy for all transition types
-    overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
-                        average_accuracy['transition_SS'] * 1.5) / 5
-
-    # overall cm among groups
-    sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list
-    for group_values in cm:
-        for transition_type, transition_cm in group_values.items():
-            sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
-
-    return average_accuracy, overall_accuracy, sum_cm

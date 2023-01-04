@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 ## select samples from a certain window position
 def selectSamples(emg_features, start_index, end_index):
     emg_feature_data = copy.deepcopy(emg_features)
-    # remove some feature data from each repetition
+    # select some feature data from each repetition
     if emg_feature_data['emg_LWSA_features'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
         for transition_type, transition_features in emg_feature_data.items():
             for count, value in enumerate(transition_features):

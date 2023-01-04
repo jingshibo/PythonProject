@@ -79,7 +79,6 @@ def calcuEmgFeatures(emg_window_data):
     AR_1 = np.zeros(channel_number)
     AR_2 = np.zeros(channel_number)
     AR_3 = np.zeros(channel_number)
-
     num_coeff = 3
     for i in np.arange(0, channel_number):
         ar_model = AutoReg(emg_window_data[:, i], lags=num_coeff).fit()
@@ -90,23 +89,22 @@ def calcuEmgFeatures(emg_window_data):
 
 
     return np.concatenate([MAV, RMS, WL, SSCn, ZCn, AR_1, AR_2, AR_3])
-    # return np.concatenate([MAV, RMS, WL, SSCn, ZCn, SK, KU])
+    # return np.concatenate([MAV, RMS, WL, SSCn, ZCn])
 
 
 ## extract features for emg data in an experiment round, which contains multiple windows
 def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
     emg_feature_labelled = {}
-    emg_window_features = []
     emg_repetition_features = {}
 
     event_time = datetime.datetime.now()
     for repetition_number, per_repetition_emg in enumerate(gait_event_emg):  # each gait event contains multiple repetitions of experiment data
+        emg_window_features = []  # reset the feature values for a new repetition
         repetition_time = datetime.datetime.now()
         for i in range(0, len(per_repetition_emg) - window_size + 1, increment):  # if window_size=512, increment=32, the sample number is 17 per repetition
             emg_window_data = per_repetition_emg[i:i + window_size, :]
             emg_window_features.append(calcuEmgFeatures(emg_window_data).tolist())  # convert numpy to list for dict storage
         emg_repetition_features[f"repetition_{repetition_number}_features"] = emg_window_features  # add the repetition results to a dict
-        emg_window_features = []  # reset the feature values for a new repetition
         print(f"repetition time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - repetition_time)
 
     # the features are stored in the dict below, which can also be regarded as labeling

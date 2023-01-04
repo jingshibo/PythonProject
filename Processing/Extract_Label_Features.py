@@ -38,7 +38,7 @@ def labelSensorData(subject, modes, sessions, version, split_data, envelope=Fals
             else:
                 emg_preprocessed = emg_filtered
             # separate the gait event using timestamps
-            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position=-1024, end_position=1024)
+            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position=-512, end_position=512)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict
@@ -73,11 +73,11 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
 if __name__ == '__main__':
     # basic information
 
-    subject = 'Zehao'
-    version = 0  # the data from which experiment version to process
+    subject = 'Shibo'
+    version = 4  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
-    up_down_session = [2, 3, 4, 5, 6, 7, 12, 13, 14]
-    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    up_down_session = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10]
+    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     sessions = [up_down_session, down_up_session]
 
     # subject = 'Shibo'

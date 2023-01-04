@@ -19,6 +19,7 @@ def loadEmgFeature(subject, version, feature_set):
     for gait_event_label, gait_event_features in emg_features.items():
         repetition_data = []
         for repetition_label, repetition_features in gait_event_features.items():
+            # if repetition_features:  # if list is not empty
             repetition_data.append(np.array(repetition_features))  # convert 2d list into numpy
         emg_features[gait_event_label] = repetition_data  # convert repetition data from dict into list
     # if you want to use CNN model, you need to reshape the data
@@ -38,7 +39,7 @@ def removeSomeSamples(emg_features, start_index=0, end_index=-1):
     # emg_feature_data.pop('emg_SSSS_features', None)
 
     # remove some feature data from each repetition
-    if start_index != 0 and end_index != -1:  # no sample is removed if 'start_index != 0 and end_index != -1'
+    if end_index != -1:  # no sample is removed if end_index != -1'
         if emg_feature_data['emg_LWSA_features'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
             for transition_type, transition_features in emg_feature_data.items():
                 for count, value in enumerate(transition_features):
