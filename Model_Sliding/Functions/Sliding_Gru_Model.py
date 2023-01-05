@@ -1,3 +1,7 @@
+'''
+classifying using GRU models at different timestamps
+'''
+
 ## import modules
 import datetime
 import numpy as np

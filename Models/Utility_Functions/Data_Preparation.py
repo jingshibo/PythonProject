@@ -36,7 +36,7 @@ def removeSomeSamples(emg_features, start_index=0, end_index=-1):
     emg_feature_data.pop('emg_LW_features', None)
     emg_feature_data.pop('emg_SD_features', None)
     emg_feature_data.pop('emg_SA_features', None)
-    # emg_feature_data.pop('emg_SSSS_features', None)
+    emg_feature_data.pop('emg_SSSS_features', None)
 
     # remove some feature data from each repetition
     if end_index != -1:  # no sample is removed if end_index != -1'

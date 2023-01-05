@@ -1,8 +1,14 @@
+'''
+reorganize the classification results
+'''
+
+
 ## import modules
 import pandas as pd
 import numpy as np
 from collections import defaultdict
 import copy
+
 
 ## reorganize the non-grouped model classification results into different groups when prior information is used
 def regroupModelResults(model_results):
@@ -39,24 +45,14 @@ def regroupModelResults(model_results):
             transition_types['transition_SD'] = {
                 'true_value': pd.concat([true_value_list[7], true_value_list[8], true_value_list[9]]).to_numpy(), 'predict_softmax': pd.concat(
                     [predict_prob_list[7].iloc[:, 7:10], predict_prob_list[8].iloc[:, 7:10], predict_prob_list[9].iloc[:, 7:10]]).to_numpy()}
-            transition_types['transition_SS'] = {
-                'true_value': pd.concat([true_value_list[10], true_value_list[11], true_value_list[12], true_value_list[13]]).to_numpy(),
-                'predict_softmax': pd.concat([predict_prob_list[10].iloc[:, 10:14], predict_prob_list[11].iloc[:, 10:14],
-                    predict_prob_list[12].iloc[:, 10:14], predict_prob_list[13].iloc[:, 10:14]]).to_numpy()}
-            # transition_types['transition_LW'] = {
-            #     'true_value': pd.concat([true_value_list[0], true_value_list[1], true_value_list[2], true_value_list[3]]).to_numpy(),
-            #     'predict_softmax': pd.concat([predict_prob_list[0].iloc[:, 0:4], predict_prob_list[1].iloc[:, 0:4],
-            #         predict_prob_list[2].iloc[:, 0:4], predict_prob_list[3].iloc[:, 0:4]]).to_numpy()}
-            # transition_types['transition_SA'] = {
-            #     'true_value': pd.concat([true_value_list[4], true_value_list[5], true_value_list[6]]).to_numpy(), 'predict_softmax': pd.concat(
-            #         [predict_prob_list[4].iloc[:, 4:7], predict_prob_list[5].iloc[:, 4:7], predict_prob_list[6].iloc[:, 4:7]]).to_numpy()}
-            # transition_types['transition_SD'] = {
-            #     'true_value': pd.concat([true_value_list[7], true_value_list[8], true_value_list[9]]).to_numpy(), 'predict_softmax': pd.concat(
-            #         [predict_prob_list[7].iloc[:, 7:10], predict_prob_list[8].iloc[:, 7:10], predict_prob_list[9].iloc[:, 7:10]]).to_numpy()}
             # transition_types['transition_SS'] = {
-            #     'true_value': pd.concat([true_value_list[10], true_value_list[11], true_value_list[12]]).to_numpy(),
-            #     'predict_softmax': pd.concat([predict_prob_list[10].iloc[:, 10:13], predict_prob_list[11].iloc[:, 10:13],
-            #         predict_prob_list[12].iloc[:, 10:13]]).to_numpy()}
+            #     'true_value': pd.concat([true_value_list[10], true_value_list[11], true_value_list[12], true_value_list[13]]).to_numpy(),
+            #     'predict_softmax': pd.concat([predict_prob_list[10].iloc[:, 10:14], predict_prob_list[11].iloc[:, 10:14],
+            #         predict_prob_list[12].iloc[:, 10:14], predict_prob_list[13].iloc[:, 10:14]]).to_numpy()}
+            transition_types['transition_SS'] = {
+                'true_value': pd.concat([true_value_list[10], true_value_list[11], true_value_list[12]]).to_numpy(),
+                'predict_softmax': pd.concat([predict_prob_list[10].iloc[:, 10:13], predict_prob_list[11].iloc[:, 10:13],
+                    predict_prob_list[12].iloc[:, 10:13]]).to_numpy()}
             regrouped_shift[shift_number] = transition_types
 
         regrouped_results.append(regrouped_shift)
@@ -118,20 +114,15 @@ def findFirstTimestamp(reorganized_softmax, threshold=0.99):
     for group_value in first_timestamps_above_threshold:
         for transition_type, transition_value in group_value.items():
             #  for each repetition, find the first timestamp at which the softmax value is larger than the threshold
-            largest_softmax = np.transpose(
-                np.amax(transition_value, axis=2))  # for each timestamp, return the largest softmax value among all categories
-            first_timestamp = np.argmax(largest_softmax > threshold,
-                axis=0)  # for each repetition, return the first timestamp at which the softmax value is above the threshold
+            largest_softmax = np.transpose(np.amax(transition_value, axis=2))  # for each timestamp, return the largest softmax value among all categories
+            first_timestamp = np.argmax(largest_softmax > threshold, axis=0)  # for each repetition, return the first timestamp at which the softmax value is above the threshold
 
             # dedicated addressing the special case when a repetition has all the softmax values (from all timestamps) below the threshold
-            first_softmax = largest_softmax[first_timestamp.tolist(), list(
-                range(largest_softmax.shape[1]))]  # find the first softmax value above the threshold for each repetition
+            first_softmax = largest_softmax[first_timestamp.tolist(), list(range(largest_softmax.shape[1]))]  # find the first softmax value above the threshold for each repetition
             threshold_test = first_softmax / threshold  # calculate the ratio to show if there are any repetitions with all the softmax
             # values below the threshold
-            repetition_low_softmax = np.transpose(np.squeeze(
-                np.argwhere(threshold_test < 1)))  # return the index of the repetition with all softmax values below the threshold
-            first_timestamp[
-                repetition_low_softmax.tolist()] = -1  # change the timestamp index  to -1, for the repetition with all softmax values below the threshold
+            repetition_low_softmax = np.transpose(np.squeeze(np.argwhere(threshold_test < 1)))  # return the index of the repetition with all softmax values below the threshold
+            first_timestamp[repetition_low_softmax.tolist()] = -1  # change the timestamp index  to -1, for the repetition with all softmax values below the threshold
 
             group_value[transition_type] = first_timestamp
 
@@ -139,7 +130,7 @@ def findFirstTimestamp(reorganized_softmax, threshold=0.99):
 
 
 ## query the prediction based on timestamps from the reorganized_prediction table
-def getSlidingPredictResults(first_timestamps_above_threshold, reorganized_prediction, increment=16, shift=4):
+def getSlidingPredictResults(reorganized_prediction, first_timestamps_above_threshold, increment=16, shift=4):
     delay_unit = increment * shift  # the window increment value(ms) * the shift number = the delay for each timestamp
     sliding_prediction = copy.deepcopy(reorganized_prediction)
     for group_number, group_value in enumerate(first_timestamps_above_threshold):

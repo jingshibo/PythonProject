@@ -1,3 +1,7 @@
+'''
+create a dataset for a sliding gru model with normalization and shuffling
+'''
+
 ##
 import numpy as np
 import copy

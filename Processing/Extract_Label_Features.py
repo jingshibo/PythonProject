@@ -20,6 +20,7 @@ def readSplitData(subject, version):
     split_data = {"up_down": split_up_down_list, "down_up": split_down_up_list}
     return split_data
 
+
 ## read, preprocess and label aligned sensor data
 def labelSensorData(subject, modes, sessions, version, split_data, envelope=False):
     now = datetime.datetime.now()
@@ -68,6 +69,7 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
         gait_event_label = list(gait_event_features.keys())[0]
         emg_features[gait_event_label] = gait_event_features[gait_event_label]
     return emg_features
+
 
 ## read sensor data and extract features with labeling
 if __name__ == '__main__':

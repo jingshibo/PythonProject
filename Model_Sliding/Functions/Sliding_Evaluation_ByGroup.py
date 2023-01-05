@@ -1,8 +1,13 @@
+'''
+evaluating the classification results (accuracy AND delay)
+'''
+
+##
 import numpy as np
+import pandas as pd
 from sklearn.metrics import confusion_matrix
-from Models.Utility_Functions import Confusion_Matrix
-from scipy.linalg import block_diag
-import matplotlib.pyplot as plt
+import copy
+
 
 ## calculate accuracy and cm values for each group
 def getAccuracyPerGroup(sliding_prediction, reorganized_truevalues):
@@ -22,39 +27,48 @@ def getAccuracyPerGroup(sliding_prediction, reorganized_truevalues):
     return accuracy, cm
 
 
-## calculate average accuracy
-def averageAccuracy(accuracy, cm):
-    transition_groups = list(accuracy[0].keys())  # list all transition types
-    # average accuracy for each transition type
-    average_accuracy = {transition: 0 for transition in transition_groups}  # initialize average accuracy list
-    for group_values in accuracy:
-        for transition_type, transition_accuracy in group_values.items():
-            average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
-    for transition_type, transition_accuracy in average_accuracy.items():
-        average_accuracy[transition_type] = transition_accuracy / len(accuracy)
+##  combine the true and predict value into a single array for later processing
+def integrateResults(sliding_prediction, reorganized_truevalues):
+    integrated_results = copy.deepcopy(reorganized_truevalues)
+    for group_number, group_value in enumerate(sliding_prediction):
+        for transition_type, transition_value in group_value.items():
+            # put true and predict information into a single array (order: predict_category, true_category, category_difference, delay_value)
+            combined_array = np.array([transition_value[0, :], reorganized_truevalues[group_number][transition_type],
+                reorganized_truevalues[group_number][transition_type] - transition_value[0, :], transition_value[1, :]])
+            unequal_columns = np.where(combined_array[2, :] != 0)[0]  # the column index where the predict values differ from the true values
 
-    # overall accuracy for all transition types
-    overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
-                        average_accuracy['transition_SS'] * 1.5) / 5
+            # remove the columns with the true values and predict values that are unequal
+            if unequal_columns.size > 0:
+                integrated_results[group_number][transition_type] = np.delete(combined_array, unequal_columns, 1)
+            else:
+                integrated_results[group_number][transition_type] = combined_array
 
-    # overall cm among groups
-    sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list
-    for group_values in cm:
-        for transition_type, transition_cm in group_values.items():
-            sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
-
-    return average_accuracy, overall_accuracy, sum_cm
+    return integrated_results
 
 
-## plot confusion matrix
-def confusionMatrix(sum_cm, recall=False):
-    # create a diagonal matrix including all categories from multiple arrays.
-    list_cm = [cm for label, cm in sum_cm.items()]
-    overall_cm = block_diag(*list_cm)
+##  calculate the count, mean and std values of delay for each category
+def countDelayNumber(integrated_results):
+    combined_results = np.array([]).reshape(2, 0)
+    for group_number, group_value in enumerate(integrated_results):
+        for transition_type, transition_value in group_value.items():
+            transition_value = np.delete(transition_value, [0, 2], 0)  # only keep the true_value row and delay_value row
+            combined_results = np.hstack((combined_results, transition_value))  # combine all results into one array
+    regrouped_delay = pd.DataFrame(combined_results).T.groupby([0, 1])  # group delay values by categories and then delay
 
-    # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
-    class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD', 'SSSS']
-    # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
-    plt.figure()
-    cm_recall = Confusion_Matrix.plotConfusionMatrix(overall_cm, class_labels, normalize=recall)
-    return cm_recall
+    # mean and std value of delay for each category
+    mean_delay = regrouped_delay.mean()
+    std_delay = regrouped_delay.std()
+
+    # the count of delay for each category
+    count_delay_category = regrouped_delay.size().reset_index(name="count")
+    count_delay_category.columns = ['Category', 'Delay(ms)', 'Count']
+
+    # sum up the count of delay for all categories
+    unique_delay = np.sort(count_delay_category["Delay(ms)"].unique())
+    delay = {}
+    for delay_value in unique_delay.tolist():
+        delay[delay_value] = count_delay_category.loc[count_delay_category['Delay(ms)'] == delay_value, 'Count'].sum()
+    count_delay_overall = pd.DataFrame(delay.items(), columns=['Delay(ms)', 'Count'])
+
+    return count_delay_category, count_delay_overall, mean_delay, std_delay
+
