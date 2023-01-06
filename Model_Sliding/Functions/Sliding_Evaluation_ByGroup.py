@@ -47,21 +47,29 @@ def integrateResults(sliding_prediction, reorganized_truevalues):
 
 
 ##  calculate the count, mean and std values of delay for each category
-def countDelayNumber(integrated_results):
+def countDelay(integrated_results):
     combined_results = np.array([]).reshape(2, 0)
     for group_number, group_value in enumerate(integrated_results):
         for transition_type, transition_value in group_value.items():
             transition_value = np.delete(transition_value, [0, 2], 0)  # only keep the true_value row and delay_value row
             combined_results = np.hstack((combined_results, transition_value))  # combine all results into one array
-    regrouped_delay = pd.DataFrame(combined_results).T.groupby([0, 1])  # group delay values by categories and then delay
 
     # mean and std value of delay for each category
+    regrouped_delay = pd.DataFrame(combined_results).T.groupby([0])  # group delay values by categories
     mean_delay = regrouped_delay.mean()
     std_delay = regrouped_delay.std()
 
-    # the count of delay for each category
+    # the count of delay values for each category
+    regrouped_delay = pd.DataFrame(combined_results).T.groupby([0, 1])  # group delay values by categories and delays
     count_delay_category = regrouped_delay.size().reset_index(name="count")
     count_delay_category.columns = ['Category', 'Delay(ms)', 'Count']
+    # the percentage of delay values for each category
+    category_count = count_delay_category.groupby(['Category'])['Count'].sum()
+    category_ratio = pd.Series(dtype='float64')
+    for category in range(len(category_count)):
+        ratio = count_delay_category.loc[count_delay_category['Category'] == category, 'Count'] / category_count[category]
+        category_ratio = pd.concat([category_ratio, ratio])
+    count_delay_category['Percentage'] = category_ratio
 
     # sum up the count of delay for all categories
     unique_delay = np.sort(count_delay_category["Delay(ms)"].unique())
@@ -69,6 +77,10 @@ def countDelayNumber(integrated_results):
     for delay_value in unique_delay.tolist():
         delay[delay_value] = count_delay_category.loc[count_delay_category['Delay(ms)'] == delay_value, 'Count'].sum()
     count_delay_overall = pd.DataFrame(delay.items(), columns=['Delay(ms)', 'Count'])
+    # the percentage of delay for all categories
+    count_delay_overall['Percentage'] = count_delay_overall['Count'] / count_delay_overall['Count'].sum()
 
     return count_delay_category, count_delay_overall, mean_delay, std_delay
+
+
 
