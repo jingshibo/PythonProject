@@ -165,7 +165,7 @@ def getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predi
                     # use the most common prediction as the result
                     prediction = np.bincount(reduced_prediction[group_number][transition_type][:, column]).argmax()
                     # use the maximum delay value instead
-                    delay_ms = delay_unit_ms * (reduced_prediction[group_number][transition_type].shape[0] + initial_predict_time - 1)
+                    delay_ms = delay_unit_ms * (reduced_prediction[group_number][transition_type].shape[0] - 1 + initial_predict_time)
                     sliding_prediction[group_number][transition_type][0, column] = prediction
                     sliding_prediction[group_number][transition_type][1, column] = delay_ms
 

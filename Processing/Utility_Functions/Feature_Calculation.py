@@ -107,7 +107,7 @@ def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
         emg_repetition_features[f"repetition_{repetition_number}_features"] = emg_window_features  # add the repetition results to a dict
         print(f"repetition time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - repetition_time)
 
-    # the features are stored in the dict below, which can also be regarded as labeling
+    # the features are stored in the dict below, which can also be regarded as a labeling process
     emg_feature_labelled[f"{gait_event_label}_features"] = emg_repetition_features
     print(f"event time:{gait_event_label}", multiprocessing.current_process().name, datetime.datetime.now() - event_time)
     return emg_feature_labelled

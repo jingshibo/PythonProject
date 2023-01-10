@@ -217,3 +217,13 @@ def readAlignedData(subject, session, mode, version):
     emg_aligned = pd.read_csv(emg_path)
 
     return left_insole_aligned, right_insole_aligned, emg_aligned
+
+##
+def infinite_sequence():
+    num = 0
+    while True:
+        yield num
+        num += 2
+a = iter(infinite_sequence())
+##
+print(next(a))   
