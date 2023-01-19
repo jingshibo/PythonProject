@@ -39,7 +39,7 @@ def labelSensorData(subject, modes, sessions, version, split_data, envelope=Fals
             else:
                 emg_preprocessed = emg_filtered
             # separate the gait event using timestamps
-            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position=-512, end_position=512)
+            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position=-1024, end_position=1024)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict

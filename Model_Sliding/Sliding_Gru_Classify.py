@@ -19,17 +19,20 @@ increment_ms = 16  # the window increment for feature calculation
 ## read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
 emg_feature_data = Data_Preparation.removeSomeSamples(emg_features)  # only remove some modes here
+del emg_features, emg_feature_2d,
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
-del emg_features, emg_feature_2d, emg_feature_data  # to release memory
+del emg_feature_data  # to release memory
 
 # create dataset
 now = datetime.datetime.now()
-shift_unit = 3   # shift_unit defines the number of window shifts for each classification sliding
+shift_unit = 2   # shift_unit defines the number of window shifts for each classification sliding
 emg_sliding_features = Sliding_Gru_Dataset.createSlidingDataset(cross_validation_groups, shift_unit, initial_start=0, initial_end=16)
+del cross_validation_groups
 window_per_repetition = emg_sliding_features['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
 normalized_groups = Sliding_Gru_Dataset.combineNormalizedDataset(emg_sliding_features, window_per_repetition)
+del emg_sliding_features
 shuffled_groups = Sliding_Gru_Dataset.shuffleTrainingSet(normalized_groups)
-del cross_validation_groups, emg_sliding_features, normalized_groups  # to release memory
+del normalized_groups  # to release memory
 print(datetime.datetime.now() - now)
 
 
@@ -37,12 +40,31 @@ print(datetime.datetime.now() - now)
 now = datetime.datetime.now()
 model_results = Sliding_Gru_Model.classifySlidingGtuLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
-## in case you want to release more memory
+# in case you want to release more memory
 del shuffled_groups  # remove the variable
 
 
-##  group the classification results together from diffferent initial_predict_time settings
-group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, shift_unit, increment_ms, threshold=0.99)
+##  group the classification results together starting from diffferent initial_predict_time settings
+end_predict_time = int(96/32) + 1  # define the end prediction timestamp at which the predict end
+group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_time, threshold=0.999)
+accuracy = {}
+for key, value in group_sliding_results.items():
+    accuracy[key] = value['overall_accuracy']
+
+
+##  print accuracy results
+eng_point = (len(accuracy)-1) * 32
+x_label = [f'{i*32}~{eng_point}ms' for i in range(len(accuracy))]
+y_value = [round(i, 1) for i in list(accuracy.values())]
+
+fig, ax = plt.subplots()
+bars = ax.bar(range(len(accuracy)), y_value)
+ax.set_xticks(range(len(accuracy)), x_label)
+ax.bar_label(bars)
+ax.set_ylim([93, 100])
+ax.set_xlabel('prediction time range')
+ax.set_ylabel('prediction accuracy(%)')
+plt.title('Prediction accuracy for the prediction starting from different time points')
 
 
 ## (separately) predict results at a certain initial_predict_time (category + delay)
@@ -51,10 +73,10 @@ regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
 # reorganize the regrouped model results based on the timestamps
 reorganized_softmax, reorganized_prediction, reorganized_truevalues = Sliding_Results_ByGroup.reorganizePredictValues(regrouped_results)
 # only keep the results after the initial_predict_time
-initial_predict_time = 4  # define the initial prediction timestamp from which the classification starts
-reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time)
+initial_predict_time = int(0/32)  # define the initial prediction timestamp from which the predict starts
+reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time, end_predict_time)
 #  find the first timestamps at which the softmax value is larger than the threshold
-first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold=0.99)
+first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold=0.999)
 # get the predict results based on timestamps from the reorganized_prediction table and convert the timestamp to delay(ms)
 sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, shift_unit, increment_ms)
 
@@ -70,10 +92,6 @@ correct_results, false_results = Sliding_Evaluation_ByGroup.integrateResults(sli
 predict_delay_category, predict_delay_overall, mean_delay, std_delay = Sliding_Evaluation_ByGroup.countDelay(correct_results)
 false_delay_category, false_delay_overall, false_delay_mean, false_delay_std = Sliding_Evaluation_ByGroup.countDelay(false_results)
 predict_delay_overall, false_delay_overall = Sliding_Evaluation_ByGroup.delayAccuracy(predict_delay_overall, false_delay_overall)
-
-
-
-
 
 
 # ## save and read shuffled_groups

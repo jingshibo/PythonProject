@@ -108,17 +108,16 @@ def reorganizePredictValues(regrouped_results):
     return softmax_reorganized, predict_reorganized, true_results
 
 
-## reduce the number of test set prediction results: only keep the results after the initial_predict_time
-def reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time):
+## reduce the number of test set prediction results: only keep the results after the initial_predict_time, and before the end_predict_time
+def reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time, end_predict_time):
     reduced_softmax = copy.deepcopy(reorganized_softmax)
     for group_number, group_value in enumerate(reorganized_softmax):
         for transition_type, transition_value in group_value.items():
-            reduced_softmax[group_number][transition_type] = transition_value[:, initial_predict_time:, :]
+            reduced_softmax[group_number][transition_type] = transition_value[:, initial_predict_time:end_predict_time, :]
     reduced_prediction = copy.deepcopy(reorganized_prediction)
     for group_number, group_value in enumerate(reorganized_prediction):
         for transition_type, transition_value in group_value.items():
-            reduced_prediction[group_number][transition_type] = transition_value[initial_predict_time:, :]
-
+            reduced_prediction[group_number][transition_type] = transition_value[initial_predict_time:end_predict_time, :]
     return reduced_softmax, reduced_prediction
 
 

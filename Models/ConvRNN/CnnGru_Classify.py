@@ -36,6 +36,7 @@ for result in model_results:
 # calculate average accuracy without prior information
 print('average accuracy without prior:', sum(accuracy_without_prior) / len(accuracy_without_prior))
 
+
 ## results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
 reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
 accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_results)
