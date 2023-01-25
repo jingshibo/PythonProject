@@ -73,12 +73,13 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
 
 ## read sensor data and extract features with labeling
 if __name__ == '__main__':
-    # basic information
 
+
+    # basic information
     subject = 'Shibo'
-    version = 4  # the data from which experiment version to process
+    version = 3  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
-    up_down_session = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10]
+    up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     sessions = [up_down_session, down_up_session]
 

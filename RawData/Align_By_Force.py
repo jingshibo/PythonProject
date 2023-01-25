@@ -13,10 +13,10 @@ from RawData.Utility_Functions import Two_Insoles_Alignment, Insole_Emg_Alignmen
 
 
 ## initialization
-subject = 'Number1'
+subject = 'Number3'
 version = 0
-mode = 'down_up'
-session = 10
+mode = 'up_down'
+session = 5
 
 # subject = 'Zehao'
 # version = 0
@@ -95,8 +95,8 @@ Two_Insoles_Alignment.plotBothInsoles(recovered_left_data, recovered_right_data,
 # view the insole force plotted above to find an appropriate start index that matches most force pulses
 # usually use the first pulse as the referenece. if the result is undesired, just add or minus one on the index to adjust, instead of selecting anather pulse
 # Note: it is the alignment later with emg data that will decide whether add one or minus one is better. But here to align only two insoles, you can do it arbitrarily.
-right_start_index = 77
-left_start_index = 81
+right_start_index = 125
+left_start_index = 141
 combine_begin_cropped, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginIndex(left_start_index,
     right_start_index, recovered_left_data, recovered_right_data)
 # check the following timestamps in combined_insole_data table when necessary
@@ -112,8 +112,8 @@ Two_Insoles_Alignment.plotBothInsoles(left_begin_cropped, right_begin_cropped, s
 # view the insole force plotted above to find an appropriate end index that matches most force pulses. usually use the last pulse as the referenece.
 # Note: scale the figure up to large enough in order to look into the alignment result more clearly.
 # it is the alignment later with emg data that will decide whether the end_index here should add or minus one to match the end of emg index better.
-right_end_index = 6727
-left_end_index = 6727
+right_end_index = 5527
+left_end_index = 5527
 left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndIndex(left_end_index, right_end_index,
     left_begin_cropped, right_begin_cropped)
 # display the eng_index before data cropping. this can be used to obtain the pulse number for insole/emg alignment
@@ -129,8 +129,8 @@ Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data
 # view the sync force plotted above to find an appropriate start and end index for alignment of emg and insoles
 # Note:  you may need to adjust the start and end index of insoles (treat two insoles as one) in order to match the corresponding emg index.
 # Usually use the position of sync force as the true value, which is more accurate. The start index and end index of the insole pair should be decided separately.
-emg_start_index = 9319  # select the index belonging to the pulse number where the insole start_index is
-emg_end_index = 345657  # select the index belonging to the pulse number where the insole end_index is
+emg_start_index = 11417  # select the index belonging to the pulse number where the insole start_index is
+emg_end_index = 287710  # select the index belonging to the pulse number where the insole end_index is
 emg_aligned = recovered_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
 # convert the timestamp column to datetime type
 emg_aligned[0] = pd.to_datetime(emg_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')

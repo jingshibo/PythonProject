@@ -68,17 +68,21 @@ def countDelay(integrated_results):
 
     # the count of delay values for each category
     regrouped_delay = pd.DataFrame(combined_results).T.groupby([0, 1])  # group delay values by categories and delays
-    count_delay_category = regrouped_delay.size().reset_index(name="count")
+    count_delay_category = regrouped_delay.size().reset_index(name="Count")
     count_delay_category.columns = ['Category', 'Delay(ms)', 'Count']
     count_delay_category['Category'] = count_delay_category['Category'].astype('int64')  # convert float category value to int
 
     # the percentage of delay values for each category
     category_count = count_delay_category.groupby(['Category'])['Count'].sum()
-    category_ratio = pd.Series(dtype='float64')
+    category_percentage = pd.Series(dtype='float64')
+    category_percentage_cum = pd.Series(dtype='float64')
     for category in category_count.index.tolist():
-        ratio = count_delay_category.loc[count_delay_category['Category'] == category, 'Count'] / category_count[category]
-        category_ratio = pd.concat([category_ratio, ratio])
-    count_delay_category['Percentage'] = category_ratio
+        percentage = count_delay_category.loc[count_delay_category['Category'] == category, 'Count'] / category_count[category]
+        percentage_cum = pd.Series(percentage.values.cumsum())
+        category_percentage = pd.concat([category_percentage, percentage])
+        category_percentage_cum = pd.concat([category_percentage_cum, percentage_cum])
+    count_delay_category['Percentage'] = category_percentage.to_numpy()
+    count_delay_category['Percentage_cum'] = category_percentage_cum.to_numpy()
     count_delay_category['Category'] = count_delay_category['Category'].replace([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
         ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD'])  # replace number by name
 
@@ -98,46 +102,67 @@ def countDelay(integrated_results):
 
 
 ## calculate the prediction accuracy at each delay timestamp point
-def delayAccuracy(predict_delay_overall, false_delay_overall):
-    # accurate rate of the prediction decisions made at each delay timestamp
-    correct_prediction = []
-    count_all = []
-    for index, row in predict_delay_overall.iterrows():
-        if row['Delay(ms)'] in false_delay_overall['Delay(ms)'].values:
-            false_count = false_delay_overall.loc[false_delay_overall['Delay(ms)'] == row['Delay(ms)'], 'Count'].to_numpy()[0]
-            correct_count = predict_delay_overall.loc[index, 'Count']
-            total_number = false_count + correct_count
-            correct_ratio = correct_count / total_number
-        else:
-            correct_ratio = 1.0
-            total_number = predict_delay_overall.loc[index, 'Count']
-        correct_prediction.append(correct_ratio)
-        count_all.append(total_number)
-    predict_delay_overall['Accuracy'] = correct_prediction
-    predict_delay_overall['Count_all'] = count_all
-    predict_delay_overall.insert(2, 'Count_all', predict_delay_overall.pop('Count_all'))  # change the column order
-    predict_delay_overall.insert(3, 'Accuracy', predict_delay_overall.pop('Accuracy'))  # change the column order
+def delayAccuracy(predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category):
+    # define the function to calculate the accurate rate of the overall prediction decisions made at each delay timestamp
+    def calculateOverallAccuracy(target_data, counterpart_data):
+        ratio = []
+        count_all = []
+        for index, row in target_data.iterrows():  # loop over each row
+            if row['Delay(ms)'] in counterpart_data['Delay(ms)'].values:
+                counterpart_count = counterpart_data.loc[counterpart_data['Delay(ms)'] == row['Delay(ms)'], 'Count'].to_numpy()[0]
+                target_count = target_data.loc[index, 'Count']
+                total_number = counterpart_count + target_count
+                target_ratio = target_count / total_number
+            else:
+                target_ratio = 1.0
+                total_number = target_data.loc[index, 'Count']
+            ratio.append(target_ratio)
+            count_all.append(total_number)
+        target_data['Accuracy'] = ratio
+        target_data['Count_all'] = count_all
+        target_data.insert(1, 'Count_all', target_data.pop('Count_all'))  # change the column order
+        target_data.insert(3, 'Accuracy', target_data.pop('Accuracy'))  # change the column order
 
-    # error rate of the prediction decisions made at each delay timestamp
-    false_prediction = []
-    count_all = []
-    for index, row in false_delay_overall.iterrows():
-        if row['Delay(ms)'] in predict_delay_overall['Delay(ms)'].values:
-            correct_count = predict_delay_overall.loc[predict_delay_overall['Delay(ms)'] == row['Delay(ms)'], 'Count'].to_numpy()[0]
-            false_count = false_delay_overall.loc[index, 'Count']
-            total_number = false_count + correct_count
-            error_ratio = false_count / total_number
-        else:
-            error_ratio = 1.0
-            total_number = false_delay_overall.loc[index, 'Count']
-        false_prediction.append(error_ratio)
-        count_all.append(total_number)
-    false_delay_overall['Error_rate'] = false_prediction
-    false_delay_overall['Count_all'] = count_all
-    false_delay_overall.insert(2, 'Count_all', false_delay_overall.pop('Count_all'))  # change the column order
-    false_delay_overall.insert(3, 'Error_rate', false_delay_overall.pop('Error_rate'))  # change the column order
-    a=1
-    return predict_delay_overall, false_delay_overall
+        return target_data
+    # call the function defined above
+    predict_delay_overall = calculateOverallAccuracy(predict_delay_overall, false_delay_overall)
+    false_delay_overall = calculateOverallAccuracy(false_delay_overall, predict_delay_overall)
+    predict_delay_overall.columns = ['Delay(ms)', 'Predict_Number', 'Correct_Number', 'Accuracy', 'Correct_Percentage', 'Percentage_Cum']
+    predict_delay_overall.columns = ['Delay(ms)', 'Predict_Number', 'False_Number', 'Error_Rate', 'False_Percentage', 'Percentage_Cum']
+
+    # define the function to calculate the accurate rate of the category prediction decisions made at each delay timestamp
+    def calculateCategoryAccuracy(target_data, counterpart_data):
+        ratio = []
+        count_all = []
+        for index, row in target_data.iterrows():  # loop over each row
+            if row['Category'] in counterpart_data['Category'].values:  # if Category value and Delay(ms) value exist in counterpart_data
+                if row['Delay(ms)'] in counterpart_data.loc[counterpart_data['Category'] == row['Category'], 'Delay(ms)'].values:
+                    counterpart_count = counterpart_data.loc[(counterpart_data['Delay(ms)'] == row['Delay(ms)']) & (
+                            counterpart_data['Category'] == row['Category']), 'Count'].to_numpy()[0]
+                    target_count = target_data.loc[index, 'Count']
+                    total_number = counterpart_count + target_count
+                    target_ratio = target_count / total_number
+                else:
+                    target_ratio = 1.0
+                    total_number = target_data.loc[index, 'Count']
+            else:
+                target_ratio = 1.0
+                total_number = target_data.loc[index, 'Count']
+            ratio.append(target_ratio)
+            count_all.append(total_number)
+        target_data['Accuracy'] = ratio
+        target_data['Count_all'] = count_all
+        target_data.insert(2, 'Count_all', target_data.pop('Count_all'))  # change the column order
+        target_data.insert(4, 'Accuracy', target_data.pop('Accuracy'))  # change the column order
+
+        return target_data
+    # call the function defined above
+    predict_delay_category = calculateCategoryAccuracy(predict_delay_category, false_delay_category)
+    false_delay_category = calculateCategoryAccuracy(false_delay_category, predict_delay_category)
+    predict_delay_category.columns = ['Category', 'Delay(ms)', 'Predict_Number', 'Correct_Number', 'Accuracy', 'Correct_Percentage', 'Percentage_Cum']
+    false_delay_category.columns = ['Category', 'Delay(ms)', 'Predict_Number', 'False_Number', 'Error_Rate', 'False_Percentage', 'Percentage_Cum']
+
+    return predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category
 
 
 ##  group the classification results together from diffferent initial_predict_time settings
@@ -172,7 +197,8 @@ def groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_tim
             correct_results, false_results = integrateResults(sliding_prediction, reorganized_truevalues)
             predict_delay_category, predict_delay_overall, mean_delay, std_delay = countDelay(correct_results)
             false_delay_category, false_delay_overall, false_delay_mean, false_delay_std = countDelay(false_results)
-            predict_delay_overall, false_delay_overall = delayAccuracy(predict_delay_overall, false_delay_overall)
+            predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category = delayAccuracy(predict_delay_overall,
+                predict_delay_category, false_delay_overall, false_delay_category)
 
             # group the prediction results
             group_result = {'average_accuracy': average_accuracy, 'overall_accuracy': overall_accuracy, 'cm_recall': cm_recall,
@@ -183,3 +209,20 @@ def groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_tim
 
     return group_sliding_results
 
+
+## get the classification accuracy at each maximum delay position
+def getResultsByDelay(model_results, shift_unit=2, feature_window_increment=16):
+    results = {}
+    predict_window_increment = shift_unit * feature_window_increment
+
+    # read the prediction value at the each delay position from the sliding results
+    for delay in range(0, 513, predict_window_increment):  # loop over each maximum delay position to get the prediction result
+        end_predict_timestamp = int(delay / predict_window_increment) + 1  # define the end prediction timestamp at which the predict ends
+        group_sliding_results = groupSlidingResults(model_results, shift_unit, feature_window_increment, end_predict_timestamp)
+
+        # only retain the last sliding result, which is the prediction result at the given maximum delay time point
+        last_window_value = list(group_sliding_results.items())[-1]
+        delay_value = "delay_" + last_window_value[0][8:]  # modify the key name string
+        results[delay_value] = last_window_value[1]
+
+    return results

@@ -5,12 +5,13 @@ import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 ## read emg data
 # basic information
-subject = "Shibo"
-version = 1  # which experiment data to process
+subject = "Zehao"
+version = 0  # which experiment data to process
 feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 increment_ms = 16  # the window increment for feature calculation
@@ -38,14 +39,15 @@ print(datetime.datetime.now() - now)
 
 ## classify using a "many to one" GRU model
 now = datetime.datetime.now()
-model_results = Sliding_Gru_Model.classifySlidingGtuLastOneModel(shuffled_groups)
+models, model_results = Sliding_Gru_Model.classifySlidingGtuLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 # in case you want to release more memory
 del shuffled_groups  # remove the variable
-
+result_set = 0
+Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set)
 
 ##  group the classification results together starting from diffferent initial_predict_time settings
-end_predict_time = int(96/32) + 1  # define the end prediction timestamp at which the predict end
+end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
 group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_time, threshold=0.999)
 accuracy = {}
 for key, value in group_sliding_results.items():
@@ -53,18 +55,18 @@ for key, value in group_sliding_results.items():
 
 
 ##  print accuracy results
-eng_point = (len(accuracy)-1) * 32
-x_label = [f'{i*32}~{eng_point}ms' for i in range(len(accuracy))]
-y_value = [round(i, 1) for i in list(accuracy.values())]
-
-fig, ax = plt.subplots()
-bars = ax.bar(range(len(accuracy)), y_value)
-ax.set_xticks(range(len(accuracy)), x_label)
-ax.bar_label(bars)
-ax.set_ylim([93, 100])
-ax.set_xlabel('prediction time range')
-ax.set_ylabel('prediction accuracy(%)')
-plt.title('Prediction accuracy for the prediction starting from different time points')
+# eng_point = (len(accuracy)-1) * 32
+# x_label = [f'{i*32}~{eng_point}ms' for i in range(len(accuracy))]
+# y_value = [round(i, 1) for i in list(accuracy.values())]
+#
+# fig, ax = plt.subplots()
+# bars = ax.bar(range(len(accuracy)), y_value)
+# ax.set_xticks(range(len(accuracy)), x_label)
+# ax.bar_label(bars)
+# ax.set_ylim([93, 100])
+# ax.set_xlabel('prediction time range')
+# ax.set_ylabel('prediction accuracy(%)')
+# plt.title('Prediction accuracy for the prediction starting from different time points')
 
 
 ## (separately) predict results at a certain initial_predict_time (category + delay)
@@ -74,6 +76,7 @@ regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
 reorganized_softmax, reorganized_prediction, reorganized_truevalues = Sliding_Results_ByGroup.reorganizePredictValues(regrouped_results)
 # only keep the results after the initial_predict_time
 initial_predict_time = int(0/32)  # define the initial prediction timestamp from which the predict starts
+end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
 reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time, end_predict_time)
 #  find the first timestamps at which the softmax value is larger than the threshold
 first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold=0.999)
@@ -91,9 +94,36 @@ print(overall_accuracy)
 correct_results, false_results = Sliding_Evaluation_ByGroup.integrateResults(sliding_prediction, reorganized_truevalues)
 predict_delay_category, predict_delay_overall, mean_delay, std_delay = Sliding_Evaluation_ByGroup.countDelay(correct_results)
 false_delay_category, false_delay_overall, false_delay_mean, false_delay_std = Sliding_Evaluation_ByGroup.countDelay(false_results)
-predict_delay_overall, false_delay_overall = Sliding_Evaluation_ByGroup.delayAccuracy(predict_delay_overall, false_delay_overall)
+predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category = Sliding_Evaluation_ByGroup.delayAccuracy(
+    predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category)
 
 
+# ## save model results
+# type = 1  # define the type of trained model to save
+# for number, model in enumerate(model_results):
+#     model_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\models_{type}\cross_validation_set_{number}'
+#     if os.path.isfile(model_dir) is False:  # check if the location is a file or directory. Only save when it is a directory
+#         model['model'].save(model_dir)  # save the model to the directory
+#
+#
+# ## load trained model
+# fold = 5
+# type = 1  # pre-trained model type
+# models = []
+# for number in range(fold):
+#     model_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\models_{type}\cross_validation_set_{number}'
+#     models.append(tf.keras.models.load_model(model_dir))
+#
+#
+# ## save trained models
+# import os
+# type = 1  # define the type of trained model to save
+# for number, model in enumerate(model_results):
+#     model_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_result_{type}\cross_validation_set_{number}'
+#     if os.path.isfile(model_dir) is False:  # check if the location is a file or directory. Only save when it is a directory
+#         model.save(model_dir)  # save the model to the directory
+#
+#
 # ## save and read shuffled_groups
 # import os
 # data_set = 0
@@ -107,9 +137,6 @@ predict_delay_overall, false_delay_overall = Sliding_Evaluation_ByGroup.delayAcc
 # shuffled_groups = np.load(feature_path, allow_pickle=True).item()
 
 
-## the problem is that it takes up a lot memories
-# import numpy as np
-# import tensorflow as tf
-# length3 = np.random.uniform(0, 1, size=(3, 2))
-# length4 = np.random.uniform(0, 1, size=(4, 2))
-# tf.keras.preprocessing.sequence.pad_sequences([length3, length4], dtype='float32', padding='post')
+
+
+

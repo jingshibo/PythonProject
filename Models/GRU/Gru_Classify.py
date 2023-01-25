@@ -11,14 +11,14 @@ import datetime
 
 ## read and cross validate dataset
 # basic information
-subject = "Shibo"
-version = 1  # which experiment data to process
+subject = "Number4"
+version = 0  # which experiment data to process
 feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
-emg_feature_data = Data_Preparation.removeSomeSamples(emg_features, start_index=0, end_index=16)  # 0, 16, 32, 48
+emg_feature_data = Data_Preparation.removeSomeSamples(emg_features, start_index=17, end_index=33)  # 0, 16, 32, 48
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 
 # reorganize data
