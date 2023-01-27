@@ -33,9 +33,9 @@ model_results = Gru_Model.classifyMultipleGruLastOneModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
 # average results among transition groups (for "many to one" GRU model, no majority vote is needed)
-majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, 1)  # this is not for majority vote rather it is for data conversion
+majority_results = MV_Results_ByGroup.majorityVoteResultsByGroup(model_results, 1)  # this is not for majority vote rather it is for data conversion
 accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
-average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
-cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
+average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy, cm)
+cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, is_recall=True)
 print(overall_accuracy)
 

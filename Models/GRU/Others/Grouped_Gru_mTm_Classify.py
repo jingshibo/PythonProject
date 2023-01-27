@@ -33,8 +33,8 @@ model_results = Gru_Model.classifyMultipleGruSequenceModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
 ## majority vote results using prior information
-majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, window_per_repetition)
+majority_results = MV_Results_ByGroup.majorityVoteResultsByGroup(model_results, window_per_repetition)
 accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
-average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
-cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
+average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_without_prior, cm)
+cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, is_recall=True)
 print(overall_accuracy)

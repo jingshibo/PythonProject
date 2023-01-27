@@ -55,10 +55,10 @@ model_results = Cnn_Model.classifyTransferCnnModel(shuffled_groups, models)
 print(datetime.datetime.now() - now)
 
 ## majority vote results
-majority_results = MV_Results_ByGroup.majorityVoteResults(model_results, window_per_repetition)
+majority_results = MV_Results_ByGroup.majorityVoteResultsByGroup(model_results, window_per_repetition)
 accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
-average_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy, cm)
-cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
+average_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy, cm)
+cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, is_recall=True)
 print(average_accuracy, cm_recall)
 
 ## mean accuracy for all groups

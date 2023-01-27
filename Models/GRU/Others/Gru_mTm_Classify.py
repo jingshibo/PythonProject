@@ -38,10 +38,10 @@ print(cm_recall, '\n', average_accuracy)
 
 ## majority vote results using prior information
 reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
-majority_results = MV_Results_ByGroup.majorityVoteResults(reorganized_results, window_per_repetition)
+majority_results = MV_Results_ByGroup.majorityVoteResultsByGroup(reorganized_results, window_per_repetition)
 accuracy_without_prior, cm = MV_Results_ByGroup.getAccuracyPerGroup(reorganized_results)
-average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_without_prior, cm)
-cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, recall=True)
+average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_without_prior, cm)
+cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, is_recall=True)
 print(overall_accuracy)
 
 

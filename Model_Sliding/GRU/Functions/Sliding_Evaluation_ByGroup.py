@@ -9,7 +9,7 @@ from sklearn.metrics import confusion_matrix
 from scipy.linalg import block_diag
 import copy
 from Models.Utility_Functions import MV_Results_ByGroup
-from Model_Sliding.Functions import Sliding_Results_ByGroup
+from Model_Sliding.GRU.Functions import Sliding_Results_ByGroup
 
 
 ## calculate accuracy and cm values for each group
@@ -166,7 +166,7 @@ def delayAccuracy(predict_delay_overall, predict_delay_category, false_delay_ove
 
 
 ##  group the classification results together from diffferent initial_predict_time settings
-def groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_time=-1, threshold=0.999):
+def groupSlidingResults(model_results, predict_window_shift_unit, feature_window_increment_ms, end_predict_time=-1, threshold=0.999):
     # reorganize the results
     # regroup the model results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
     regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
@@ -183,12 +183,11 @@ def groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_tim
             #  find the first timestamps at which the softmax value is larger than the threshold
             first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold)
             # get the predict results based on timestamps from the reorganized_prediction table and convert the timestamp to delay(ms)
-            sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, shift_unit, increment_ms)
+            sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, predict_window_shift_unit, feature_window_increment_ms)
 
-            # evaluate the prediction results
-            # calculate the prediction accuracy
+            # calculate the prediction accuracy and confusion matrix
             accuracy_bygroup, cm_bygroup = getAccuracyPerGroup(sliding_prediction, reorganized_truevalues)
-            average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracy(accuracy_bygroup, cm_bygroup)
+            average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup, cm_bygroup)
             list_cm = [cm for label, cm in sum_cm.items()]
             overall_cm = block_diag(*list_cm)
             cm_recall = np.around(overall_cm.astype('float') / overall_cm.sum(axis=1)[:, np.newaxis], 3)  # calculate cm recall
@@ -205,20 +204,20 @@ def groupSlidingResults(model_results, shift_unit, increment_ms, end_predict_tim
                 'predict_delay_category': predict_delay_category, 'predict_delay_overall': predict_delay_overall,
                 'false_delay_category': false_delay_category, 'false_delay_overall': false_delay_overall}
 
-            group_sliding_results[f'initial_{increment_ms * shift_unit * initial_predict_time}_ms'] = group_result
+            group_sliding_results[f'initial_{feature_window_increment_ms * predict_window_shift_unit * initial_predict_time}_ms'] = group_result
 
     return group_sliding_results
 
 
-## get the classification accuracy at each maximum delay position
-def getResultsByDelay(model_results, shift_unit=2, feature_window_increment=16):
+## get the classification accuracy at each delay position
+def getResultsEachDelay(model_results, predict_window_shift_unit=2, feature_window_increment_ms=16):
     results = {}
-    predict_window_increment = shift_unit * feature_window_increment
+    predict_window_increment = predict_window_shift_unit * feature_window_increment_ms
 
     # read the prediction value at the each delay position from the sliding results
-    for delay in range(0, 513, predict_window_increment):  # loop over each maximum delay position to get the prediction result
+    for delay in range(0, 513, predict_window_increment):  # loop over each delay position to get the prediction result
         end_predict_timestamp = int(delay / predict_window_increment) + 1  # define the end prediction timestamp at which the predict ends
-        group_sliding_results = groupSlidingResults(model_results, shift_unit, feature_window_increment, end_predict_timestamp)
+        group_sliding_results = groupSlidingResults(model_results, predict_window_shift_unit, feature_window_increment_ms, end_predict_timestamp)
 
         # only retain the last sliding result, which is the prediction result at the given maximum delay time point
         last_window_value = list(group_sliding_results.items())[-1]

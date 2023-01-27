@@ -143,8 +143,8 @@ def findFirstTimestamp(reduced_softmax, threshold=0.99):
 
 
 ## query the prediction based on timestamps from the reorganized_prediction table
-def getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, shift_unit, increment_ms):
-    delay_unit_ms = increment_ms * shift_unit  # the window increment value(ms) * the shift number = the delay for each timestamp
+def getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, predict_window_shift_unit, feature_window_increment_ms):
+    delay_unit_ms = feature_window_increment_ms * predict_window_shift_unit  # the window increment value(ms) * the shift number = the delay for each timestamp
     sliding_prediction = copy.deepcopy(reduced_prediction)
     for group_number, group_value in enumerate(first_timestamps):
         for transition_type, transition_value in group_value.items():

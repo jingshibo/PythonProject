@@ -59,7 +59,7 @@ def regroupModelResults(model_results):
 
 
 ## majority vote results
-def majorityVoteResults(group_results, window_per_repetition):
+def majorityVoteResultsByGroup(group_results, window_per_repetition):
     # reunite the samples belonging to the same transition
     bin_results = []
     for each_group in group_results:
@@ -95,8 +95,8 @@ def majorityVoteResults(group_results, window_per_repetition):
 
 ## calculate accuracy and cm values for each group
 def getAccuracyPerGroup(majority_results):
-    accuracy = []
-    cm = []
+    accuracy_bygroup = []
+    cm_bygroup = []
     for each_group in majority_results:
         transition_cm = {}
         transition_accuracy = {}
@@ -106,21 +106,21 @@ def getAccuracyPerGroup(majority_results):
             numCorrect = np.count_nonzero(true_y == predict_y)
             transition_accuracy[transition_type] = numCorrect / len(true_y) * 100
             transition_cm[transition_type] = confusion_matrix(y_true=true_y, y_pred=predict_y)
-        accuracy.append(transition_accuracy)
-        cm.append(transition_cm)
-    return accuracy, cm
+        accuracy_bygroup.append(transition_accuracy)
+        cm_bygroup.append(transition_cm)
+    return accuracy_bygroup, cm_bygroup
 
 
 ## calculate average accuracy
-def averageAccuracy(accuracy, cm):
-    transition_groups = list(accuracy[0].keys())  # list all transition types
+def averageAccuracyByGroup(accuracy_bygroup, cm_bygroup):
+    transition_groups = list(accuracy_bygroup[0].keys())  # list all transition types
     # average accuracy for each transition type
     average_accuracy = {transition: 0 for transition in transition_groups}  # initialize average accuracy list
-    for group_values in accuracy:
+    for group_values in accuracy_bygroup:
         for transition_type, transition_accuracy in group_values.items():
             average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
     for transition_type, transition_accuracy in average_accuracy.items():
-        average_accuracy[transition_type] = transition_accuracy / len(accuracy)
+        average_accuracy[transition_type] = transition_accuracy / len(accuracy_bygroup)
 
     # overall accuracy for all transition types
     overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
@@ -128,7 +128,7 @@ def averageAccuracy(accuracy, cm):
 
     # overall cm among groups
     sum_cm = {transition: 0 for transition in transition_groups}   # initialize overall cm list
-    for group_values in cm:
+    for group_values in cm_bygroup:
         for transition_type, transition_cm in group_values.items():
             sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
 
@@ -136,7 +136,7 @@ def averageAccuracy(accuracy, cm):
 
 
 ## plot confusion matrix
-def confusionMatrix(sum_cm, recall=False):
+def confusionMatrix(sum_cm, is_recall=False):
     # create a diagonal matrix from multiple arrays.
     list_cm = [cm for label, cm in sum_cm.items()]
     overall_cm = block_diag(*list_cm)
@@ -145,5 +145,5 @@ def confusionMatrix(sum_cm, recall=False):
     # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD', 'SSSS']
     class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
     plt.figure()
-    cm_recall = Confusion_Matrix.plotConfusionMatrix(overall_cm, class_labels, normalize=recall)
+    cm_recall = Confusion_Matrix.plotConfusionMatrix(overall_cm, class_labels, normalize=is_recall)
     return cm_recall

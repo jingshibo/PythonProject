@@ -14,7 +14,10 @@ def classifyUsingAnnModel(shuffled_groups):
     '''
     A basic 4-layer ANN model
     '''
+
+    models = []
     results = []
+
     for group_number, group_value in shuffled_groups.items():
         # one muscle input data
         # train_tibialis_x = group_value['train_feature_x'][:, 0: 65]
@@ -91,9 +94,10 @@ def classifyUsingAnnModel(shuffled_groups):
         predict_y = np.argmax(predictions, axis=-1)  # return predicted labels
         test_loss, test_accuracy = model.evaluate(test_set_x, test_set_y)  # return loss and accuracy values
 
-        results.append({"model": model, "true_value": group_value['test_int_y'], "predict_softmax": predictions, "predict_value": predict_y,
+        results.append({"true_value": group_value['test_int_y'], "predict_softmax": predictions, "predict_value": predict_y,
             "predict_accuracy": test_accuracy})
-    return results
+        models.append(model)
+    return models, results
 
 
 ## multiple ANN models by group

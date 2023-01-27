@@ -58,10 +58,10 @@ transfer_model_results = Ann_Model.classifyTransferAnnModel(transfer_shuffled_gr
 print(datetime.datetime.now() - now)
 
 # majority vote results
-transfer_majority_results = MV_Results_ByGroup.majorityVoteResults(transfer_model_results, window_per_repetition)
+transfer_majority_results = MV_Results_ByGroup.majorityVoteResultsByGroup(transfer_model_results, window_per_repetition)
 transfer_accuracy, transfer_cm = MV_Results_ByGroup.getAccuracyPerGroup(transfer_majority_results)
-transfer_average_accuracy, transfer_overall_accuracy, transfer_sum_cm = MV_Results_ByGroup.averageAccuracy(transfer_accuracy, transfer_cm)
-transfer_cm_recall = MV_Results_ByGroup.confusionMatrix(transfer_sum_cm, recall=True)
+transfer_average_accuracy, transfer_overall_accuracy, transfer_sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(transfer_accuracy, transfer_cm)
+transfer_cm_recall = MV_Results_ByGroup.confusionMatrix(transfer_sum_cm, is_recall=True)
 print(transfer_overall_accuracy)
 
 

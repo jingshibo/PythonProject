@@ -7,7 +7,7 @@ classifying using GRU models at different timestamps
 import datetime
 import numpy as np
 import tensorflow as tf
-from Model_Sliding.Functions import Sliding_Gru_Dataset
+from Model_Sliding.GRU.Functions import Sliding_Evaluation_ByGroup, Sliding_Gru_Dataset
 import copy
 import json
 import os
@@ -75,8 +75,8 @@ def classifySlidingGtuLastOneModel(shuffled_groups):
     return group_models, group_results
 
 
-##  save the classification results to disk
-def saveModelResults(subject, model_results, version, result_set):
+##  save the model results to disk
+def saveModelResults(subject, model_results, version, result_set, model_type='sliding_gru'):
     results = copy.deepcopy(model_results)
     for result in results:
         for shift_number, shift_value in result.items():
@@ -85,17 +85,17 @@ def saveModelResults(subject, model_results, version, result_set):
             shift_value['predict_value'] = shift_value['predict_value'].tolist()
 
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_results_{result_set}.json'
+    result_file = f'subject_{subject}_Experiment_{version}_model_results_{model_type}_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     with open(result_path, 'w') as json_file:
         json.dump(results, json_file, indent=8)
 
 
-##  read the classification results from disk
-def loadModelResults(subject, version, result_set):
+##  read the model results from disk
+def loadModelResults(subject, version, result_set, model_type='sliding_gru'):
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_results_{result_set}.json'
+    result_file = f'subject_{subject}_Experiment_{version}_model_results_{model_type}_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     # read json file
@@ -108,3 +108,18 @@ def loadModelResults(subject, version, result_set):
             shift_value['predict_value'] = np.array(shift_value['predict_value'])
 
     return result_json
+
+
+##  get subject results (accuracy + cm) at each delay points
+def getPredictResults(subject, version, result_set):
+    model_results = loadModelResults(subject, version, result_set)
+    delay_results = Sliding_Evaluation_ByGroup.getResultsEachDelay(model_results, predict_window_shift_unit=2, feature_window_increment_ms=16)
+
+    accuracy = {}
+    cm_recall = {}
+    for key, value in delay_results.items():
+        accuracy[key] = value['overall_accuracy']
+        cm_recall[key] = value['cm_recall']
+    subject_results = {'accuracy': accuracy, 'cm_call': cm_recall}
+
+    return subject_results
