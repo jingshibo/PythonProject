@@ -44,12 +44,13 @@ print(datetime.datetime.now() - now)
 del shuffled_groups  # remove the variable
 # save model results
 result_set = 0
-Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set)
+Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set, feature_window_increment_ms, predict_window_shift_unit)
 
 
 ##  group the classification results together, starting from diffferent initial_predict_time settings, ending at the given end_predict_time
 end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
-group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, predict_window_shift_unit, feature_window_increment_ms, end_predict_time, threshold=0.999)
+group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, predict_window_shift_unit,
+    feature_window_increment_ms, end_predict_time, threshold=0.999)
 accuracy = {}
 for key, value in group_sliding_results.items():
     accuracy[key] = value['overall_accuracy']

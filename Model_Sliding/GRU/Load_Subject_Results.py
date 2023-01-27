@@ -8,7 +8,7 @@ from Models.Utility_Functions import Confusion_Matrix
 import matplotlib.pyplot as plt
 
 all_subjects = {}  # save all subject results
-result_set = 0
+result_set = 0  # default for sliding GRU model results
 
 ## load model results
 subject = 'Shibo'

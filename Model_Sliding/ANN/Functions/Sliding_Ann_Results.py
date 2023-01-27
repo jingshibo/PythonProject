@@ -5,6 +5,8 @@ import json
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from scipy.linalg import block_diag
+from Models.Utility_Functions import MV_Results_ByGroup
+
 
 ##  majority vote results for all transitions without grouping
 def majorityVoteResults(model_results, window_per_repetition, initial_start=0, initial_end=16, predict_window_shift_unit=2):
@@ -39,7 +41,10 @@ def majorityVoteResults(model_results, window_per_repetition, initial_start=0, i
 
 
 ##  majority vote results based on transition groups
-def majorityVoteResultsByGroup(reorganized_results, window_per_repetition, initial_start=0, initial_end=16, predict_window_shift_unit=2):
+def majorityVoteResultsByGroup(reorganized_results, window_per_repetition, predict_window_shift_unit, initial_start=0, initial_end=16):
+    """
+    initial_start and initial_end define the initial window position(and size), shift_unit defines the number of window shift each slding
+    """
     # reunite the samples belonging to the same transition
     bin_results = []
     for each_group in reorganized_results:  # reunite the samples from the same transition
@@ -115,15 +120,17 @@ def getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window
 
 
 ##  save the model results to disk
-def saveModelResults(subject, model_results, version, result_set):
+def saveModelResults(subject, model_results, version, result_set,  window_per_repetition, feature_window_increment_ms, model_type='sliding_ANN'):
     results = copy.deepcopy(model_results)
     for result in results:
-        result['true_value'] = result['true_value'].values.tolist()
-        result['predict_softmax'] = result['predict_softmax'].values.tolist()
+        result['true_value'] = result['true_value'].tolist()
+        result['predict_softmax'] = result['predict_softmax'].tolist()
         result['predict_value'] = result['predict_value'].tolist()
+        result['window_per_repetition'] = window_per_repetition
+        result['feature_window_increment_ms'] = feature_window_increment_ms
 
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_results_{result_set}.json'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     with open(result_path, 'w') as json_file:
@@ -131,9 +138,9 @@ def saveModelResults(subject, model_results, version, result_set):
 
 
 ##  read the model results from disk
-def loadModelResults(subject, version, result_set):
+def loadModelResults(subject, version, result_set, model_type='sliding_ANN'):
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_results_{result_set}.json'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     # read json file
@@ -147,3 +154,22 @@ def loadModelResults(subject, version, result_set):
     return result_json
 
 
+##  read the model results from disk
+def getPredictResults(subject, version, result_set, predict_window_shift_unit=2):
+    model_results = loadModelResults(subject, version, result_set)
+    feature_window_increment_ms = model_results[0]['feature_window_increment_ms']
+    window_per_repetition = model_results[0]['window_per_repetition']
+
+    reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
+    sliding_majority_vote_by_group = majorityVoteResultsByGroup(reorganized_results, window_per_repetition, predict_window_shift_unit,
+        initial_start=0, initial_end=16)
+    accuracy_bygroup, cm_bygroup = getAccuracyPerGroup(sliding_majority_vote_by_group)
+    # calculate the accuracy and cm. Note: the first dimension refers to each delay
+    average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(
+        accuracy_bygroup, cm_bygroup)
+    accuracy, cm_recall = getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
+        predict_window_shift_unit)
+
+    subject_results = {'accuracy': accuracy, 'cm_call': cm_recall}
+
+    return subject_results

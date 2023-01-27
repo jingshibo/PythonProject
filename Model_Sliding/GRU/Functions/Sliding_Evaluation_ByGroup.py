@@ -179,11 +179,13 @@ def groupSlidingResults(model_results, predict_window_shift_unit, feature_window
         if initial_predict_time < end_predict_time:  # only applies for those when initial_predict_time is smaller than end_predict_time
             # preprocessing the results
             # only keep the results after the initial_predict_time
-            reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time, end_predict_time)
+            reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction,
+                initial_predict_time, end_predict_time)
             #  find the first timestamps at which the softmax value is larger than the threshold
             first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold)
             # get the predict results based on timestamps from the reorganized_prediction table and convert the timestamp to delay(ms)
-            sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, predict_window_shift_unit, feature_window_increment_ms)
+            sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps,
+                initial_predict_time, predict_window_shift_unit, feature_window_increment_ms)
 
             # calculate the prediction accuracy and confusion matrix
             accuracy_bygroup, cm_bygroup = getAccuracyPerGroup(sliding_prediction, reorganized_truevalues)

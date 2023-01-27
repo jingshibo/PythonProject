@@ -22,7 +22,7 @@ def readSplitData(subject, version):
 
 
 ## read, preprocess and label aligned sensor data
-def labelSensorData(subject, modes, sessions, version, split_data, envelope=False):
+def labelSensorData(subject, modes, sessions, version, split_data, start_position=-1024, end_position=1024, envelope=False):
     now = datetime.datetime.now()
     combined_emg_labelled = {}
 
@@ -39,7 +39,7 @@ def labelSensorData(subject, modes, sessions, version, split_data, envelope=Fals
             else:
                 emg_preprocessed = emg_filtered
             # separate the gait event using timestamps
-            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position=-1024, end_position=1024)
+            gait_event_timestamp = Data_Separation.seperateGait(split_data[mode][f'session{session}'], start_position, end_position)
             # use the gait event timestamps to label emg data
             emg_labelled = Data_Separation.seperateEmgdata(emg_preprocessed, gait_event_timestamp)
             # combine the emg data from all sessions of the same gait event into the same key of a dict
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     # Feature extraction
     split_data = readSplitData(subject, version)
-    combined_emg_labelled = labelSensorData(subject, modes, sessions, version, split_data)
+    combined_emg_labelled = labelSensorData(subject, modes, sessions, version, split_data, start_position=-1024, end_position=1024)
     emg_features = extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32)
 
     # store features

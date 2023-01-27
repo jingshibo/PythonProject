@@ -76,16 +76,18 @@ def classifySlidingGtuLastOneModel(shuffled_groups):
 
 
 ##  save the model results to disk
-def saveModelResults(subject, model_results, version, result_set, model_type='sliding_gru'):
+def saveModelResults(subject, model_results, version, result_set, feature_window_increment_ms, predict_window_shift_unit, model_type='sliding_GRU'):
     results = copy.deepcopy(model_results)
     for result in results:
         for shift_number, shift_value in result.items():
-            shift_value['true_value'] = shift_value['true_value'].values.tolist()
-            shift_value['predict_softmax'] = shift_value['predict_softmax'].values.tolist()
+            shift_value['true_value'] = shift_value['true_value'].tolist()
+            shift_value['predict_softmax'] = shift_value['predict_softmax'].tolist()
             shift_value['predict_value'] = shift_value['predict_value'].tolist()
+            shift_value['feature_window_increment_ms'] = feature_window_increment_ms
+            shift_value['predict_window_shift_unit'] = predict_window_shift_unit
 
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_results_{model_type}_{result_set}.json'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     with open(result_path, 'w') as json_file:
@@ -93,9 +95,9 @@ def saveModelResults(subject, model_results, version, result_set, model_type='sl
 
 
 ##  read the model results from disk
-def loadModelResults(subject, version, result_set, model_type='sliding_gru'):
+def loadModelResults(subject, version, result_set, model_type='sliding_GRU'):
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_results_{model_type}_{result_set}.json'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     # read json file
@@ -113,7 +115,9 @@ def loadModelResults(subject, version, result_set, model_type='sliding_gru'):
 ##  get subject results (accuracy + cm) at each delay points
 def getPredictResults(subject, version, result_set):
     model_results = loadModelResults(subject, version, result_set)
-    delay_results = Sliding_Evaluation_ByGroup.getResultsEachDelay(model_results, predict_window_shift_unit=2, feature_window_increment_ms=16)
+    predict_window_shift_unit = model_results[0]['shift_0']['predict_window_shift_unit']
+    feature_window_increment_ms = model_results[0]['shift_0']['feature_window_increment_ms']
+    delay_results = Sliding_Evaluation_ByGroup.getResultsEachDelay(model_results, predict_window_shift_unit, feature_window_increment_ms)
 
     accuracy = {}
     cm_recall = {}
@@ -123,3 +127,4 @@ def getPredictResults(subject, version, result_set):
     subject_results = {'accuracy': accuracy, 'cm_call': cm_recall}
 
     return subject_results
+
