@@ -29,7 +29,7 @@ shuffled_groups = Ann_Dataset.shuffleTrainingSet(normalized_groups)
 
 ## classify using a single ann model
 now = datetime.datetime.now()
-model_results = Ann_Model.classifyUsingAnnModel(shuffled_groups)
+models, model_results = Ann_Model.classifyUsingAnnModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
 

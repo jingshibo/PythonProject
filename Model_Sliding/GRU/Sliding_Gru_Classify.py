@@ -3,10 +3,12 @@ classify using a GRU model with sliding predict windows. if the first selected w
 than the treashold, move to the next window until the final window.
 '''
 
+
 ## import modules
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.GRU.Functions import Sliding_Evaluation_ByGroup, Sliding_Gru_Dataset, Sliding_Gru_Model, Sliding_Results_ByGroup
 import datetime
+
 
 ## read emg data
 # basic information

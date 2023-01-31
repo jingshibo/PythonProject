@@ -13,26 +13,27 @@ import os
 # basic information
 subject = "Shibo"
 version = 1  # which experiment data to process
-feature_set = 1  # which feature set to use
+feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
 emg_feature_data = Data_Preparation.removeSomeSamples(emg_feature_2d)
-window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[-1]  # how many windows there are for each event repetition
+cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 
 # reorganize data
-cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
+window_per_repetition = emg_feature_data['emg_LWLW_features'][0].shape[-1]  # how many windows there are for each event repetition
 normalized_groups = Cnn_Dataset.combineNormalizedDataset(cross_validation_groups, window_per_repetition)
 shuffled_groups = Cnn_Dataset.shuffleTrainingSet(normalized_groups)
 
 
 ## classify using a single cnn model
 now = datetime.datetime.now()
-model_results = Cnn_Model.classifyUsingCnnModel(shuffled_groups)
+models, model_results = Cnn_Model.classifyUsingCnnModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 
-# majority vote results
+
+## majority vote results
 majority_results = MV_Results.majorityVoteResults(model_results, window_per_repetition)
 average_accuracy, sum_cm = MV_Results.averageAccuracy(majority_results)
 cm_recall = MV_Results.confusionMatrix(sum_cm, recall=True)

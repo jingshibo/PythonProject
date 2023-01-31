@@ -143,7 +143,7 @@ def confusionMatrix(sum_cm, is_recall=False):
 
     # the label order in the classes list should correspond to the one hot labels, which is a alphabetical order
     # class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD', 'SSSS']
-    class_labels = ['LWLW', 'LWSA', 'LWSD', 'LWSS', 'SALW', 'SASA', 'SASS', 'SDLW', 'SDSD', 'SDSS', 'SSLW', 'SSSA', 'SSSD']
+    class_labels = ['LW-LW', 'LW-SA', 'LW-SD', 'LW-SS', 'SA-LW', 'SA-SA', 'SA-SS', 'SD-LW', 'SD-SD', 'SD-SS', 'SS-LW', 'SS-SA', 'SS-SD']
     plt.figure()
     cm_recall = Confusion_Matrix.plotConfusionMatrix(overall_cm, class_labels, normalize=is_recall)
     return cm_recall

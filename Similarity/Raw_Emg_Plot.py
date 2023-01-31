@@ -4,8 +4,8 @@ plot the filtered emg data from each channel at each gait event
 
 
 ## modules
-from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
-from Processing import Extract_Label_Features
+from Pre_Processing.Utility_Functions import Feature_Storage, Data_Reshaping
+from Pre_Processing import Preprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -21,8 +21,8 @@ down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
 sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
-split_data = Extract_Label_Features.readSplitData(subject, version)
-combined_emg_labelled = Extract_Label_Features.labelSensorData(subject, modes, sessions, version, split_data, envelope=True)
+split_data = Preprocessing.readSplitParameters(subject, version)
+combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_data, envelope=True)
 
 
 ## organize all summed emg data

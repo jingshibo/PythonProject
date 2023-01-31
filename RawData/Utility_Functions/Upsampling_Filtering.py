@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from scipy import signal, ndimage
-from Processing.Utility_Functions import Data_Reshaping
+from Pre_Processing.Utility_Functions import Data_Reshaping
 from scipy.interpolate import PchipInterpolator
 
 
@@ -96,9 +96,11 @@ def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned,
     elif emg_aligned.shape[1] >= 128 and emg_aligned.shape[1] < 192:  # if two sessantaquattro data
         emg1_preprocessed = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor=quality_factor)
         emg2_preprocessed = filterEmg(emg_aligned.iloc[:, 73:137], notchEMG, quality_factor=quality_factor)
+        # change emg channel order
         emg1_reordered = Data_Reshaping.reorderElectrodes(emg1_preprocessed)
         emg2_reordered = Data_Reshaping.reorderElectrodes(emg2_preprocessed)
         emg_reordered = pd.concat([emg1_reordered, emg2_reordered], axis=1, ignore_index=True)
+        # get emg envelope
         emg1_envelope = getEmgRectEnvelope(emg1_reordered, cutoff=envelope_cutoff)
         emg2_envelope = getEmgRectEnvelope(emg2_reordered, cutoff=envelope_cutoff)
         emg_envelope = pd.concat([emg1_envelope, emg2_envelope], axis=1, ignore_index=True)

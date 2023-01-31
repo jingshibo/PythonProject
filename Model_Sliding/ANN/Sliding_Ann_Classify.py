@@ -29,10 +29,10 @@ shuffled_groups = Ann_Dataset.shuffleTrainingSet(normalized_groups)
 now = datetime.datetime.now()
 models, model_results = Ann_Model.classifyUsingAnnModel(shuffled_groups)
 print(datetime.datetime.now() - now)
-# save model results
-##
+
+## save model results
 result_set = 0
-Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_per_repetition, feature_window_increment_ms)
+Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_per_repetition, feature_window_increment_ms, model_type='sliding_ANN')
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points

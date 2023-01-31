@@ -5,7 +5,7 @@ producing the transfer learning dataset.
 
 
 ## import modules
-from Processing.Utility_Functions import Feature_Storage, Data_Reshaping
+from Pre_Processing.Utility_Functions import Feature_Storage, Data_Reshaping
 import random
 import numpy as np
 import copy
@@ -28,28 +28,35 @@ def loadEmgFeature(subject, version, feature_set):
 
 
 ## abandon samples from some modes
-def removeSomeSamples(emg_features, start_index=0, end_index=-1):
-    emg_feature_data = copy.deepcopy(emg_features)
+def removeSomeSamples(emg_all_data, start_index=0, end_index=-1):
+    emg_selected_data = copy.deepcopy(emg_all_data)
+
+    # check if emg_features is raw data or feature data
+    if 'emg_LWLW_features' in list(emg_all_data.keys()):  # emg features
+        string = '_features'
+    elif 'emg_LWLW' in list(emg_all_data.keys()):  # emg data
+        string = ''
+
     # remove some modes
-    emg_feature_data['emg_LWLW_features'] = emg_feature_data['emg_LWLW_features'][
-    int(len(emg_feature_data['emg_LWLW_features']) / 4): int(len(emg_feature_data['emg_LWLW_features']) * 3 / 4)]  # remove half of LWLW mode
-    emg_feature_data.pop('emg_LW_features', None)
-    emg_feature_data.pop('emg_SD_features', None)
-    emg_feature_data.pop('emg_SA_features', None)
-    emg_feature_data.pop('emg_SSSS_features', None)
+    emg_selected_data[f'emg_LWLW{string}'] = emg_selected_data[f'emg_LWLW{string}'][
+    int(len(emg_selected_data[f'emg_LWLW{string}']) / 4): int(len(emg_selected_data[f'emg_LWLW{string}']) * 3 / 4)]  # remove half of LWLW mode
+    emg_selected_data.pop(f'emg_LW{string}', None)
+    emg_selected_data.pop(f'emg_SD{string}', None)
+    emg_selected_data.pop(f'emg_SA{string}', None)
+    emg_selected_data.pop(f'emg_SSSS{string}', None)
 
     # remove some feature data from each repetition
     if end_index != -1:  # no sample is removed if end_index != -1'
-        if emg_feature_data['emg_LWSA_features'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
-            for transition_type, transition_features in emg_feature_data.items():
-                for count, value in enumerate(transition_features):
-                    transition_features[count] = value[start_index: end_index + 1, :]  # only keep the feature data between start index and end index
-        elif emg_feature_data['emg_LWSA_features'][0].ndim == 4:  # if emg data is 2d (4 dimension matrix)
-            for transition_type, transition_features in emg_feature_data.items():
-                for count, value in enumerate(transition_features):
-                    transition_features[count] = value[:, :, :, start_index: end_index + 1]  # only keep the feature data between start index and end index
+        if emg_selected_data[f'emg_LWSA{string}'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
+            for transition_type, transition_data in emg_selected_data.items():
+                for count, value in enumerate(transition_data):
+                    transition_data[count] = value[start_index: end_index + 1, :]  # only keep the feature data between start index and end index
+        elif emg_selected_data[f'emg_LWSA{string}'][0].ndim == 4:  # if emg data is 2d (4 dimension matrix)
+            for transition_type, transition_data in emg_selected_data.items():
+                for count, value in enumerate(transition_data):
+                    transition_data[count] = value[:, :, :, start_index: end_index + 1]  # only keep the feature data between start index and end index
 
-    return emg_feature_data
+    return emg_selected_data
 
 ## create k-fold cross validation groups
 def crossValidationSet(fold, emg_feature_data):
@@ -131,12 +138,10 @@ def divideTransferDataset(fold, emg_feature_data, transfer_data_percent):
 
 
 ##
-if __name__ == '__main__':
-    #  class name to labels (according to the alphabetical order)
-    class_all = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_LW_features': 4,
-        'emg_SALW_features': 5, 'emg_SASA_features': 6, 'emg_SASS_features': 7, 'emg_SA_features': 8, 'emg_SDLW_features': 9,
-        'emg_SDSD_features': 10, 'emg_SDSS_features': 11, 'emg_SD_features': 12, 'emg_SSLW_features': 13, 'emg_SSSA_features': 14,
-        'emg_SSSD_features': 15, 'emg_SSSS_features': 16}
-    class_reduced = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_SALW_features': 4,
-        'emg_SASA_features': 5, 'emg_SASS_features': 6, 'emg_SDLW_features': 7, 'emg_SDSD_features': 8, 'emg_SDSS_features': 9,
-        'emg_SSLW_features': 10, 'emg_SSSA_features': 11, 'emg_SSSD_features': 12, 'emg_SSSS_features': 13}
+class_all = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_LW_features': 4,
+    'emg_SALW_features': 5, 'emg_SASA_features': 6, 'emg_SASS_features': 7, 'emg_SA_features': 8, 'emg_SDLW_features': 9,
+    'emg_SDSD_features': 10, 'emg_SDSS_features': 11, 'emg_SD_features': 12, 'emg_SSLW_features': 13, 'emg_SSSA_features': 14,
+    'emg_SSSD_features': 15, 'emg_SSSS_features': 16}
+class_reduced = {'emg_LWLW_features': 0, 'emg_LWSA_features': 1, 'emg_LWSD_features': 2, 'emg_LWSS_features': 3, 'emg_SALW_features': 4,
+    'emg_SASA_features': 5, 'emg_SASS_features': 6, 'emg_SDLW_features': 7, 'emg_SDSD_features': 8, 'emg_SDSS_features': 9,
+    'emg_SSLW_features': 10, 'emg_SSSA_features': 11, 'emg_SSSD_features': 12, 'emg_SSSS_features': 13}

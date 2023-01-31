@@ -4,7 +4,7 @@ import numpy as np
 import datetime
 from statsmodels.tsa.ar_model import AutoReg
 from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
-from Processing.Utility_Functions import Data_Separation, Data_Reshaping
+from Pre_Processing.Utility_Functions import Data_Separation, Data_Reshaping
 import concurrent.futures
 import multiprocessing
 import functools

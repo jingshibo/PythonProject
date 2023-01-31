@@ -4,7 +4,7 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 
-from Processing import Extract_Label_Features
+from Pre_Processing import Preprocessing
 from dtaidistance import dtw  # this method seems to work worse than Accelerated DTW package
 from dtaidistance import dtw_visualisation as dtwvis
 
@@ -17,9 +17,9 @@ down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
 sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
-split_data = Extract_Label_Features.readSplitData(subject, version)
+split_data = Preprocessing.readSplitParameters(subject, version)
 # obtain the envelope of emg data
-combined_emg_labelled = Extract_Label_Features.labelSensorData(subject, modes, sessions, version, split_data, envelope=True)
+combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_data, envelope=True)
 
 
 ## Calcualte the mean value of each gait event

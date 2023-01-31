@@ -4,15 +4,15 @@ import numpy as np
 import datetime
 import concurrent.futures
 
-from Processing import Extract_Label_Features
+from Pre_Processing import Preprocessing
 from dtaidistance import dtw
 from dtaidistance import dtw_visualisation as dtwvis
 
 ## input emg labelled series data
 def readEmgData(subject, version, modes, sessions):
     # labelled emg series data
-    split_data = Extract_Label_Features.readSplitData(subject, version)
-    combined_emg_labelled = Extract_Label_Features.labelSensorData(subject, modes, sessions, version, split_data, envelope=True)
+    split_data = Preprocessing.readSplitParameters(subject, version)
+    combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_data, envelope=True)
     combined_emg_labelled.pop('emg_LW', None)
     combined_emg_labelled.pop('emg_SD', None)
     combined_emg_labelled.pop('emg_SA', None)

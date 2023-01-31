@@ -10,15 +10,15 @@ import datetime
 import concurrent.futures
 import matplotlib.pyplot as plt
 import copy
-from Processing import Extract_Label_Features
+from Pre_Processing import Preprocessing
 from dtw import accelerated_dtw
 from Similarity.Utility_Functions import Dtw_Storage
 
 ## input emg labelled series data
 def readEmgData(subject, version, modes, sessions):
     # labelled emg series data
-    split_data = Extract_Label_Features.readSplitData(subject, version)
-    combined_emg_labelled = Extract_Label_Features.labelSensorData(subject, modes, sessions, version, split_data, envelope=True)
+    split_data = Preprocessing.readSplitParameters(subject, version)
+    combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_data, envelope=True)
     combined_emg_labelled.pop('emg_LW', None)
     combined_emg_labelled.pop('emg_SD', None)
     combined_emg_labelled.pop('emg_SA', None)

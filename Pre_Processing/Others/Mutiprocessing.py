@@ -2,8 +2,8 @@
 import pandas as pd
 import datetime
 from RawData.Utility_Functions import Insole_Emg_Alignment, Upsampling_Filtering, Insole_Data_Splition
-from Processing.Utility_Functions import Data_Separation, Data_Reshaping
-from Processing.Others import Calculate_Features
+from Pre_Processing.Utility_Functions import Data_Separation, Data_Reshaping
+from Pre_Processing.Others import Calculate_Features
 import concurrent.futures
 
 

@@ -51,7 +51,7 @@ def classifyUsingAnnModel(shuffled_groups):
         initializer = tf.keras.initializers.HeNormal()
         # model structure
         model = tf.keras.models.Sequential(name="ann_model")  # optional name
-        model.add(tf.keras.layers.InputLayer(input_shape=(train_set_x.shape[1])))  # or replaced by: model.add(tf.keras.Input(shape=(28,28)))
+        model.add(tf.keras.layers.InputLayer(input_shape=(train_set_x.shape[1])))  # or replaced by: model.add(tf.keras.Input(shape=1040))
         model.add(tf.keras.layers.Dense(600, kernel_regularizer=regularization, kernel_initializer=initializer))  # or activation=tf.nn.relu
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.ReLU())
@@ -72,7 +72,6 @@ def classifyUsingAnnModel(shuffled_groups):
         model.add(tf.keras.layers.Softmax())  # or activation=tf.nn.softmax
         # view model
         model.summary()
-
 
         # model parameters
         num_epochs = 100
