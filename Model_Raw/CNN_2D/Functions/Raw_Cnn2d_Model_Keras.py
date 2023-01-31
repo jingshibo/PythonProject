@@ -51,19 +51,19 @@ def classifyUsingCnn2dModel(shuffled_groups):
         x = tf.keras.layers.Conv2D(32, 7, dilation_rate=1, strides=2, padding='same', data_format='channels_last')(inputs)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.ReLU()(x)
-        # x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=2)(x)
-        # x = tf.keras.layers.Conv2D(64, 5, dilation_rate=1, strides=2, padding='same', data_format='channels_last')(x)
-        # x = tf.keras.layers.BatchNormalization()(x)
-        # x = tf.keras.layers.ReLU()(x)
-        # x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=2)(x)
-        # x = tf.keras.layers.Conv2D(128, 3, dilation_rate=1, strides=2, padding='same', data_format='channels_last')(x)
-        # x = tf.keras.layers.BatchNormalization()(x)
-        # x = tf.keras.layers.ReLU()(x)
+        x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=2)(x)
+        x = tf.keras.layers.Conv2D(64, 5, dilation_rate=1, strides=2, padding='same', data_format='channels_last')(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.ReLU()(x)
+        x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=2)(x)
+        x = tf.keras.layers.Conv2D(128, 3, dilation_rate=1, strides=2, padding='same', data_format='channels_last')(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.ReLU()(x)
         x = tf.keras.layers.AveragePooling2D(pool_size=2, strides=2)(x)
         x = tf.keras.layers.Flatten(data_format='channels_last')(x)
-        # x = tf.keras.layers.Dense(1000, kernel_regularizer=regularization, kernel_initializer=initializer)(x)
-        # x = tf.keras.layers.BatchNormalization()(x)
-        # x = tf.keras.layers.ReLU()(x)
+        x = tf.keras.layers.Dense(100, kernel_regularizer=regularization, kernel_initializer=initializer)(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.ReLU()(x)
         x = tf.keras.layers.Dropout(0.5)(x)
         x = tf.keras.layers.Dense(class_number, kernel_regularizer=regularization, kernel_initializer=initializer)(x)
         outputs = tf.keras.layers.Softmax()(x)
@@ -72,7 +72,7 @@ def classifyUsingCnn2dModel(shuffled_groups):
         model.summary()
 
         # model parameters
-        num_epochs = 60
+        num_epochs = 10
         decay_epochs = 25
         batch_size = 512
         decay_steps = decay_epochs * len(train_set_y) / batch_size

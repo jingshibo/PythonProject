@@ -6,19 +6,20 @@ from sklearn.preprocessing import LabelEncoder
 
 
 ##  seperate data from each repetitions using sliding windows
-def seperateEmgData(cross_validation_groups, separation_window_size=512, increment=64):
+def seperateEmgData(cross_validation_groups, feature_window_size, increment=64):
     sliding_window_dataset = copy.deepcopy(cross_validation_groups)
+    feature_window_per_repetition = (cross_validation_groups['group_0']['train_set']['emg_LWLW'][0].shape[0] - feature_window_size) / increment + 1
     for group_number, group_data in cross_validation_groups.items():
         for set_type, set_value in group_data.items():
             for transition_label, transition_data in set_value.items():
                 for repetition_number, repetition_data in enumerate(transition_data):
                     windows_per_repetition = []
                     # if window_size=512, increment=64, the sample number is 25 per repetition
-                    for i in range(0, repetition_data.shape[0] - separation_window_size + 1, increment):
-                        windows_per_repetition.append(repetition_data[i:i + separation_window_size, :])
+                    for i in range(0, repetition_data.shape[0] - feature_window_size + 1, increment):
+                        windows_per_repetition.append(repetition_data[i:i + feature_window_size, :])
                     sliding_window_dataset[group_number][set_type][transition_label][repetition_number] = np.transpose(
                         np.array(windows_per_repetition).astype(np.float32), (1, 2, 0))
-    return sliding_window_dataset
+    return sliding_window_dataset, feature_window_per_repetition
 
 
 ##  combine data of all gait events into a single dataset

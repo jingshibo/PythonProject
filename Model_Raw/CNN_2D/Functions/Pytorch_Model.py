@@ -11,7 +11,7 @@ from torchinfo import summary
 
 ##
 from Pre_Processing import Preprocessing
-from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
+from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model_Keras
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
 import datetime
@@ -24,8 +24,8 @@ version = 1  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
 # up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 # down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
-up_down_session = [10, 11]
-down_up_session = [10, 11]
+up_down_session = [10]
+down_up_session = [10]
 sessions = [up_down_session, down_up_session]
 
 # read and filter data
@@ -40,7 +40,7 @@ del emg_preprocessed
 
 ##  reorganize data
 now = datetime.datetime.now()
-sliding_window_dataset = Raw_Cnn2d_Dataset.seperateEmgData(cross_validation_groups, separation_window_size=512, increment=64)
+sliding_window_dataset = Raw_Cnn2d_Dataset.seperateEmgData(cross_validation_groups, feature_window_size=512, increment=64)
 del cross_validation_groups
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset)
 del sliding_window_dataset
@@ -63,17 +63,17 @@ class ConvNet(nn.Module):
 
         # define convolutional layer
         self.convolutional_layer = nn.Sequential(
-            nn.Conv2d(in_channels=input_channel, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], stride=1),
+            nn.Conv2d(in_channels=input_channel, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], stride=2),
             nn.BatchNorm2d(self.conv1_parameter[0]),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2, padding=0),
 
-            nn.Conv2d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], stride=1),
+            nn.Conv2d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], stride=2),
             nn.BatchNorm2d(self.conv2_parameter[0]),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2, padding=0),
 
-            nn.Conv2d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], stride=1),
+            nn.Conv2d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], stride=2),
             nn.BatchNorm2d(self.conv3_parameter[0]),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
@@ -81,12 +81,12 @@ class ConvNet(nn.Module):
 
         # define dense layer
         self.linear_layer = nn.Sequential(
-            nn.LazyLinear(self.linear1_parameter),
+            nn.Linear(in_features=896, out_features=self.linear1_parameter),
             nn.BatchNorm1d(self.linear1_parameter),
             nn.ReLU(),
             nn.Dropout(0.5),
 
-            nn.LazyLinear(self.linear2_parameter),
+            nn.Linear(in_features=self.linear1_parameter, out_features=self.linear2_parameter),
             nn.BatchNorm1d(self.linear2_parameter),
             nn.ReLU(),
             nn.Dropout(0.5),
@@ -102,36 +102,13 @@ class ConvNet(nn.Module):
         #     x = F.softmax(x, dim=1)
         return x
 
-##
-# class ConvNet(nn.Module):
-#     def __init__(self):
-#         super(ConvNet, self).__init__()
-#         self.conv1 = nn.Conv2d(1, 6, 5)
-#         self.pool = nn.MaxPool2d(2, 2)
-#         self.conv2 = nn.Conv2d(6, 16, 5)
-#         self.fc1 = nn.LazyLinear(120)
-#         self.fc2 = nn.Linear(120, 84)
-#         self.fc3 = nn.Linear(84, 13)
-#     def forward(self, x):
-#         # -> n, 3, 32, 32
-#         x = self.pool(F.relu(self.conv1(x)))  # -> n, 6, 14, 14
-#         x = self.pool(F.relu(self.conv2(x)))  # -> n, 16, 5, 5
-#         x = x.view(x.size(0), -1)            # -> n, 400
-#         x = F.relu(self.fc1(x))               # -> n, 120
-#         x = F.relu(self.fc2(x))               # -> n, 84
-#         x = self.fc3(x)                       # -> n, 10
-#         return x
-
-
-
 ##  check model
-net = ConvNet(1,13)
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model = net.to(device)  # move the model to GPU
-print(net)
+model = ConvNet(1, 13).to(device)  # move the model to GPU
+print(model)
 
 ##
-summary(model, input_size=(512, 1, 512, 130))
+summary(model, input_size=(1024, 1, 512, 130))
 
 ##  dataset
 class EmgDataSet(Dataset):
@@ -150,7 +127,7 @@ class EmgDataSet(Dataset):
 
 ##  training process
 # training the model for one epoch
-def trainOneGroup(training_loader, epochs, group_number, model, loss_fn, optimizer):
+def trainOneFold(training_loader, epochs, group_number, model, loss_fn, optimizer):
     model.train(True)
     # repeat training for epochs times
     for epoch_number in range(epochs):
@@ -162,7 +139,7 @@ def trainOneGroup(training_loader, epochs, group_number, model, loss_fn, optimiz
             loss = loss_fn(outputs, labels)
             loss.backward()
             optimizer.step()
-        print(f"group_number: {group_number}, epoch: {epoch_number}, loss: {loss:>7f}")
+        print(f"group_number: {group_number}, epoch: {epoch_number}, batch: {i}, loss: {loss:>7f}")
 
 def predictTestResults(test_loader, model):
     model.train(False)
@@ -178,19 +155,21 @@ def predictTestResults(test_loader, model):
             test_predict_softmax.extend(predict_softmax.cpu().numpy())
             test_predict_labels.extend(predict_label)
 
-    return test_true_labels, test_predict_softmax, test_predict_labels
+    return np.array(test_true_labels), np.array(test_predict_softmax), np.array(test_predict_labels)
 
-def trainModel(shuffled_groups, epochs, model, loss_fn):
+def trainModel(shuffled_groups, epochs, optimizer, loss_fn):
     models = []
     results = []
     for group_number, group_value in shuffled_groups.items():
+        model = ConvNet(1, 13).to(device)  # move the model to GPU
+
         train_data = EmgDataSet(group_value, 'train')
-        train_loader = DataLoader(train_data, batch_size=32, shuffle=True, num_workers=0)
-        trainOneGroup(train_loader, epochs, group_number, model, loss_fn, optimizer)  # train the dataset for one group
+        train_loader = DataLoader(train_data, batch_size=1024, shuffle=True, pin_memory=True, num_workers=0)
+        trainOneFold(train_loader, epochs, group_number, model, loss_fn, optimizer)  # train the dataset for one group
 
         # after finish the training for each group of data
         test_data = EmgDataSet(group_value, 'test')
-        test_loader = DataLoader(test_data, batch_size=512, shuffle=False, num_workers=0)
+        test_loader = DataLoader(test_data, batch_size=1024, shuffle=False, pin_memory=True, num_workers=0)
         test_true_labels, test_predict_softmax, test_predict_labels = predictTestResults(test_loader, model)  # classify the test dataset
 
         results.append({"true_value": test_true_labels, "predict_softmax": test_predict_softmax, "predict_value": test_predict_labels})
@@ -205,4 +184,4 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 # Loss functions expect data in batches, so we're creating batches of 4
 loss_fn = torch.nn.CrossEntropyLoss()
 epochs = 10
-models, results = trainModel(shuffled_groups, epochs, model, loss_fn)
+models, results = trainModel(shuffled_groups, epochs, optimizer, loss_fn)
