@@ -164,7 +164,7 @@ def select1dFeatureChannels(group_value, channel_to_calculate):
             test_set_x = test_emg2_x[:, :, 0: 65 * num_features]
         elif channel_to_calculate == 'emg_all':
             test_set_x = shift_value['test_feature_x'][:, :, 0: 130 * num_features]
-        elif channel_to_calculate == 'emg_bipolar':
+        elif channel_to_calculate == 'bipolar':
             pass
             # bipolar input data
             # train_bipolar_x = group_value['train_feature_x'][:, 33].reshape(len(group_value['train_int_y']), 1)

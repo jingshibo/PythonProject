@@ -20,8 +20,8 @@ def classifySlidingGtuLastOneModel(shuffled_groups):
     for group_number, group_value in shuffled_groups.items():
 
         # select channels to calculate
-        channel_to_compute = 'emg_all'
-        train_set, test_set = Sliding_Gru_Dataset.select1dFeatureChannels(group_value, channel_to_compute)
+        select_channels = 'emg_all'
+        train_set, test_set = Sliding_Gru_Dataset.select1dFeatureChannels(group_value, select_channels)
         class_number = len(set(train_set['train_int_y']))
 
         # layer parameters

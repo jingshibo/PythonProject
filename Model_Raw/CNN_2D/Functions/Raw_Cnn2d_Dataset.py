@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 ##  seperate data from each repetitions using sliding windows
 def seperateEmgData(cross_validation_groups, feature_window_size, increment=64):
     sliding_window_dataset = copy.deepcopy(cross_validation_groups)
-    feature_window_per_repetition = (cross_validation_groups['group_0']['train_set']['emg_LWLW'][0].shape[0] - feature_window_size) / increment + 1
+    feature_window_per_repetition = int((cross_validation_groups['group_0']['train_set']['emg_LWLW'][0].shape[0] - feature_window_size) / increment + 1)
     for group_number, group_data in cross_validation_groups.items():
         for set_type, set_value in group_data.items():
             for transition_label, transition_data in set_value.items():
