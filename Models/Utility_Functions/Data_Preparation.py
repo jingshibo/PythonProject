@@ -20,7 +20,7 @@ def loadEmgFeature(subject, version, feature_set):
         repetition_data = []
         for repetition_label, repetition_features in gait_event_features.items():
             # if repetition_features:  # if list is not empty
-            repetition_data.append(np.array(repetition_features))  # convert 2d list into numpy
+            repetition_data.append(np.array(repetition_features).astype(np.float32))  # convert 2d list into numpy
         emg_features[gait_event_label] = repetition_data  # convert repetition data from dict into list
     # if you want to use CNN model, you need to reshape the data
     emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_features)
@@ -28,7 +28,7 @@ def loadEmgFeature(subject, version, feature_set):
 
 
 ## abandon samples from some modes
-def removeSomeSamples(emg_all_data, start_index=0, end_index=-1):
+def removeSomeSamples(emg_all_data, start_index=0, end_index=-1, is_down_sampling=False):
     emg_selected_data = copy.deepcopy(emg_all_data)
 
     # check if emg_features is raw data or feature data
@@ -55,6 +55,11 @@ def removeSomeSamples(emg_all_data, start_index=0, end_index=-1):
             for transition_type, transition_data in emg_selected_data.items():
                 for count, value in enumerate(transition_data):
                     transition_data[count] = value[:, :, :, start_index: end_index + 1]  # only keep the feature data between start index and end index
+
+    if is_down_sampling == True:  # use a factor of 2 to downsample the emg data
+        for transition_label, transition_data in emg_selected_data.items():
+            for number, value in enumerate(transition_data):
+                emg_selected_data[transition_label][number] = value[::2, :]  # [1 3 5 7 9]
 
     return emg_selected_data
 

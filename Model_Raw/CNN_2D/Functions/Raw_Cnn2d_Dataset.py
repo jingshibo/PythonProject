@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 
 
 ##  seperate data from each repetitions using sliding windows
-def seperateEmgData(cross_validation_groups, feature_window_size, increment=64):
+def separateEmgData(cross_validation_groups, feature_window_size, increment=64):
     sliding_window_dataset = copy.deepcopy(cross_validation_groups)
     feature_window_per_repetition = int((cross_validation_groups['group_0']['train_set']['emg_LWLW'][0].shape[0] - feature_window_size) / increment + 1)
     for group_number, group_data in cross_validation_groups.items():
@@ -34,21 +34,19 @@ def combineNormalizedDataset(sliding_window_dataset):
         for set_type, set_value in group_value.items():
             if set_type == 'train_set':  # combine all data into a dataset
                 for transition_label, transition_data in set_value.items():
-                    train_feature_x.append(np.concatenate(transition_data, axis=-1))
+                    train_feature_x.extend(transition_data)
                     train_feature_y.extend([transition_label] * len(transition_data) * transition_data[0].shape[-1])
             elif set_type == 'test_set':  # keep the structure unchanged
                 for transition_label, transition_data in set_value.items():
-                    test_feature_x.append(np.concatenate(transition_data, axis=-1))
+                    test_feature_x.extend(transition_data)
                     test_feature_y.extend([transition_label] * len(transition_data) * transition_data[0].shape[-1])
         sliding_window_dataset[group_number] = []  # delete data to release the memory
 
         # normalization
-        train_feature_x = np.concatenate(train_feature_x, axis=-1)
-        test_feature_x = np.concatenate(test_feature_x, axis=-1)
-        mean_x = np.mean(train_feature_x, axis=-1)[:, :, np.newaxis]
-        std_x = np.std(train_feature_x, axis=-1)[:, :, np.newaxis]
-        train_feature_x = (train_feature_x - mean_x) / std_x
-        test_feature_x = (test_feature_x - mean_x) / std_x
+        mean_x = np.mean(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
+        std_x = np.std(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
+        train_feature_x = (np.concatenate(train_feature_x, axis=-1) - mean_x) / std_x
+        test_feature_x = (np.concatenate(test_feature_x, axis=-1) - mean_x) / std_x
 
         # one-hot encode categories (according to the alphabetical order)
         train_int_y = LabelEncoder().fit_transform(train_feature_y)

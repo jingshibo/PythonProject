@@ -41,7 +41,7 @@ def majorityVoteResults(model_results, window_per_repetition, initial_start=0, i
 
 
 ##  majority vote results based on transition groups
-def majorityVoteResultsByGroup(reorganized_results, window_per_repetition, predict_window_shift_unit, initial_start=0, predict_from_window_number=16):
+def majorityVoteResultsByGroup(reorganized_results, feature_window_per_repetition, predict_window_shift_unit, initial_start=0, predict_of_window_number=16):
     """
     initial_start and predict_window_number define the initial window position(and size), shift_unit defines the number of window shift each slding
     """
@@ -54,16 +54,16 @@ def majorityVoteResultsByGroup(reorganized_results, window_per_repetition, predi
             predict_y = []
             for key, value in transition_results.items():
                 if key == 'true_value':
-                    for i in range(0, len(value), window_per_repetition):
-                        true_y.append(value[i: i + window_per_repetition])
+                    for i in range(0, len(value), feature_window_per_repetition):
+                        true_y.append(value[i: i + feature_window_per_repetition])
                 elif key == 'predict_value':
-                    for i in range(0, len(value), window_per_repetition):
-                        predict_y.append(value[i: i + window_per_repetition])
+                    for i in range(0, len(value), feature_window_per_repetition):
+                        predict_y.append(value[i: i + feature_window_per_repetition])
             bin_transitions[transition_type] = {"true_value": true_y, "predict_value": predict_y}
         bin_results.append(bin_transitions)
 
     # use majority vote to get a consensus result for each repetition
-    shift_range = window_per_repetition - initial_start - predict_from_window_number  # decide how many shifts there are in the for loop below
+    shift_range = feature_window_per_repetition - initial_start - predict_of_window_number  # decide how many shifts there are in the for loop below
     sliding_majority_vote_by_group = copy.deepcopy(bin_results)
     for group, result in enumerate(bin_results):
         for transition_type, transition_results in result.items():
@@ -71,7 +71,7 @@ def majorityVoteResultsByGroup(reorganized_results, window_per_repetition, predi
                 for number, each_repetition in enumerate(value):
                     sliding_result_each_repetition = []
                     for shift in range(0, shift_range, predict_window_shift_unit):  # reorganize the predict results at each delay timepoint
-                        window_value = each_repetition[initial_start + shift: predict_from_window_number + shift + 1]
+                        window_value = each_repetition[initial_start + shift: predict_of_window_number + shift + 1]
                         sliding_result_each_repetition.append(np.bincount(window_value).argmax())  # get majority vote results at the delay time
                     sliding_majority_vote_by_group[group][transition_type][key][number] = sliding_result_each_repetition
                 # convert nested list to numpy: row is the repetition, column is the predict results at each delay time in this repetition
@@ -162,7 +162,7 @@ def getPredictResults(subject, version, result_set, predict_window_shift_unit=2)
 
     reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
     sliding_majority_vote_by_group = majorityVoteResultsByGroup(reorganized_results, window_per_repetition, predict_window_shift_unit,
-        initial_start=0, predict_from_window_number=16)
+        initial_start=0, predict_of_window_number=16)
     accuracy_bygroup, cm_bygroup = getAccuracyPerGroup(sliding_majority_vote_by_group)
     # calculate the accuracy and cm. Note: the first dimension refers to each delay
     average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(

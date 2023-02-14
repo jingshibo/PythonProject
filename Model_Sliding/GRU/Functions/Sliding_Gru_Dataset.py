@@ -26,10 +26,10 @@ def selectSamples(emg_features, start_index, end_index):
 
 
 ##  create emg dataset from different sliding window positions
-def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, initial_start=0, predict_from_window_number=16):
+def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, initial_start=0, predict_of_window_number=16):
     # initial_start and predict_from_window_number define the initial window position and size, shift_unit defines the number of window shift for each sliding
     window_per_repetition = cross_validation_groups['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
-    shift_range = window_per_repetition - initial_start - predict_from_window_number  # decide how many shifts to do in the for loop below
+    shift_range = window_per_repetition - initial_start - predict_of_window_number  # decide how many shifts to do in the for loop below
 
     emg_feature_all = copy.deepcopy(cross_validation_groups)
     for group_number, group_value in emg_feature_all.items():
@@ -37,7 +37,7 @@ def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, ini
             emg_sliding_features = {}  # emg features from different window positions
             if set_type == 'train_set':  # combine the features from different window positions together
                 for shift in range(0, shift_range, predict_window_shift_unit):  # shift = 0, 2, 4, 6, 。。。, 42, 44, 46, 48
-                    emg_feature_value = selectSamples(set_value, start_index=initial_start + shift, end_index=predict_from_window_number + shift)  # (0,16) -> (32,48)
+                    emg_feature_value = selectSamples(set_value, start_index=initial_start + shift, end_index=predict_of_window_number + shift)  # (0,16) -> (32,48)
                     for gait_event_label, gait_event_emg in emg_feature_value.items():
                         if gait_event_label in emg_sliding_features:  # check if there is already the key in the dict
                             emg_sliding_features[gait_event_label].extend(gait_event_emg)
@@ -45,7 +45,7 @@ def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, ini
                             emg_sliding_features[gait_event_label] = gait_event_emg
             elif set_type == 'test_set':  # put the features from different window positions separately
                 for shift in range(0, shift_range, predict_window_shift_unit):  # 0, 4, 8, 12, 16, 20, 24, 28, 32
-                    emg_feature_value = selectSamples(set_value, start_index=initial_start + shift, end_index=predict_from_window_number + shift)
+                    emg_feature_value = selectSamples(set_value, start_index=initial_start + shift, end_index=predict_of_window_number + shift)
                     emg_sliding_features[f'shift_{shift}'] = emg_feature_value  # the keyword is the number of window shift
             group_value[set_type] = emg_sliding_features
 
@@ -53,7 +53,7 @@ def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, ini
 
 
 ## combine data of all gait events into a single dataset
-def combineNormalizedDataset(emg_sliding_features, window_per_repetition):
+def combineNormalizedDataset(emg_sliding_features, feature_window_per_repetition):
     normalized_groups = {}
     # window_per_repetition = emg_feature_all['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
 
@@ -63,16 +63,16 @@ def combineNormalizedDataset(emg_sliding_features, window_per_repetition):
         train_feature_y = []
         for gait_event_label, gait_event_features in group_value['train_set'].items():  # training set: combine all data into a dataset
             train_feature_x.extend(np.concatenate(gait_event_features))
-            train_feature_y.extend([gait_event_label] * len(gait_event_features) * window_per_repetition)
+            train_feature_y.extend([gait_event_label] * len(gait_event_features) * feature_window_per_repetition)
         # normalization
         train_norm_x = (train_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
         # one-hot encode categories (according to the alphabetical order)
         train_int_y = LabelEncoder().fit_transform(train_feature_y)
         train_onehot_y = tf.keras.utils.to_categorical(train_int_y)
         #  reshape the data structure for RNN model (of shape [batch, timesteps, feature])
-        train_norm_x_reshaped = np.transpose(np.reshape(train_norm_x, (window_per_repetition, -1, train_norm_x.shape[1]), order='F'), (1, 0, 2))
-        train_int_y_reshaped = np.transpose(np.reshape(train_int_y, (window_per_repetition, -1), order='F'))
-        train_onehot_y_reshaped = np.transpose(np.reshape(train_onehot_y, (window_per_repetition, -1, train_onehot_y.shape[1]), order='F'), (1, 0, 2))
+        train_norm_x_reshaped = np.transpose(np.reshape(train_norm_x, (feature_window_per_repetition, -1, train_norm_x.shape[1]), order='F'), (1, 0, 2))
+        train_int_y_reshaped = np.transpose(np.reshape(train_int_y, (feature_window_per_repetition, -1), order='F'))
+        train_onehot_y_reshaped = np.transpose(np.reshape(train_onehot_y, (feature_window_per_repetition, -1, train_onehot_y.shape[1]), order='F'), (1, 0, 2))
 
         train_set = {"train_feature_x": train_norm_x_reshaped, "train_int_y": train_int_y_reshaped, "train_onehot_y": train_onehot_y_reshaped}
 
@@ -83,16 +83,16 @@ def combineNormalizedDataset(emg_sliding_features, window_per_repetition):
             test_feature_y = []
             for gait_event_label, gait_event_features in shift_value.items():
                 test_feature_x.extend(np.concatenate(gait_event_features))
-                test_feature_y.extend([gait_event_label] * len(gait_event_features) * window_per_repetition)
+                test_feature_y.extend([gait_event_label] * len(gait_event_features) * feature_window_per_repetition)
             # normalization
             test_norm_x = (test_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
             # one-hot encode categories (according to the alphabetical order)
             test_int_y = LabelEncoder().fit_transform(test_feature_y)
             test_onehot_y = tf.keras.utils.to_categorical(test_int_y)
             #  reshape the data structure for RNN model (of shape [batch, timesteps, feature])
-            test_norm_x_reshaped = np.transpose(np.reshape(test_norm_x, (window_per_repetition, -1, test_norm_x.shape[1]), order='F'), (1, 0, 2))
-            test_int_y_reshaped = np.transpose(np.reshape(test_int_y, (window_per_repetition, -1), order='F'))
-            test_onehot_y_reshaped = np.transpose(np.reshape(test_onehot_y, (window_per_repetition, -1, test_onehot_y.shape[1]), order='F'), (1, 0, 2))
+            test_norm_x_reshaped = np.transpose(np.reshape(test_norm_x, (feature_window_per_repetition, -1, test_norm_x.shape[1]), order='F'), (1, 0, 2))
+            test_int_y_reshaped = np.transpose(np.reshape(test_int_y, (feature_window_per_repetition, -1), order='F'))
+            test_onehot_y_reshaped = np.transpose(np.reshape(test_onehot_y, (feature_window_per_repetition, -1, test_onehot_y.shape[1]), order='F'), (1, 0, 2))
             test_set[shift_number] = {"test_feature_x": test_norm_x_reshaped, "test_int_y": test_int_y_reshaped, "test_onehot_y": test_onehot_y_reshaped}
 
         # put training data and test data into one group

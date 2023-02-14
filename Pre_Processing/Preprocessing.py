@@ -22,7 +22,8 @@ def readSplitParameters(subject, version):
 
 
 ## read, preprocess and label aligned sensor data
-def labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1024, end_position=1024, envelope=False):
+def labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1024, end_position=1024, notchEMG=False,
+        reordering=True, envelope=False):
     now = datetime.datetime.now()
     combined_emg_labelled = {}
 
@@ -32,11 +33,13 @@ def labelFilteredData(subject, modes, sessions, version, split_parameters, start
             # read aligned data
             left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version)
             # upsampling, filtering and reordering data
-            left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_envelope = Upsampling_Filtering.preprocessSensorData(
-                left_insole_aligned, right_insole_aligned, emg_aligned, envelope_cutoff=10)
+            left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_reordered, emg_envelope = Upsampling_Filtering\
+                .preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, envelope_cutoff=10, notchEMG=notchEMG)
             if envelope == True:  # if emg envelope is needed
                 emg_preprocessed = emg_envelope
-            else:
+            elif reordering == True:  # if reordering emg is needed
+                emg_preprocessed = emg_reordered
+            else:  # if only filtering
                 emg_preprocessed = emg_filtered
             # separate the gait event using timestamps
             gait_event_timestamp = Data_Separation.seperateGait(split_parameters[mode][f'session{session}'], start_position, end_position)
@@ -74,25 +77,25 @@ def extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32):
 ## read sensor data and extract features with labeling
 if __name__ == '__main__':
 
-    # basic information
-    subject = 'Shibo'
-    version = 3  # the data from which experiment version to process
+    # # basic information
+    # subject = 'Shibo'
+    # version = 3  # the data from which experiment version to process
+    # modes = ['up_down', 'down_up']
+    # up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    # down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    # sessions = [up_down_session, down_up_session]
+
+    subject = 'Number3'
+    version = 0  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
     up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     sessions = [up_down_session, down_up_session]
-
-    # subject = 'Shibo'
-    # version = 1   # the data from which experiment version to process
-    # modes = ['up_down', 'down_up']
-    # up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-    # down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
-    # sessions = [up_down_session, down_up_session]
 
     # Feature extraction
     split_parameters = readSplitParameters(subject, version)
-    combined_emg_labelled = labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1024, end_position=1024)
-    emg_features = extractEmgFeatures(combined_emg_labelled, window_size=512, increment=32)
+    combined_emg_labelled = labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-800, end_position=800)
+    emg_features = extractEmgFeatures(combined_emg_labelled, window_size=600, increment=40)
 
     # store features
     feature_set = 0  # there may be multiple sets of features to be calculated for comparison

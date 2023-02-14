@@ -15,12 +15,12 @@ import os
 
 
 ## design model
-class Raw_Cnn_2d(nn.Module):
+class Raw_Cnn_4d(nn.Module):
     def __init__(self, input_size, class_number):
-        super(Raw_Cnn_2d, self).__init__()
+        super(Raw_Cnn_4d, self).__init__()
 
         # define layer parameter
-        self.conv1_parameter = [32, 3]
+        self.conv1_parameter = [32, 5]
         self.conv2_parameter = [32, 3]
         self.conv3_parameter = [32, 3]
         self.linear1_parameter = 500
@@ -28,20 +28,20 @@ class Raw_Cnn_2d(nn.Module):
 
         # define convolutional layer
         self.convolutional_layer = nn.Sequential(
-            nn.Conv2d(in_channels=input_size, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv1_parameter[0]),
+            nn.Conv3d(in_channels=input_size, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], dilation=1, stride=1),
+            nn.BatchNorm3d(self.conv1_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
+            nn.AvgPool3d(kernel_size=2, stride=1, padding=0),
 
-            nn.Conv2d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv2_parameter[0]),
+            nn.Conv3d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], dilation=1, stride=1),
+            nn.BatchNorm3d(self.conv2_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
+            nn.AvgPool3d(kernel_size=2, stride=1, padding=0),
 
-            nn.Conv2d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv3_parameter[0]),
+            nn.Conv3d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], dilation=1, stride=2),
+            nn.BatchNorm3d(self.conv3_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0)
+            nn.AvgPool3d(kernel_size=2, stride=1, padding=0)
         )
 
         # define dense layer
@@ -49,12 +49,12 @@ class Raw_Cnn_2d(nn.Module):
             nn.LazyLinear(self.linear1_parameter),
             nn.BatchNorm1d(self.linear1_parameter),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            # nn.Dropout(0.4),
 
             nn.LazyLinear(self.linear2_parameter),
             nn.BatchNorm1d(self.linear2_parameter),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            # nn.Dropout(0.4),
 
             nn.LazyLinear(class_number)
         )
@@ -63,7 +63,7 @@ class Raw_Cnn_2d(nn.Module):
     # define the initialization method for each layer
     def initialize_weights(self):
         for m in self.convolutional_layer:
-            if isinstance(m, nn.Conv2d):
+            if isinstance(m, nn.Conv3d):
                 nn.init.xavier_normal_(m.weight)  # xavier / Glorot method
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
@@ -80,12 +80,12 @@ class Raw_Cnn_2d(nn.Module):
         #     x = F.softmax(x, dim=1)
         return x
 
-print("change dropout!")
+print("change dropout")
 
 
 ## model summary
 # model = Raw_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
-# summary(model, input_size=(1024, 1, 512, 130))
+# summary(model, input_size=(1024, 1, 512, 13, 10))
 
 
 ## training
@@ -104,7 +104,7 @@ class ModelTraining():
         self.test_loader = None
         self.writer = None
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
+        self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_3D\Results\\runs_{timestamp}'
 
         #  train the model
     def trainModel(self, shuffled_groups, decay_epochs, select_channels='emg_all'):
@@ -112,13 +112,13 @@ class ModelTraining():
         results = []
         # train and test the dataset for each group
         # for group_number, group_value in shuffled_groups.items():
-        for group_number, group_value in {'group_1': shuffled_groups['group_1'], 'group_3': shuffled_groups['group_3']}.items():
+        for group_number, group_value in {'group_1': shuffled_groups['group_1']}.items():
             # initialize the tensorboard writer
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
             # extract the dataset
-            input_size = group_value['train_feature_x'].shape[2]
+            input_size = group_value['train_feature_x'].shape[3]
             class_number = len(set(group_value['train_int_y']))
             data_set = self.selectSamples(group_value, select_channels)
 
@@ -129,8 +129,8 @@ class ModelTraining():
             self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
 
             # training parameters
-            self.model = Raw_Cnn_2d(input_size, class_number).to(self.device)  # move the model to GPU
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=0.0001)  # initial learning rate and regularization
+            self.model = Raw_Cnn_4d(input_size, class_number).to(self.device)  # move the model to GPU
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=0.001)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.3)  # adjusted learning rate
@@ -228,11 +228,11 @@ class ModelTraining():
         if select_channels == 'emg_all':
             return group_value
         elif select_channels == 'emg_1':
-            train_set_x = group_value['train_feature_x'][:, 0: 65, :, :]
-            test_set_x = group_value['test_feature_x'][:, 0: 65, :, :]
+            train_set_x = group_value['train_feature_x'][:, :, 0:5, :, :]
+            test_set_x = group_value['train_feature_x'][:, :, 0:5, :, :]
         elif select_channels == 'emg_2':
-            train_set_x = group_value['train_feature_x'][:, 65: 130, :, :]
-            test_set_x = group_value['test_feature_x'][:, 65: 130, :, :]
+            train_set_x = group_value['train_feature_x'][:, :, 5:10, :, :]
+            test_set_x = group_value['train_feature_x'][:, :, 5:10, :, :]
         elif select_channels == 'bipolar':
             pass
         else:
@@ -248,7 +248,7 @@ class EmgDataSet(Dataset):
     def __init__(self, shuffled_data, mode):
         self.n_samples = shuffled_data[f'{mode}_int_y'].shape[0]
         # here the first column is the class label, the rest are the features
-        self.x_data = torch.from_numpy(np.transpose(shuffled_data[f'{mode}_feature_x'], (3, 2, 0, 1)))  # size [n_samples, n_channel, length, width]
+        self.x_data = torch.from_numpy(np.transpose(shuffled_data[f'{mode}_feature_x'], (4, 3, 0, 1, 2)))  # size [n_samples, n_channel, length, width]
         self.y_data = torch.from_numpy(shuffled_data[f'{mode}_int_y'])  # size [n_samples]
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
@@ -258,8 +258,8 @@ class EmgDataSet(Dataset):
         return self.n_samples
 
 
-##  visualize the images
-import matplotlib.pyplot as plt
+# ##  visualize the images
+# import matplotlib.pyplot as plt
 # train_data = EmgDataSet(shuffled_groups['group_0'], 'train')
 #
 # figure = plt.figure(figsize=(8, 8))
@@ -270,10 +270,11 @@ import matplotlib.pyplot as plt
 #     figure.add_subplot(rows, cols, i)
 #     plt.title(label)
 #     plt.axis("off")
-#     plt.imshow(img.squeeze())
+#     plt.imshow(img[1, :, :].squeeze())
 # plt.show()
 
 
+##
 class AdMSoftmaxLoss(nn.Module):
 
     def __init__(self, in_features, out_features, s=30.0, m=0.4):

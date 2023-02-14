@@ -10,19 +10,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
+from Models.Utility_Functions import Data_Preparation
 
 
 ## input emg labelled series data
 subject = 'Shibo'
-version = 1  # the data from which experiment version to process
+version = 3  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
-split_data = Preprocessing.readSplitParameters(subject, version)
-combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_data, envelope=True)
+split_parameters = Preprocessing.readSplitParameters(subject, version)
+combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1000,
+    end_position=1000, notchEMG=False, reordering=True, envelope=False)
+emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
 ## organize all summed emg data
@@ -31,20 +34,52 @@ emg_2_mean_channels = {}
 emg_1_mean_events = {}  # emg device 1: tibialis
 emg_2_mean_events = {}  # emg device 2: rectus
 # sum the emg data of all channels and samples up for the same gait event
-for gait_event_label, gait_event_emg in combined_emg_labelled.items():
-    emg_1_mean_channels[f"{gait_event_label}_data"] = [np.sum(emg_per_repetition[:, 0:65], axis=1) / 65 for emg_per_repetition in
+for gait_event_label, gait_event_emg in emg_preprocessed.items():
+    emg_1_mean_channels[f"{gait_event_label}_data"] = [np.sum(np.abs(emg_per_repetition[:, 0:65]), axis=1) / 65 for emg_per_repetition in
         gait_event_emg]  # average the emg values of all channels
     emg_1_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_1_mean_channels[f"{gait_event_label}_data"]) / len\
             (emg_1_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
     emg_1_mean_channels[f"{gait_event_label}_data"].insert(0, emg_1_mean_events[f"{gait_event_label}_data"])  # insert the mean event value in front of the dataset
-    emg_2_mean_channels[f"{gait_event_label}_data"] = [np.sum(emg_per_repetition[:, 65:130], axis=1) / 65 for emg_per_repetition in
+    emg_2_mean_channels[f"{gait_event_label}_data"] = [np.sum(np.abs(emg_per_repetition[:, 65:130]), axis=1) / 65 for emg_per_repetition in
         gait_event_emg]  # average the emg values of all channels
     emg_2_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_2_mean_channels[f"{gait_event_label}_data"]) / len\
             (emg_2_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
     emg_2_mean_channels[f"{gait_event_label}_data"].insert(0, emg_2_mean_events[f"{gait_event_label}_data"])
-# plot summed series emg data
-pd.DataFrame(emg_1_mean_events).plot(subplots=True, layout=(4, 4))
-# pd.DataFrame(emg_2_mean_events).plot(subplots=True, layout=(4, 4))
+
+
+##  plot summed series emg data
+left_number = 000
+right_number = 2000
+emg_1_value = copy.deepcopy(emg_1_mean_events)
+for event, value in emg_1_mean_events.items():
+    emg_1_value[event] = value[left_number:right_number]
+emg_2_value = copy.deepcopy(emg_2_mean_events)
+for event, value in emg_2_mean_events.items():
+    emg_2_value[event] = value[left_number:right_number]
+pd.DataFrame(emg_1_value).plot(subplots=True, layout=(4, 4), title="EMG 1")
+pd.DataFrame(emg_2_value).plot(subplots=True, layout=(4, 4), title="EMG 2")
+
+
+##  plot summed series emg data by group
+emd_data = emg_1_value
+x = list(range(left_number-1000, right_number-1000))
+plt.figure()
+plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_LWSS_data"])
+plt.legend(['emg_LWLW_data', 'emg_LWSA_data', 'emg_LWSD_data', 'emg_LWSS_data'])
+plt.title("LW")
+plt.figure()
+plt.plot(x, emd_data["emg_SASA_data"], x, emd_data["emg_SALW_data"], x, emd_data["emg_SASS_data"])
+plt.legend(['emg_SASA_data', 'emg_SALW_data', 'emg_SASS_data'])
+plt.title("SA")
+plt.figure()
+plt.plot(x, emd_data["emg_SDSD_data"], x, emd_data["emg_SDLW_data"], x, emd_data["emg_SDSS_data"])
+plt.legend(['emg_SDSD_data', 'emg_SDLW_data', 'emg_SDSS_data'])
+plt.title("SD")
+plt.figure()
+plt.plot(x, emd_data["emg_SSLW_data"], x, emd_data["emg_SSSA_data"], x, emd_data["emg_SSSD_data"])
+plt.legend(['emg_SSLW_data', 'emg_SSSA_data', 'emg_SSSD_data'])
+plt.title("SS")
+
 
 
 ## organize channel summed emg data

@@ -79,8 +79,8 @@ plt.title('Prediction accuracy for the prediction at different delay points')
 
 
 ##  print confusion matrix
-subject = 'Zehao'
-delay = 480
+subject = 'Number3'
+delay = 400
 cm_call = all_subjects[f'{subject}']['cm_call'][f'delay_{delay}_ms']
 class_labels = ['LW-LW', 'LW-SA', 'LW-SD', 'LW-SS', 'SA-LW', 'SA-SA', 'SA-SS', 'SD-LW', 'SD-SD', 'SD-SS', 'SS-LW', 'SS-SA', 'SS-SD']
 plt.figure()

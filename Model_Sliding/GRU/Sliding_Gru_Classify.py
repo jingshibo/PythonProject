@@ -12,18 +12,21 @@ import datetime
 
 ## read emg data
 # basic information
-subject = "Zehao"
+subject = "Number3"
 version = 0  # which experiment data to process
 feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # window parameters
-predict_window_size = 1024
-feature_window_size = 512
-predict_window_increment_ms = 32
-feature_window_increment_ms = 16
-predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)  # shift_unit defines the number of window shifts for each classification sliding
-predict_from_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms*2))
+predict_window_ms = 400
+feature_window_ms = 300
+sample_rate = 2
+predict_window_size = predict_window_ms * sample_rate
+feature_window_size = feature_window_ms * sample_rate
+predict_window_increment_ms = 20
+feature_window_increment_ms = 20
+predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
+predict_of_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
 
 ## read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
@@ -32,16 +35,18 @@ del emg_features, emg_feature_2d,
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 del emg_feature_data  # to release memory
 
+##
 # create dataset
 now = datetime.datetime.now()
 emg_sliding_features = Sliding_Gru_Dataset.createSlidingDataset(cross_validation_groups, predict_window_shift_unit, initial_start=0,
-    predict_from_window_number=predict_from_window_number)
-del cross_validation_groups
-window_per_repetition = emg_sliding_features['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
-normalized_groups = Sliding_Gru_Dataset.combineNormalizedDataset(emg_sliding_features, window_per_repetition)
-del emg_sliding_features
+    predict_of_window_number=predict_of_window_number)
+# del cross_validation_groups
+##
+feature_window_per_repetition = emg_sliding_features['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
+normalized_groups = Sliding_Gru_Dataset.combineNormalizedDataset(emg_sliding_features, feature_window_per_repetition)
+# del emg_sliding_features
 shuffled_groups = Sliding_Gru_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups  # to release memory
+# del normalized_groups  # to release memory
 print(datetime.datetime.now() - now)
 
 

@@ -88,12 +88,12 @@ def plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsamp
     left_total_force = left_insole_upsampled.loc[:, 192]  # extract total force column
     right_total_force = right_insole_upsampled.loc[:, 192]
     if emg_aligned.shape[1] == 64:  # the input is filtered emg data, only contain 64 channel data
-        emg_data = emg_aligned.iloc[:, emg_columms].sum(axis=1)
+        emg_data = emg_aligned.iloc[:, emg_columms].abs().sum(axis=1)
     else:  # the input is aligned emg data before filtering, contain other information more than 64 channel data
         if sync_force:  # plot syncstation load cell data
             emg_data = emg_aligned.iloc[:, -3]  # extract load cell column
         else:  # plot selected emg channel data
-            emg_data = emg_aligned.iloc[:, emg_columms].sum(axis=1)  # calculate sum of emg signals from selected emg channels
+            emg_data = emg_aligned.iloc[:, emg_columms].abs().sum(axis=1)  # calculate sum of emg signals from selected emg channels
 
     # plot
     fig, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
@@ -217,13 +217,3 @@ def readAlignedData(subject, session, mode, version):
     emg_aligned = pd.read_csv(emg_path)
 
     return left_insole_aligned, right_insole_aligned, emg_aligned
-
-##
-def infinite_sequence():
-    num = 0
-    while True:
-        yield num
-        num += 2
-a = iter(infinite_sequence())
-##
-print(next(a))   
