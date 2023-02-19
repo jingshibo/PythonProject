@@ -18,8 +18,8 @@ feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # window parameters
-predict_window_ms = 400
-feature_window_ms = 300
+predict_window_ms = 450
+feature_window_ms = 350
 sample_rate = 2
 predict_window_size = predict_window_ms * sample_rate
 feature_window_size = feature_window_ms * sample_rate
@@ -27,6 +27,13 @@ predict_window_increment_ms = 20
 feature_window_increment_ms = 20
 predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
 predict_of_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
+endtime_after_toeoff_ms = 400
+predict_window_per_repetition = int(endtime_after_toeoff_ms / predict_window_increment_ms) + 1
+window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
+    'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
+    'predict_window_shift_unit': predict_window_shift_unit, 'predict_of_window_number': predict_of_window_number,
+    'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition}
+
 
 ## read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
@@ -57,7 +64,7 @@ print(datetime.datetime.now() - now)
 del shuffled_groups  # remove the variable
 # save model results
 result_set = 0
-Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set, feature_window_increment_ms, predict_window_shift_unit)
+Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set, feature_window_increment_ms, predict_window_shift_unit, model_type='sliding_GRU')
 
 
 ##  group the classification results together, starting from diffferent initial_predict_time settings, ending at the given end_predict_time

@@ -71,7 +71,8 @@ print(datetime.datetime.now() - now)
 
 ## save model results
 result_set = 0
-Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, feature_window_per_repetition, feature_window_increment_ms, model_type='Raw_Cnn3d')
+Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, feature_window_per_repetition,
+    feature_window_increment_ms, predict_window_shift_unit, model_type='Raw_CNN3D')
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points

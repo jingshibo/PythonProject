@@ -14,8 +14,8 @@ from Models.Utility_Functions import Data_Preparation
 
 
 ## input emg labelled series data
-subject = 'Shibo'
-version = 3  # the data from which experiment version to process
+subject = 'Number3'
+version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
 up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -24,7 +24,7 @@ sessions = [up_down_session, down_up_session]
 # labelled emg series data
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1000,
-    end_position=1000, notchEMG=False, reordering=True, envelope=False)
+    end_position=800, notchEMG=False, reordering=True, envelope=False)
 emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
@@ -49,7 +49,7 @@ for gait_event_label, gait_event_emg in emg_preprocessed.items():
 
 ##  plot summed series emg data
 left_number = 000
-right_number = 2000
+right_number = 1800
 emg_1_value = copy.deepcopy(emg_1_mean_events)
 for event, value in emg_1_mean_events.items():
     emg_1_value[event] = value[left_number:right_number]
@@ -61,7 +61,7 @@ pd.DataFrame(emg_2_value).plot(subplots=True, layout=(4, 4), title="EMG 2")
 
 
 ##  plot summed series emg data by group
-emd_data = emg_1_value
+emd_data = emg_2_value
 x = list(range(left_number-1000, right_number-1000))
 plt.figure()
 plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_LWSS_data"])

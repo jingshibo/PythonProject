@@ -113,8 +113,8 @@ def loadModelResults(subject, version, result_set, model_type='sliding_GRU'):
 
 
 ##  get subject results (accuracy + cm) at each delay points
-def getPredictResults(subject, version, result_set):
-    model_results = loadModelResults(subject, version, result_set)
+def getPredictResults(subject, version, result_set, model_type='sliding_GRU'):
+    model_results = loadModelResults(subject, version, result_set, model_type)
     predict_window_shift_unit = model_results[0]['shift_0']['predict_window_shift_unit']
     feature_window_increment_ms = model_results[0]['shift_0']['feature_window_increment_ms']
     delay_results = Sliding_Evaluation_ByGroup.getResultsEachDelay(model_results, predict_window_shift_unit, feature_window_increment_ms)

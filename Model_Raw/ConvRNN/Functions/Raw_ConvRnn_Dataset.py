@@ -78,3 +78,4 @@ def shuffleTrainingSet(normalized_groups, predict_window_per_repetition, predict
         group_value['train_onehot_y'] = np.array(shuffle_list_using_reference([row for row in group_value['train_onehot_y']], train_idx))
 
     return shuffled_groups
+
