@@ -9,17 +9,19 @@ from scipy.linalg import block_diag
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import copy
 
 
 ## reorganize the non-grouped model classification results into different groups when prior information is used
-def regroupModelResults(model_results):
+def groupedModelResults(model_results):
     # convert numpy to pandas for easier grouping operation
-    for result in model_results:
+    results = copy.deepcopy(model_results)
+    for result in results:
         result['true_value'] = pd.DataFrame(result['true_value'])
         result['predict_softmax'] = pd.DataFrame(result['predict_softmax'])
     # regroup the model results
     regrouped_results = []
-    for result in model_results:
+    for result in results:
         transition_types = {}
         grouped_true_label = result['true_value'].groupby(0)  # group by categories (int value)
         categories = set(np.concatenate(result['true_value'].to_numpy()).tolist())
@@ -113,6 +115,12 @@ def getAccuracyPerGroup(majority_results):
 
 ## calculate average accuracy
 def averageAccuracyByGroup(accuracy_bygroup, cm_bygroup):
+    # average accuracy for each cross validation group
+    validation_accuracy = [((group_value['transition_LW'] * 1.5 + group_value['transition_SA'] + group_value['transition_SD'] +
+                group_value['transition_SS']) / 4.5) for group_value in accuracy_bygroup]
+    # overall accuracy
+    # overall_accuracy = np.mean(np.array(validation_accuracy), axis=0) # another method to calculate the overall accuracy
+
     transition_groups = list(accuracy_bygroup[0].keys())  # list all transition types
     # average accuracy for each transition type
     average_accuracy = {transition: 0 for transition in transition_groups}  # initialize average accuracy list
@@ -121,7 +129,6 @@ def averageAccuracyByGroup(accuracy_bygroup, cm_bygroup):
             average_accuracy[transition_type] = average_accuracy[transition_type] + transition_accuracy
     for transition_type, transition_accuracy in average_accuracy.items():
         average_accuracy[transition_type] = transition_accuracy / len(accuracy_bygroup)
-
     # overall accuracy for all transition types
     overall_accuracy = (average_accuracy['transition_LW'] * 1.5 + average_accuracy['transition_SA'] + average_accuracy['transition_SD'] +
                         average_accuracy['transition_SS']) / 4.5
@@ -132,7 +139,7 @@ def averageAccuracyByGroup(accuracy_bygroup, cm_bygroup):
         for transition_type, transition_cm in group_values.items():
             sum_cm[transition_type] = sum_cm[transition_type] + transition_cm
 
-    return average_accuracy, overall_accuracy, sum_cm
+    return validation_accuracy, overall_accuracy, sum_cm
 
 
 ## plot confusion matrix

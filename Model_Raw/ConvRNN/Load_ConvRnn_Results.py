@@ -3,63 +3,72 @@ get oll subject's accuracy and confusion matrix at each delay point. display and
 '''
 
 ## import
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Results
 from Models.Utility_Functions import Confusion_Matrix
 import matplotlib.pyplot as plt
 
 all_subjects = {}  # save all subject results
-result_set = 0  # default for sliding GRU model results
 model_type = 'raw_ConvRnn'
 
 ## get model results. Note: different from the GRU method, here you can decide the shift_unit as you want.
 subject = 'Shibo'
 version = 1
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Zehao'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number1'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number2'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number3'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number4'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number5'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number6'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number7'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number8'
 version = 0
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
+result_set = 0
+subject_results = Raw_ConvRnn_Results.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 
 

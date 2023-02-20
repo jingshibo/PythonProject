@@ -26,13 +26,9 @@ feature_window_size = feature_window_ms * sample_rate
 predict_window_increment_ms = 20
 feature_window_increment_ms = 20
 predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
-predict_of_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
+predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
 endtime_after_toeoff_ms = 400
 predict_window_per_repetition = int(endtime_after_toeoff_ms / predict_window_increment_ms) + 1
-window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
-    'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
-    'predict_window_shift_unit': predict_window_shift_unit, 'predict_of_window_number': predict_of_window_number,
-    'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition}
 
 
 ## read feature data
@@ -42,13 +38,12 @@ del emg_features, emg_feature_2d,
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 del emg_feature_data  # to release memory
 
-##
-# create dataset
+
+## create dataset
 now = datetime.datetime.now()
-emg_sliding_features = Sliding_Gru_Dataset.createSlidingDataset(cross_validation_groups, predict_window_shift_unit, initial_start=0,
-    predict_of_window_number=predict_of_window_number)
-# del cross_validation_groups
-##
+emg_sliding_features = Sliding_Gru_Dataset.createSlidingDataset(cross_validation_groups, predict_window_shift_unit,
+    predict_using_window_number, initial_start=0)
+del cross_validation_groups
 feature_window_per_repetition = emg_sliding_features['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
 normalized_groups = Sliding_Gru_Dataset.combineNormalizedDataset(emg_sliding_features, feature_window_per_repetition)
 # del emg_sliding_features
@@ -64,60 +59,66 @@ print(datetime.datetime.now() - now)
 del shuffled_groups  # remove the variable
 # save model results
 result_set = 0
-Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set, feature_window_increment_ms, predict_window_shift_unit, model_type='sliding_GRU')
+model_type = 'sliding_GRU'
+window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
+    'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
+    'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
+    'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
+    'feature_window_per_repetition': feature_window_per_repetition}
+Sliding_Gru_Model.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type)
 
 
-##  group the classification results together, starting from diffferent initial_predict_time settings, ending at the given end_predict_time
-end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
-group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, predict_window_shift_unit,
-    feature_window_increment_ms, end_predict_time, threshold=0.999)
-accuracy = {}
-for key, value in group_sliding_results.items():
-    accuracy[key] = value['overall_accuracy']
-
-
-##  print accuracy results
-# eng_point = (len(accuracy)-1) * 32
-# x_label = [f'{i*32}~{eng_point}ms' for i in range(len(accuracy))]
-# y_value = [round(i, 1) for i in list(accuracy.values())]
+# ##  group the classification results together, starting from diffferent initial_predict_time settings, ending at the given end_predict_time
+# end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
+# group_sliding_results = Sliding_Evaluation_ByGroup.groupSlidingResults(model_results, predict_window_shift_unit,
+#     feature_window_increment_ms, end_predict_time, threshold=0.999)
+# accuracy = {}
+# for key, value in group_sliding_results.items():
+#     accuracy[key] = value['overall_accuracy']
 #
-# fig, ax = plt.subplots()
-# bars = ax.bar(range(len(accuracy)), y_value)
-# ax.set_xticks(range(len(accuracy)), x_label)
-# ax.bar_label(bars)
-# ax.set_ylim([93, 100])
-# ax.set_xlabel('prediction time range')
-# ax.set_ylabel('prediction accuracy(%)')
-# plt.title('Prediction accuracy for the prediction starting from different time points')
-
-
-## (separately) predict results at a certain initial_predict_time (category + delay)
-# regroup the model results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
-regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
-# reorganize the regrouped model results based on the timestamps
-reorganized_softmax, reorganized_prediction, reorganized_truevalues = Sliding_Results_ByGroup.reorganizePredictValues(regrouped_results)
-# only keep the results after the initial_predict_time
-initial_predict_time = int(0/32)  # define the initial prediction timestamp from which the predict starts
-end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
-reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time, end_predict_time)
-#  find the first timestamps at which the softmax value is larger than the threshold
-first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold=0.999)
-# get the predict results based on timestamps from the reorganized_prediction table and convert the timestamp to delay(ms)
-sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, predict_window_shift_unit, feature_window_increment_ms)
-
-
-## evaluate the prediction results at a certain initial_predict_time
-# calculate the prediction accuracy
-accuracy_bygroup, cm_bygroup = Sliding_Evaluation_ByGroup.getAccuracyPerGroup(sliding_prediction, reorganized_truevalues)
-average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup, cm_bygroup)
-cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, is_recall=True)
-print(overall_accuracy)
-# calculate the prediction delay (separately for those with correct or false prediction results)
-correct_results, false_results = Sliding_Evaluation_ByGroup.integrateResults(sliding_prediction, reorganized_truevalues)
-predict_delay_category, predict_delay_overall, mean_delay, std_delay = Sliding_Evaluation_ByGroup.countDelay(correct_results)
-false_delay_category, false_delay_overall, false_delay_mean, false_delay_std = Sliding_Evaluation_ByGroup.countDelay(false_results)
-predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category = Sliding_Evaluation_ByGroup.delayAccuracy(
-    predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category)
+#
+# ##  print accuracy results
+# # eng_point = (len(accuracy)-1) * 32
+# # x_label = [f'{i*32}~{eng_point}ms' for i in range(len(accuracy))]
+# # y_value = [round(i, 1) for i in list(accuracy.values())]
+# #
+# # fig, ax = plt.subplots()
+# # bars = ax.bar(range(len(accuracy)), y_value)
+# # ax.set_xticks(range(len(accuracy)), x_label)
+# # ax.bar_label(bars)
+# # ax.set_ylim([93, 100])
+# # ax.set_xlabel('prediction time range')
+# # ax.set_ylabel('prediction accuracy(%)')
+# # plt.title('Prediction accuracy for the prediction starting from different time points')
+#
+#
+# ## (separately) predict results at a certain initial_predict_time (category + delay)
+# # regroup the model results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
+# regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
+# # reorganize the regrouped model results based on the timestamps
+# reorganized_softmax, reorganized_prediction, reorganized_truevalues = Sliding_Results_ByGroup.reorganizePredictValues(regrouped_results)
+# # only keep the results after the initial_predict_time
+# initial_predict_time = int(0/32)  # define the initial prediction timestamp from which the predict starts
+# end_predict_time = int(500/32) + 1  # define the end prediction timestamp at which the predict end
+# reduced_softmax, reduced_prediction = Sliding_Results_ByGroup.reducePredictResults(reorganized_softmax, reorganized_prediction, initial_predict_time, end_predict_time)
+# #  find the first timestamps at which the softmax value is larger than the threshold
+# first_timestamps = Sliding_Results_ByGroup.findFirstTimestamp(reduced_softmax, threshold=0.999)
+# # get the predict results based on timestamps from the reorganized_prediction table and convert the timestamp to delay(ms)
+# sliding_prediction = Sliding_Results_ByGroup.getSlidingPredictResults(reduced_prediction, first_timestamps, initial_predict_time, predict_window_shift_unit, feature_window_increment_ms)
+#
+#
+# ## evaluate the prediction results at a certain initial_predict_time
+# # calculate the prediction accuracy
+# accuracy_bygroup, cm_bygroup = Sliding_Evaluation_ByGroup.getAccuracyPerGroup(sliding_prediction, reorganized_truevalues)
+# average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup, cm_bygroup)
+# cm_recall = MV_Results_ByGroup.confusionMatrix(sum_cm, is_recall=True)
+# print(overall_accuracy)
+# # calculate the prediction delay (separately for those with correct or false prediction results)
+# correct_results, false_results = Sliding_Evaluation_ByGroup.integrateResults(sliding_prediction, reorganized_truevalues)
+# predict_delay_category, predict_delay_overall, mean_delay, std_delay = Sliding_Evaluation_ByGroup.countDelay(correct_results)
+# false_delay_category, false_delay_overall, false_delay_mean, false_delay_std = Sliding_Evaluation_ByGroup.countDelay(false_results)
+# predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category = Sliding_Evaluation_ByGroup.delayAccuracy(
+#     predict_delay_overall, predict_delay_category, false_delay_overall, false_delay_category)
 
 
 # ## save model results

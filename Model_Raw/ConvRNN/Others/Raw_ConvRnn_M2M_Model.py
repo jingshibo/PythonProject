@@ -71,8 +71,9 @@ class Raw_Cnn_Rnn(nn.Module):
 
         # Apply the RNN
         x, _ = self.rnn_layers(x)
-        x = x[:, -1, :]  # Only use the last output from the LSTM
+        x = x.reshape(-1, x.shape[-1])
         x = self.output_layers(x)
+        x = x.view(batch_size, num_frames, -1)
 
         return x
 
@@ -154,7 +155,7 @@ class ModelTraining():
             inputs, labels = data[0].to(self.device), data[1].type(torch.LongTensor).squeeze().to(self.device)
             self.optimizer.zero_grad()
             outputs = self.model(inputs)  # output size: (batch_size, class_number)
-            train_loss = self.loss_fn(outputs, labels)
+            train_loss = self.loss_fn(outputs.transpose(1, 2), labels)
             train_loss.backward()
             self.optimizer.step()
             self.lr_scheduler.step()  # update the learning rate
@@ -162,9 +163,9 @@ class ModelTraining():
         # report the training results every 10 epochs
         if (epoch_number + 1) % self.report_period == 0:
             # calculate training accurate value and loss from only the last batches of one epoch
-            _, predicted = torch.max(outputs.data, 1)  # use outputs.data to remove the grad of outputs variable
-            num_correct = (predicted == labels).sum().item()
-            num_sample = predicted.size(0)
+            _, predicted = torch.max(outputs.data, -1)  # use outputs.data to remove the grad of outputs variable
+            num_correct = (torch.flatten(predicted) == torch.flatten(labels)).sum().item()
+            num_sample = torch.flatten(predicted).size(0)
             training_accuracy = num_correct / num_sample
 
             print(f"group: {int(group_number[-1])}, epoch: {epoch_number + 1}, train accuracy: {training_accuracy:>7f}, train loss: {train_loss.item():>7f}")
@@ -194,18 +195,18 @@ class ModelTraining():
             for i, test_data in enumerate(self.test_loader):
                 test_inputs, test_labels = test_data[0].to(self.device), test_data[1].type(torch.LongTensor).squeeze().to(self.device)
                 test_outputs = self.model(test_inputs)
-                test_loss = self.loss_fn(test_outputs, test_labels)
-                test_softmax = F.softmax(test_outputs, dim=1)
+                test_loss = self.loss_fn(test_outputs.transpose(1, 2), test_labels)
+                test_softmax = F.softmax(test_outputs.reshape(-1, test_outputs.shape[-1]), dim=1)
 
                 # calculate test accurate value summation from all previous batches
-                _, predicted = torch.max(test_outputs.data, 1)  # use outputs.data to remove the grad of outputs variable
-                num_correct += (predicted == test_labels).sum().item()
-                num_sample += predicted.size(0)
+                _, predicted = torch.max(test_outputs.data, -1)  # use outputs.data to remove the grad of outputs variable
+                num_correct += (torch.flatten(predicted) == torch.flatten(test_labels)).sum().item()
+                num_sample += torch.flatten(predicted).size(0)
 
                 # combine predict results
-                test_predict_labels.extend(predicted.cpu().numpy())
+                test_predict_labels.extend(torch.flatten(predicted).cpu().numpy())
                 test_predict_softmax.extend(test_softmax.cpu().numpy())
-                test_true_labels.extend(test_labels.cpu().numpy())
+                test_true_labels.extend(torch.flatten(test_labels).cpu().numpy())
             test_results = {"true_value": test_true_labels, "predict_softmax": test_predict_softmax, "predict_value": test_predict_labels}
 
             # calculate average training accuracy and loss for one group
@@ -250,7 +251,7 @@ class EmgDataSet(Dataset):
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
         x = torch.from_numpy(np.transpose(self.x_data[index], (3, 2, 0, 1)))  # size [time_stamps, n_channel, length, width]
-        y = torch.from_numpy(np.array([self.y_data[index]]))  # size of 1
+        y = torch.from_numpy(np.repeat(np.array([self.y_data[index]]), x.shape[0]))  # size [time_stamps]
         return x, y
 
     def __len__(self):  # we can call len(dataset) to return the size

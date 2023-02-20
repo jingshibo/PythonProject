@@ -40,7 +40,7 @@ feature_window_size = feature_window_ms * sample_rate
 predict_window_increment_ms = 32
 feature_window_increment_ms = 16
 predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
-predict_of_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate))
+predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate))
 
 
 ##  reorganize data
@@ -76,9 +76,9 @@ Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points
-reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
-sliding_majority_vote_by_group = Sliding_Ann_Results.majorityVoteResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, initial_start=0, predict_of_window_number=predict_of_window_number)
+reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
+sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
+    predict_window_shift_unit, initial_start=0, predict_using_window_number=predict_using_window_number)
 accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
 # calculate the accuracy and cm. Note: the first dimension refers to each delay
 average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,

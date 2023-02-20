@@ -133,7 +133,7 @@ class ModelTraining():
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=0.0001)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
-            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.3)  # adjusted learning rate
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.1)  # adjusted learning rate
 
             # train and test the model of a group
             for epoch_number in range(self.num_epochs):  # loop over each epoch
@@ -144,6 +144,8 @@ class ModelTraining():
             # log the model structure
             self.writer.add_graph(self.model, next(iter(self.train_loader))[0].to(self.device))
 
+            # output the final test results
+            test_true_labels, test_predict_softmax, test_predict_labels = self.predictTestResults(group_number, self.num_epochs-1)
             results.append(
                 {"true_value": test_true_labels, "predict_softmax": test_predict_softmax, "predict_value": test_predict_labels})
             models.append(self.model.to("cpu"))
@@ -209,7 +211,7 @@ class ModelTraining():
                 test_predict_labels.extend(predicted.cpu().numpy())
                 test_predict_softmax.extend(test_softmax.cpu().numpy())
                 test_true_labels.extend(test_labels.cpu().numpy())
-                test_results = {"true_value": test_true_labels, "predict_softmax": test_predict_softmax, "predict_value": test_predict_labels}
+            test_results = {"true_value": test_true_labels, "predict_softmax": test_predict_softmax, "predict_value": test_predict_labels}
 
             # calculate average training accuracy and loss for one group
             test_accuracy = num_correct / num_sample

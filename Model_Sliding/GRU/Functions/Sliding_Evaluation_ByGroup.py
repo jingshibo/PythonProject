@@ -166,7 +166,7 @@ def delayAccuracy(predict_delay_overall, predict_delay_category, false_delay_ove
 
 
 ##  group the classification results together from diffferent initial_predict_time settings
-def groupSlidingResults(model_results, predict_window_shift_unit, feature_window_increment_ms, end_predict_time=-1, threshold=0.999):
+def groupSlidingResults(model_results, predict_window_shift_unit, feature_window_increment_ms, end_predict_time, threshold=0.999):
     # reorganize the results
     # regroup the model results using prior information (no majority vote used, what we need here is the grouped accuracy calculation)
     regrouped_results = Sliding_Results_ByGroup.regroupModelResults(model_results)
@@ -212,7 +212,7 @@ def groupSlidingResults(model_results, predict_window_shift_unit, feature_window
 
 
 ## get the classification accuracy at each delay position
-def getResultsEachDelay(model_results, predict_window_shift_unit=2, feature_window_increment_ms=16):
+def getResultsEachDelay(model_results, predict_window_shift_unit, feature_window_increment_ms):
     results = {}
     predict_window_increment = predict_window_shift_unit * feature_window_increment_ms
 

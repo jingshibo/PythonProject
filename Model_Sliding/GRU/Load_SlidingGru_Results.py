@@ -10,57 +10,57 @@ import matplotlib.pyplot as plt
 
 all_subjects = {}  # save all subject results
 result_set = 0  # default for sliding GRU model results
-model_type='sliding_GRU'
+model_type = 'sliding_GRU'
 
 ## load model results
 subject = 'Shibo'
 version = 1
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Zehao'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number1'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number2'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number3'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number4'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number5'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number6'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number7'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 ##
 subject = 'Number8'
 version = 0
-subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type=model_type)
+subject_results = Sliding_Gru_Model.getPredictResults(subject, version, result_set, model_type)
 all_subjects[subject] = subject_results
 
 

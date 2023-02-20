@@ -1,20 +1,22 @@
-##
+## import modules
 from Pre_Processing import Preprocessing
-from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
+from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Dataset, Raw_ConvRnn_Results
+from Model_Raw.ConvRNN.Others import Raw_ConvRnn_M2M_Model
 import datetime
 
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Zehao'
+subject = 'Number3'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-# up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-# down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
-up_down_session = [2, 3, 4, 5, 6, 7, 12, 13, 14]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+# up_down_session = [2, 3, 4, 5, 6, 7, 12, 13, 14]
+# down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 sessions = [up_down_session, down_up_session]
 
 
@@ -50,27 +52,28 @@ now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 del cross_validation_groups
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset)
+normalized_groups = Raw_ConvRnn_Dataset.combineNormalizedDataset(sliding_window_dataset)
 del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
+shuffled_groups = Raw_ConvRnn_Dataset.shuffleTrainingSet(normalized_groups, feature_window_per_repetition, predict_window_shift_unit,
+    predict_using_window_number)
 del normalized_groups
 print(datetime.datetime.now() - now)
 
 
-##  classify using a single cnn 2d model
-num_epochs = 55
-batch_size = 1024
-decay_epochs = 20
+##  classify using a single cnn-rnn model
+num_epochs = 12
+batch_size = 224
+decay_epochs = 8
 now = datetime.datetime.now()
-# train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size)
-train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)
+shuffled_data = {'group_0': shuffled_groups['group_0'], 'group_3': shuffled_groups['group_3']}
+train_model = Raw_ConvRnn_M2M_Model.ModelTraining(num_epochs, batch_size, report_period=5)
+models, model_results = train_model.trainModel(shuffled_data, decay_epochs)
 print(datetime.datetime.now() - now)
 
 
 ## save model results
+model_type = 'Raw_CnnRnn_M2M'
 result_set = 0
-model_type = 'Raw_Cnn2d'
 window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
     'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
@@ -81,31 +84,12 @@ Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points
 reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
+sliding_majority_vote_by_group = Raw_ConvRnn_Results.SlidingMvResultsByGroup(reorganized_results, predict_using_window_number,
+    predict_window_per_repetition)
 accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
 # calculate the accuracy and cm. Note: the first dimension refers to each delay
 average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
     cm_bygroup)
 accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
     predict_window_shift_unit)
-
-
-
-# import os
-# import json
-#
-# model_type = 'Raw_Cnn2d'
-# result_set = 1
-#
-# for group_number, group_value in shuffled_groups.items():
-#     for key, value in group_value.items():
-#         group_value[key] = value.tolist()
-#
-# data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\extracted_features'
-# result_file = f'subject_{subject}_Experiment_{version}_emg_raw_data_{result_set}.json'
-# result_path = os.path.join(data_dir, result_file)
-#
-# with open(result_path, 'w') as json_file:
-#     json.dump(shuffled_groups, json_file, indent=8)
 

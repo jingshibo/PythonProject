@@ -21,13 +21,9 @@ feature_window_size = feature_window_ms * sample_rate
 predict_window_increment_ms = 20
 feature_window_increment_ms = 20
 predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
-predict_of_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) # number of feature windows for prediction
+predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) # number of feature windows for prediction
 endtime_after_toeoff_ms = 400
 predict_window_per_repetition = int(endtime_after_toeoff_ms / predict_window_increment_ms) + 1
-window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
-    'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
-    'predict_window_shift_unit': predict_window_shift_unit, 'predict_of_window_number': predict_of_window_number,
-    'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition}
 
 
 ## read feature data
@@ -50,13 +46,18 @@ print(datetime.datetime.now() - now)
 ## save model results
 result_set = 0
 model_type ='sliding_ANN'
+window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
+    'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
+    'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
+    'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
+    'feature_window_per_repetition': feature_window_per_repetition}
 Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type)
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points
-reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
-sliding_majority_vote_by_group = Sliding_Ann_Results.majorityVoteResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_of_window_number, initial_start=0)
+reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
+sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
+    predict_window_shift_unit, predict_using_window_number, initial_start=0)
 accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
 # calculate the accuracy and cm. Note: the first dimension refers to each delay
 average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,

@@ -76,15 +76,14 @@ def classifySlidingGtuLastOneModel(shuffled_groups):
 
 
 ##  save the model results to disk
-def saveModelResults(subject, model_results, version, result_set, feature_window_increment_ms, predict_window_shift_unit, model_type='sliding_GRU'):
+def saveModelResults(subject, model_results, version, result_set, window_parameters, model_type):
     results = copy.deepcopy(model_results)
     for result in results:
         for shift_number, shift_value in result.items():
             shift_value['true_value'] = shift_value['true_value'].tolist()
             shift_value['predict_softmax'] = shift_value['predict_softmax'].tolist()
             shift_value['predict_value'] = shift_value['predict_value'].tolist()
-            shift_value['feature_window_increment_ms'] = feature_window_increment_ms
-            shift_value['predict_window_shift_unit'] = predict_window_shift_unit
+            shift_value['window_parameters'] = window_parameters
 
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
@@ -95,7 +94,7 @@ def saveModelResults(subject, model_results, version, result_set, feature_window
 
 
 ##  read the model results from disk
-def loadModelResults(subject, version, result_set, model_type='sliding_GRU'):
+def loadModelResults(subject, version, result_set, model_type):
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
@@ -113,10 +112,10 @@ def loadModelResults(subject, version, result_set, model_type='sliding_GRU'):
 
 
 ##  get subject results (accuracy + cm) at each delay points
-def getPredictResults(subject, version, result_set, model_type='sliding_GRU'):
+def getPredictResults(subject, version, result_set, model_type):
     model_results = loadModelResults(subject, version, result_set, model_type)
-    predict_window_shift_unit = model_results[0]['shift_0']['predict_window_shift_unit']
-    feature_window_increment_ms = model_results[0]['shift_0']['feature_window_increment_ms']
+    predict_window_shift_unit = model_results[0]['shift_0']['window_parameters']['predict_window_shift_unit']
+    feature_window_increment_ms = model_results[0]['shift_0']['window_parameters']['feature_window_increment_ms']
     delay_results = Sliding_Evaluation_ByGroup.getResultsEachDelay(model_results, predict_window_shift_unit, feature_window_increment_ms)
 
     accuracy = {}

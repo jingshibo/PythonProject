@@ -9,7 +9,7 @@ from Models.Utility_Functions import MV_Results_ByGroup
 
 
 ##  majority vote results for all transitions without grouping
-def majorityVoteResults(model_results, window_per_repetition, predict_window_shift_unit, predict_of_window_number, initial_start=0):
+def majorityVoteResults(model_results, window_per_repetition, predict_window_shift_unit, predict_using_window_number, initial_start=0):
     # reorganize the results
     bin_results = []
     for result in model_results:  # reunite the samples from the same transition
@@ -24,14 +24,14 @@ def majorityVoteResults(model_results, window_per_repetition, predict_window_shi
                     predict_y.append(value[i: i+window_per_repetition])
         bin_results.append({"true_value": true_y, "predict_value": predict_y})
 
-    shift_range = window_per_repetition - initial_start - predict_of_window_number  # decide how many shifts to do in the for loop below
+    shift_range = window_per_repetition - initial_start - predict_using_window_number  # decide how many shifts to do in the for loop below
     sliding_majority_vote = copy.deepcopy(bin_results)
     for group, result in enumerate(bin_results):
         for key, value in result.items():
             for number, each_repetition in enumerate(value):
                 sliding_result_each_repetition = []
                 for shift in range(0, shift_range, predict_window_shift_unit):  # reorganize the predict results at each delay timepoint
-                    slicing_value = each_repetition[initial_start + shift: predict_of_window_number + shift + 1]
+                    slicing_value = each_repetition[initial_start + shift: predict_using_window_number + shift + 1]
                     sliding_result_each_repetition.append(np.bincount(slicing_value).argmax())  # get majority vote results at the delay time
                 sliding_majority_vote[group][key][number] = sliding_result_each_repetition
                 # convert nested list to numpy: row is the repetition, column is the predict results at each delay time in this repetition
@@ -40,8 +40,8 @@ def majorityVoteResults(model_results, window_per_repetition, predict_window_shi
     return sliding_majority_vote
 
 
-##  majority vote results based on transition groups
-def majorityVoteResultsByGroup(reorganized_results, feature_window_per_repetition, predict_window_shift_unit, predict_of_window_number, initial_start=0):
+##  majority vote results at each delay point based on transition groups
+def SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition, predict_window_shift_unit, predict_using_window_number, initial_start=0):
     """
     initial_start and predict_window_number define the initial window position(and size), shift_unit defines the number of window shift each slding
     """
@@ -63,15 +63,15 @@ def majorityVoteResultsByGroup(reorganized_results, feature_window_per_repetitio
         bin_results.append(bin_transitions)
 
     # use majority vote to get a consensus result for each repetition
-    shift_range = feature_window_per_repetition - initial_start - predict_of_window_number  # decide how many shifts there are in the for loop below
+    shift_range = feature_window_per_repetition - initial_start - predict_using_window_number  # decide how many shifts there are in the for loop below
     sliding_majority_vote_by_group = copy.deepcopy(bin_results)
     for group, result in enumerate(bin_results):
         for transition_type, transition_results in result.items():
             for key, value in transition_results.items():
                 for number, each_repetition in enumerate(value):
                     sliding_result_each_repetition = []
-                    for shift in range(0, shift_range, predict_window_shift_unit):  # reorganize the predict results at each delay timepoint
-                        window_value = each_repetition[initial_start + shift: predict_of_window_number + shift + 1]
+                    for shift in range(0, shift_range + 1, predict_window_shift_unit):  # reorganize the predict results at each delay timepoint
+                        window_value = each_repetition[initial_start + shift: predict_using_window_number + shift]
                         sliding_result_each_repetition.append(np.bincount(window_value).argmax())  # get majority vote results at the delay time
                     sliding_majority_vote_by_group[group][transition_type][key][number] = sliding_result_each_repetition
                 # convert nested list to numpy: row is the repetition, column is the predict results at each delay time in this repetition
@@ -159,11 +159,11 @@ def getPredictResults(subject, version, result_set, model_type):
     feature_window_increment_ms = model_results[0]['window_parameters']['feature_window_increment_ms']
     feature_window_per_repetition = model_results[0]['window_parameters']['feature_window_per_repetition']
     predict_window_shift_unit = model_results[0]['window_parameters']['predict_window_shift_unit']
-    predict_of_window_number = model_results[0]['window_parameters']['predict_of_window_number']
+    predict_using_window_number = model_results[0]['window_parameters']['predict_using_window_number']
 
-    reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
-    sliding_majority_vote_by_group = majorityVoteResultsByGroup(reorganized_results, feature_window_per_repetition,
-        predict_window_shift_unit, predict_of_window_number, initial_start=0)
+    reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
+    sliding_majority_vote_by_group = SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
+        predict_window_shift_unit, predict_using_window_number, initial_start=0)
     accuracy_bygroup, cm_bygroup = getAccuracyPerGroup(sliding_majority_vote_by_group)
     # calculate the accuracy and cm. Note: the first dimension refers to each delay
     average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(
