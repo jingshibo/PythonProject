@@ -18,6 +18,7 @@ def plotConfusionMatrix(cm, classes, normalize=False, title='confusion matrix', 
         cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], 3)  # calculate cm recall
         print("normalized confusion matrix")
     else:
+        cm = np.around(cm, 3)
         print('Confusion matrix, without normalization')
 
     thresh = cm.max() / 2

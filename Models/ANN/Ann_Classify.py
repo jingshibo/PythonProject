@@ -41,7 +41,7 @@ print(cm_recall, '\n', average_accuracy)
 
 
 ## majority vote results using prior information
-reorganized_results = MV_Results_ByGroup.regroupModelResults(model_results)
+reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
 majority_results = MV_Results_ByGroup.majorityVoteResultsByGroup(reorganized_results, window_per_repetition)
 accuracy, cm = MV_Results_ByGroup.getAccuracyPerGroup(majority_results)
 average_accuracy, overall_accuracy, sum_cm = MV_Results_ByGroup.averageAccuracyByGroup(accuracy, cm)
