@@ -63,6 +63,7 @@ def removeSomeSamples(emg_all_data, start_index=0, end_index=-1, is_down_samplin
 
     return emg_selected_data
 
+
 ## create k-fold cross validation groups
 def crossValidationSet(fold, emg_feature_data):
     cross_validation_groups = {}  # 5 groups of cross validation set

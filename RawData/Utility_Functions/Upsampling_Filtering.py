@@ -60,7 +60,7 @@ def filterInsole(upsampled_left_insole, upsampled_right_insole):
 
 
 ## filtering EMG data
-def filterEmg(emg_measurements, notch=False, quality_factor=10):
+def filterEmg(emg_measurements, notch=False, median_filtering=True, quality_factor=10):
     sos = signal.butter(4, [20, 400], fs=2000, btype="bandpass", output='sos')
     emg_bandpass_filtered = signal.sosfiltfilt(sos, emg_measurements, axis=0)  # only filter the emg measurements
     emg_filtered = emg_bandpass_filtered
@@ -70,7 +70,10 @@ def filterEmg(emg_measurements, notch=False, quality_factor=10):
         emg_notch_filtered = signal.filtfilt(b, a, pd.DataFrame(emg_bandpass_filtered), axis=0)
         emg_filtered = emg_notch_filtered
     # compensate bad emg channels (median filtering)
-    emg_filtered = pd.DataFrame(ndimage.median_filter(emg_filtered, mode='nearest', size=3))
+    if median_filtering:
+        emg_filtered = pd.DataFrame(ndimage.median_filter(emg_filtered, mode='nearest', size=3))
+    else:
+        emg_filtered = emg_filtered
     return pd.DataFrame(emg_filtered)
 
 
@@ -83,19 +86,22 @@ def getEmgRectEnvelope(emg_reordered, cutoff=10):
 
 ## preprocess all sensor data
 def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, envelope_cutoff=10, insoleFiltering=False, notchEMG=False,
-        quality_factor=10):
+        median_filtering=True, quality_factor=10):
     # upsampling insole data
     left_insole_preprocessed, right_insole_preprocessed = upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
     if insoleFiltering:
         left_insole_preprocessed, right_insole_preprocessed = filterInsole(left_insole_preprocessed, right_insole_preprocessed)
     # filtering emg data
     if emg_aligned.shape[1] >= 64 and emg_aligned.shape[1] < 128:  # if one sessantaquattro data
-        emg_filtered = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor=quality_factor) # extract only emg measurement data
+        emg_filtered = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, median_filtering, quality_factor=quality_factor) # extract only emg measurement data
+        emg_filtered = Data_Reshaping.insertElectrode(emg_filtered)
         emg_reordered = Data_Reshaping.reorderElectrodes(emg_filtered)
-        emg_envelope = getEmgRectEnvelope(emg_reordered, cutoff = envelope_cutoff)  # rectify and envelope EMG
+        emg_envelope = getEmgRectEnvelope(emg_reordered, cutoff=envelope_cutoff)  # rectify and envelope EMG
     elif emg_aligned.shape[1] >= 128 and emg_aligned.shape[1] < 192:  # if two sessantaquattro data
-        emg1_filtered = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, quality_factor=quality_factor)
-        emg2_filtered = filterEmg(emg_aligned.iloc[:, 73:137], notchEMG, quality_factor=quality_factor)
+        emg1_filtered = filterEmg(emg_aligned.iloc[:, 3:67], notchEMG, median_filtering, quality_factor=quality_factor)
+        emg2_filtered = filterEmg(emg_aligned.iloc[:, 73:137], notchEMG, median_filtering, quality_factor=quality_factor)
+        emg1_filtered = Data_Reshaping.insertElectrode(emg1_filtered)
+        emg2_filtered = Data_Reshaping.insertElectrode(emg2_filtered)
         emg_filtered = pd.concat([emg1_filtered, emg2_filtered], axis=1, ignore_index=True)
         # change emg channel order
         emg1_reordered = Data_Reshaping.reorderElectrodes(emg1_filtered)

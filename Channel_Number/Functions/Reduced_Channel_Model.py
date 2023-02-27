@@ -15,73 +15,72 @@ import os
 
 
 ## design model
-class Raw_Cnn_Rnn(nn.Module):
+class reduced_Cnn_2d(nn.Module):
     def __init__(self, input_size, class_number):
-        super(Raw_Cnn_Rnn, self).__init__()
+        super(reduced_Cnn_2d, self).__init__()
 
         # define layer parameter
         self.conv1_parameter = [32, 3]
         self.conv2_parameter = [32, 3]
         self.conv3_parameter = [32, 3]
-        self.rnn1_parameter = 1000
         self.linear1_parameter = 500
         self.linear2_parameter = 100
 
-        # Define the CNN layer
-        self.cnn_layers = nn.Sequential(
+        # define convolutional layer
+        self.convolutional_layer = nn.Sequential(
             nn.Conv2d(in_channels=input_size, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], dilation=2, stride=2),
             nn.BatchNorm2d(self.conv1_parameter[0]),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
+
             nn.Conv2d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], dilation=2, stride=2),
             nn.BatchNorm2d(self.conv2_parameter[0]),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
-            nn.Conv2d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv3_parameter[0]),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
         )
-       # define dense layer
-        self.dense_layers = nn.Sequential(
+
+        # define dense layer
+        self.linear_layer = nn.Sequential(
             nn.LazyLinear(self.linear1_parameter),
             nn.BatchNorm1d(self.linear1_parameter),
             nn.ReLU(),
             nn.Dropout(0.5),
-        )
-        # Define the GRU layer
-        self.rnn_layers = nn.GRU(input_size=self.linear1_parameter, hidden_size=self.rnn1_parameter, dropout=0.5, num_layers=2, batch_first=True)
 
-        # Define the output layer
-        self.output_layers = nn.Sequential(
             nn.LazyLinear(self.linear2_parameter),
             nn.BatchNorm1d(self.linear2_parameter),
             nn.ReLU(),
+            nn.Dropout(0.5),
+
             nn.LazyLinear(class_number)
         )
+        # self.initialize_weights()
+
+    # define the initialization method for each layer
+    def initialize_weights(self):
+        for m in self.convolutional_layer:
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)  # xavier / Glorot method
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                pass
+            elif isinstance(m, nn.Linear):
+                pass
 
     def forward(self, x):
-        # Apply the CNN to each frame
-        batch_size, num_frames, channels, height, width = x.size()
-        x = x.view(-1, channels, height, width)
-        x = self.cnn_layers(x)
+        x = self.convolutional_layer(x)
         x = torch.flatten(x, 1)
-        x = self.dense_layers(x)
-        x = x.view(batch_size, num_frames, -1)
-
-        # Apply the RNN
-        x, _ = self.rnn_layers(x)
-        x = x[:, -1, :]  # Only use the last output from the LSTM
-        x = self.output_layers(x)
-
+        x = self.linear_layer(x)
+        # if self.training is False:
+        #     x = F.softmax(x, dim=1)
         return x
 
-print("change dropout")
+print("change dropout!")
 
 
 ## model summary
-# model = Raw_Cnn_Rnn(1, 13).to('cuda')  # move the model to GPU
-# summary(model, input_size=(224, 8, 1, 350, 130))
+model = reduced_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
+summary(model, input_size=(1024, 1, 512, 16))
 
 
 ## training
@@ -100,20 +99,21 @@ class ModelTraining():
         self.test_loader = None
         self.writer = None
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.result_dir = f'D:\Project\pythonProject\Model_Raw\ConvRNN\Results\\runs_{timestamp}'
+        self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
 
         #  train the model
-    def trainModel(self, shuffled_data, decay_epochs, select_channels='emg_all'):
+    def trainModel(self, shuffled_groups, decay_epochs, select_channels='emg_all'):
         models = []
         results = []
         # train and test the dataset for each group
-        for group_number, group_value in shuffled_data.items():
+        for group_number, group_value in shuffled_groups.items():
+        # for group_number, group_value in {'group_1': shuffled_groups['group_1'], 'group_3': shuffled_groups['group_3']}.items():
             # initialize the tensorboard writer
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
             # extract the dataset
-            input_size = group_value['train_feature_x'][0].shape[2]
+            input_size = group_value['train_feature_x'].shape[2]
             class_number = len(set(group_value['train_int_y']))
             data_set = self.selectSamples(group_value, select_channels)
 
@@ -124,7 +124,7 @@ class ModelTraining():
             self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
 
             # training parameters
-            self.model = Raw_Cnn_Rnn(input_size, class_number).to(self.device)  # move the model to GPU
+            self.model = reduced_Cnn_2d(input_size, class_number).to(self.device)  # move the model to GPU
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=0.0001)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
@@ -151,7 +151,7 @@ class ModelTraining():
         self.model.train(True)
         # loop over each batch
         for batch_number, data in enumerate(self.train_loader):
-            inputs, labels = data[0].to(self.device), data[1].type(torch.LongTensor).squeeze().to(self.device)
+            inputs, labels = data[0].to(self.device), data[1].to(self.device)
             self.optimizer.zero_grad()
             outputs = self.model(inputs)  # output size: (batch_size, class_number)
             train_loss = self.loss_fn(outputs, labels)
@@ -170,7 +170,7 @@ class ModelTraining():
             print(f"group: {int(group_number[-1])}, epoch: {epoch_number + 1}, train accuracy: {training_accuracy:>7f}, train loss: {train_loss.item():>7f}")
             # Log the average training accuracy and loss per epoch
             self.writer.add_scalars('Accuracy', {f'{group_number}_train accuracy': training_accuracy}, epoch_number)
-            self.writer.add_scalars('Loss', {f'{group_number}_train loss': train_loss}, epoch_number)
+            self.writer.add_scalars('Loss', {f'{group_number}_train loss': train_loss}, epoch_number )
             self.writer.flush()
         else:
             print(f"group: {int(group_number[-1])}, epoch: {epoch_number + 1}, batch: {len(self.train_loader) * (epoch_number + 1)}, "
@@ -192,7 +192,7 @@ class ModelTraining():
 
             # loop over each batch
             for i, test_data in enumerate(self.test_loader):
-                test_inputs, test_labels = test_data[0].to(self.device), test_data[1].type(torch.LongTensor).squeeze().to(self.device)
+                test_inputs, test_labels = test_data[0].to(self.device), test_data[1].to(self.device)
                 test_outputs = self.model(test_inputs)
                 test_loss = self.loss_fn(test_outputs, test_labels)
                 test_softmax = F.softmax(test_outputs, dim=1)
@@ -225,11 +225,11 @@ class ModelTraining():
         if select_channels == 'emg_all':
             return group_value
         elif select_channels == 'emg_1':
-            train_set_x = [data[:, 0: 65, :, :] for data in group_value['train_feature_x']]
-            test_set_x = [data[:, 0: 65, :, :] for data in group_value['test_feature_x']]
+            train_set_x = group_value['train_feature_x'][:, 0: 65, :, :]
+            test_set_x = group_value['test_feature_x'][:, 0: 65, :, :]
         elif select_channels == 'emg_2':
-            train_set_x = [data[:, 65: 130, :, :] for data in group_value['train_feature_x']]
-            test_set_x = [data[:, 65: 130, :, :] for data in group_value['test_feature_x']]
+            train_set_x = group_value['train_feature_x'][:, 65: 130, :, :]
+            test_set_x = group_value['test_feature_x'][:, 65: 130, :, :]
         elif select_channels == 'bipolar':
             pass
         else:
@@ -245,13 +245,11 @@ class EmgDataSet(Dataset):
     def __init__(self, shuffled_data, mode):
         self.n_samples = shuffled_data[f'{mode}_int_y'].shape[0]
         # here the first column is the class label, the rest are the features
-        self.x_data = shuffled_data[f'{mode}_feature_x']
-        self.y_data = shuffled_data[f'{mode}_int_y']
+        self.x_data = torch.from_numpy(np.transpose(shuffled_data[f'{mode}_feature_x'], (3, 2, 0, 1)))  # size [n_samples, n_channel, length, width]
+        self.y_data = torch.from_numpy(shuffled_data[f'{mode}_int_y'])  # size [n_samples]
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
-        x = torch.from_numpy(np.transpose(self.x_data[index], (3, 2, 0, 1)))  # size [time_stamps, n_channel, length, width]
-        y = torch.from_numpy(np.array([self.y_data[index]]))  # size of 1
-        return x, y
+        return self.x_data[index, :, :, :], self.y_data[index]
 
     def __len__(self):  # we can call len(dataset) to return the size
         return self.n_samples

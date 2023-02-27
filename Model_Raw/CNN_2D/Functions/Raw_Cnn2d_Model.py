@@ -85,7 +85,7 @@ print("change dropout!")
 
 ## model summary
 # model = Raw_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
-# summary(model, input_size=(1024, 1, 512, 130))
+# summary(model, input_size=(1024, 1, 512, 60))
 
 
 ## training

@@ -5,7 +5,7 @@ import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder
 
 
-##  seperate data from each repetitions using sliding windows
+##  seperate data from each repetitions using sliding feature windows
 def separateEmgData(cross_validation_groups, feature_window_size, increment=64):
     sliding_window_dataset = copy.deepcopy(cross_validation_groups)
     feature_window_per_repetition = int((cross_validation_groups['group_0']['train_set']['emg_LWLW'][0].shape[0] - feature_window_size) / increment + 1)

@@ -18,17 +18,19 @@ feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation
 
 # window parameters
-predict_window_ms = 450
+down_sampling = False
+start_before_toeoff_ms = 450
+endtime_after_toeoff_ms = 400
 feature_window_ms = 350
-sample_rate = 2
+predict_window_ms = start_before_toeoff_ms
+sample_rate = 1 if down_sampling is True else 2
 predict_window_size = predict_window_ms * sample_rate
 feature_window_size = feature_window_ms * sample_rate
 predict_window_increment_ms = 20
 feature_window_increment_ms = 20
 predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
 predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
-endtime_after_toeoff_ms = 400
-predict_window_per_repetition = int(endtime_after_toeoff_ms / predict_window_increment_ms) + 1
+predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeoff_ms - predict_window_ms) / predict_window_increment_ms) + 1
 
 
 ## read feature data
