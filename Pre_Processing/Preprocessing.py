@@ -86,11 +86,11 @@ if __name__ == '__main__':
     # down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     # sessions = [up_down_session, down_up_session]
 
-    subject = 'Number3'
+    subject = 'Number4'
     version = 0  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
     up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
     sessions = [up_down_session, down_up_session]
 
     # Feature extraction
@@ -102,27 +102,12 @@ if __name__ == '__main__':
     feature_set = 0  # there may be multiple sets of features to be calculated for comparison
     Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
 
-    subject = 'Shibo'
-    version = 1  # the data from which experiment version to process
-    modes = ['up_down', 'down_up']
-    up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-    down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
-    sessions = [up_down_session, down_up_session]
 
-    # Feature extraction
-    split_parameters = readSplitParameters(subject, version)
-    combined_emg_labelled = labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-900, end_position=800)
-    emg_features = extractEmgFeatures(combined_emg_labelled, window_size=700, increment=40)
-
-    # store features
-    feature_set = 0  # there may be multiple sets of features to be calculated for comparison
-    Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
-
-    subject = 'Zehao'
+    subject = 'Number5'
     version = 0  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
-    up_down_session = [2, 3, 4, 5, 6, 7, 12, 13, 14]
-    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
     sessions = [up_down_session, down_up_session]
 
     # Feature extraction

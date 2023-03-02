@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 all_subjects = {}  # save all subject results
 
 
-##
+## model set
 model_type = 'raw_Cnn2d'
-result_set = 1
+result_set = 0
 
 ## get model results. Note: different from the GRU method, here you can decide the shift_unit as you want.
 subject = 'Shibo'
@@ -66,7 +66,7 @@ all_subjects[subject] = subject_results
 
 
 ##  average accuracy across subjects
-delay_groups = list(all_subjects['Shibo']['accuracy'].keys())  # list all transition types
+delay_groups = list(all_subjects['Number5']['accuracy'].keys())  # list all transition types
 average_accuracy = {delay_time: 0 for delay_time in delay_groups}  # initialize average accuracy list
 average_cm = {delay_time: 0 for delay_time in delay_groups}  # initialize average cm list
 

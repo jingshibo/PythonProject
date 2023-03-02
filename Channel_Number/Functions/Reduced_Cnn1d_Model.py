@@ -15,9 +15,9 @@ import os
 
 
 ## design model
-class Raw_Cnn_2d(nn.Module):
+class reduced_Cnn_1d(nn.Module):
     def __init__(self, input_size, class_number):
-        super(Raw_Cnn_2d, self).__init__()
+        super(reduced_Cnn_1d, self).__init__()
 
         # define layer parameter
         self.conv1_parameter = [32, 3]
@@ -28,20 +28,20 @@ class Raw_Cnn_2d(nn.Module):
 
         # define convolutional layer
         self.convolutional_layer = nn.Sequential(
-            nn.Conv2d(in_channels=input_size, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv1_parameter[0]),
+            nn.Conv1d(in_channels=input_size, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], dilation=2, stride=2),
+            nn.BatchNorm1d(self.conv1_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
+            nn.AvgPool1d(kernel_size=2, stride=1, padding=0),
 
-            nn.Conv2d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv2_parameter[0]),
+            nn.Conv1d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], dilation=2, stride=2),
+            nn.BatchNorm1d(self.conv2_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
+            nn.AvgPool1d(kernel_size=2, stride=1, padding=0),
 
-            nn.Conv2d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], dilation=2, stride=2),
-            nn.BatchNorm2d(self.conv3_parameter[0]),
+            nn.Conv1d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], dilation=2, stride=2),
+            nn.BatchNorm1d(self.conv3_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0)
+            nn.AvgPool1d(kernel_size=2, stride=1, padding=0)
         )
 
         # define dense layer
@@ -58,34 +58,17 @@ class Raw_Cnn_2d(nn.Module):
 
             nn.LazyLinear(class_number)
         )
-        # self.initialize_weights()
-
-    # define the initialization method for each layer
-    def initialize_weights(self):
-        for m in self.convolutional_layer:
-            if isinstance(m, nn.Conv2d):
-                nn.init.xavier_normal_(m.weight)  # xavier / Glorot method
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                pass
-            elif isinstance(m, nn.Linear):
-                pass
 
     def forward(self, x):
         x = self.convolutional_layer(x)
         x = torch.flatten(x, 1)
         x = self.linear_layer(x)
-        # if self.training is False:
-        #     x = F.softmax(x, dim=1)
         return x
-
-print("change dropout!")
 
 
 ## model summary
-# model = Raw_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
-# summary(model, input_size=(1024, 1, 512, 42))
+# model = reduced_Cnn_1d(2, 13).to('cpu')  # move the model to GPU
+# summary(model, input_size=(1024, 2, 350))
 
 
 ## training
@@ -104,9 +87,9 @@ class ModelTraining():
         self.test_loader = None
         self.writer = None
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
+        self.result_dir = f'D:\Project\pythonProject\Channel_Number\Results\\runs_{timestamp}'
 
-        #  train the model
+    #  train the model
     def trainModel(self, shuffled_groups, decay_epochs, select_channels='emg_all'):
         models = []
         results = []
@@ -118,7 +101,7 @@ class ModelTraining():
             self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
             # extract the dataset
-            input_size = group_value['train_feature_x'].shape[2]
+            input_size = group_value['train_feature_x'].shape[1]
             class_number = len(set(group_value['train_int_y']))
             data_set = self.selectSamples(group_value, select_channels)
 
@@ -129,7 +112,7 @@ class ModelTraining():
             self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
 
             # training parameters
-            self.model = Raw_Cnn_2d(input_size, class_number).to(self.device)  # move the model to GPU
+            self.model = reduced_Cnn_1d(input_size, class_number).to(self.device)  # move the model to GPU
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=0.0001)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
@@ -250,11 +233,11 @@ class EmgDataSet(Dataset):
     def __init__(self, shuffled_data, mode):
         self.n_samples = shuffled_data[f'{mode}_int_y'].shape[0]
         # here the first column is the class label, the rest are the features
-        self.x_data = torch.from_numpy(np.transpose(shuffled_data[f'{mode}_feature_x'], (3, 2, 0, 1)))  # size [n_samples, n_channel, length, width]
+        self.x_data = torch.from_numpy(np.transpose(shuffled_data[f'{mode}_feature_x'], (3, 2, 1, 0)))  # size [n_samples, n_channel, features, sequence length]
         self.y_data = torch.from_numpy(shuffled_data[f'{mode}_int_y'])  # size [n_samples]
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
-        return self.x_data[index, :, :, :], self.y_data[index]
+        return np.squeeze(self.x_data[index, :, :, :], axis=1), self.y_data[index]  # remove the channel dimension
 
     def __len__(self):  # we can call len(dataset) to return the size
         return self.n_samples
