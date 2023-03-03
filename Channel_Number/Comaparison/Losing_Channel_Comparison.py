@@ -8,34 +8,34 @@ model_accuracy = [sliding_ann_accuracy, sliding_gru_accuracy, raw_cnn_accuracy, 
 
 ## random losing channels
 channel_random_lost_5 = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
-channel_random_lost_6 = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
 channel_random_lost_10 = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
 channel_random_lost_15 = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
-random_losing_accuracy = [raw_convrnn_accuracy, channel_random_lost_5, channel_random_lost_6, channel_random_lost_10, channel_random_lost_15]
+channel_random_lost_20 = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
+random_losing_accuracy = [raw_convrnn_accuracy, channel_random_lost_5, channel_random_lost_20, channel_random_lost_10, channel_random_lost_15]
 
 
 ## random recovery channels
 channel_random_lost_5_recovered = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
-channel_random_lost_6_recovered = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
 channel_random_lost_10_recovered = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
 channel_random_lost_15_recovered = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
-random_recovery_accuracy = [raw_convrnn_accuracy, channel_random_lost_5_recovered, channel_random_lost_6_recovered, channel_random_lost_10_recovered, channel_random_lost_15_recovered]
+channel_random_lost_20_recovered = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 94.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
+random_recovery_accuracy = [raw_convrnn_accuracy, channel_random_lost_5_recovered, channel_random_lost_20_recovered, channel_random_lost_10_recovered, channel_random_lost_15_recovered]
 
 
 ## corner losing channels
 channel_corner_lost_5 = {'delay_0_ms': 64.1, 'delay_60_ms': 69.0, 'delay_100_ms': 69.7, 'delay_200_ms': 71.6, 'delay_300_ms': 76.5, 'delay_400_ms': 81.3}
-channel_corner_lost_6 = {'delay_0_ms': 65.1, 'delay_60_ms': 68.0, 'delay_100_ms': 73.7, 'delay_200_ms': 78, 'delay_300_ms': 83.5, 'delay_400_ms': 87.3}
 channel_corner_lost_10 = {'delay_0_ms': 64.1, 'delay_60_ms': 69.0, 'delay_100_ms': 70.7, 'delay_200_ms': 72.6, 'delay_300_ms': 78.5, 'delay_400_ms': 82.3}
 channel_corner_lost_15 = {'delay_0_ms': 55.1, 'delay_60_ms': 52.0, 'delay_100_ms': 50.7, 'delay_200_ms': 51.6, 'delay_300_ms': 58.5, 'delay_400_ms': 62.3}
-corner_losing_accuracy = [raw_convrnn_accuracy, channel_corner_lost_5, channel_corner_lost_6, channel_corner_lost_10, channel_corner_lost_15]
+channel_corner_lost_20 = {'delay_0_ms': 65.1, 'delay_60_ms': 68.0, 'delay_100_ms': 73.7, 'delay_200_ms': 78, 'delay_300_ms': 83.5, 'delay_400_ms': 87.3}
+corner_losing_accuracy = [raw_convrnn_accuracy, channel_corner_lost_5, channel_corner_lost_20, channel_corner_lost_10, channel_corner_lost_15]
 
 
 ## corner recovery channels
 channel_corner_lost_5_recovered = {'delay_0_ms': 90.1, 'delay_60_ms': 92.0, 'delay_100_ms': 93.7, 'delay_200_ms': 96.6, 'delay_300_ms': 98.2, 'delay_400_ms': 99.3}
-channel_corner_lost_6_recovered = {'delay_0_ms': 88.1, 'delay_60_ms': 91.0, 'delay_100_ms': 93.7, 'delay_200_ms': 95.6, 'delay_300_ms': 98.9, 'delay_400_ms': 99.5}
 channel_corner_lost_10_recovered = {'delay_0_ms': 86.1, 'delay_60_ms': 89.6, 'delay_100_ms': 90.9, 'delay_200_ms': 95.6, 'delay_300_ms': 98.0, 'delay_400_ms': 99.3}
 channel_corner_lost_15_recovered = {'delay_0_ms': 75.1, 'delay_60_ms': 80.0, 'delay_100_ms': 81.7, 'delay_200_ms': 87.6, 'delay_300_ms': 94.5, 'delay_400_ms': 96.3}
-corner_recovery_accuracy = [raw_convrnn_accuracy, channel_corner_lost_5_recovered, channel_corner_lost_6_recovered, channel_corner_lost_10_recovered, channel_corner_lost_15_recovered]
+channel_corner_lost_20_recovered = {'delay_0_ms': 88.1, 'delay_60_ms': 91.0, 'delay_100_ms': 93.7, 'delay_200_ms': 95.6, 'delay_300_ms': 98.9, 'delay_400_ms': 99.5}
+corner_recovery_accuracy = [raw_convrnn_accuracy, channel_corner_lost_5_recovered, channel_corner_lost_20_recovered, channel_corner_lost_10_recovered, channel_corner_lost_15_recovered]
 
 
 ## plot the accuracy for each model at different delay points

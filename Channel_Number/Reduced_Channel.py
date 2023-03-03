@@ -9,11 +9,11 @@ import numpy as np
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number5'
+subject = 'Number4'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
 up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
 # up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 # down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 sessions = [up_down_session, down_up_session]
@@ -46,12 +46,12 @@ channel_area_35 = list(range(3, 10)) + list(range(16, 23)) + list(range(29, 36))
 channel_area_25 = list(range(4, 9)) + list(range(17, 22)) + list(range(30, 35)) + list(range(43, 48)) + list(range(56, 61))
 channel_area_15 = list(range(17, 22)) + list(range(30, 35)) + list(range(43, 48))
 channel_area_6 = [31, 32, 33, 44, 45, 46]
+channel_area_2 = [31, 33]
 
 channel_muscle_hdemg1 = list(range(0, 65))
 channel_muscle_hdemg2 = list(range(65, 130))
 channel_muscle_bipolar1 = [31]
 channel_muscle_bipolar2 = [96]
-channel_muscle_bipolar = [31, 33]
 
 
 ## read and filter data
@@ -63,8 +63,8 @@ emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down
 
 
 ## select part of the channels
-channel_selected = channel_area_6
-result_set = 'channel_area_6'
+channel_selected = channel_muscle_bipolar2
+result_set = 'channel_muscle_bipolar2'
 emg_channel_selected = Channel_Manipulation.selectSomeChannels(emg_preprocessed, channel_selected)
 # del emg_filtered_data
 fold = 5  # 5-fold cross validation
@@ -78,7 +78,7 @@ if len(channel_selected) == 1:
         for set_type, set_value in group_value.items():
             for transition_label, transition_data in set_value.items():
                 for repetition_number, repetition_data in enumerate(transition_data):
-                    transition_data[repetition_number] = repetition_data[:, np.newaxis]
+                    transition_data[repetition_number] = repetition_data[:, np.newaxis]  # add an extra axis otherwise the program reports an error
 
 
 ##  reorganize data
@@ -94,7 +94,7 @@ print(datetime.datetime.now() - now)
 
 
 ##  classify using a single cnn 2d model
-num_epochs = 50
+num_epochs = 40
 batch_size = 1024
 decay_epochs = 20
 now = datetime.datetime.now()
@@ -103,7 +103,7 @@ shuffled_data = shuffled_groups
 if len(channel_selected) > 2:  # for hdemg of different channel numbers
     train_model = Reduced_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
     models, model_results = train_model.trainModel(shuffled_data, decay_epochs)
-else:  # for bipolar emg only
+else:  # for one or two bipolar emg only
     train_model = Reduced_Cnn1d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
     models, model_results = train_model.trainModel(shuffled_data, decay_epochs)
 

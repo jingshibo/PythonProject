@@ -15,8 +15,8 @@ channel_area_35 = {'delay_0_ms': 88.8, 'delay_60_ms': 91.1, 'delay_100_ms': 93.3
 channel_area_25 = {'delay_0_ms': 87.7, 'delay_60_ms': 91.0, 'delay_100_ms': 92.7, 'delay_200_ms': 94.6, 'delay_300_ms': 97.5, 'delay_400_ms': 99.1}
 channel_area_15 = {'delay_0_ms': 84.6, 'delay_60_ms': 87.5, 'delay_100_ms': 89.5, 'delay_200_ms': 93.2, 'delay_300_ms': 97.7, 'delay_400_ms': 99.3}
 channel_area_6 = {'delay_0_ms': 80.8, 'delay_60_ms': 82.6, 'delay_100_ms': 85.7, 'delay_200_ms': 89.4, 'delay_300_ms': 94.5, 'delay_400_ms': 96.3}
-channel_muscle_bipolar = {'delay_0_ms': 78.1, 'delay_60_ms': 82.0, 'delay_100_ms': 84.3, 'delay_200_ms': 88.3, 'delay_300_ms': 90.6, 'delay_400_ms': 94.3}
-reduce_area_accuracy = [raw_convrnn_accuracy, channel_area_35, channel_area_25, channel_area_15, channel_area_6, channel_muscle_bipolar]
+channel_area_2 = {'delay_0_ms': 78.1, 'delay_60_ms': 82.0, 'delay_100_ms': 84.3, 'delay_200_ms': 88.3, 'delay_300_ms': 90.6, 'delay_400_ms': 94.3}
+reduce_area_accuracy = [raw_convrnn_accuracy, channel_area_35, channel_area_25, channel_area_15, channel_area_6, channel_area_2]
 
 
 ## reduce density results
@@ -25,7 +25,7 @@ channel_density_21 = {'delay_0_ms': 88.4, 'delay_60_ms': 91.5, 'delay_100_ms': 9
 channel_density_11 = {'delay_0_ms': 82.1, 'delay_60_ms': 86.0, 'delay_100_ms': 88.7, 'delay_200_ms': 93, 'delay_300_ms': 96.5, 'delay_400_ms': 97.3}
 channel_density_8 = {'delay_0_ms': 82.1, 'delay_60_ms': 85.9, 'delay_100_ms': 87.7, 'delay_200_ms': 91, 'delay_300_ms': 95.5, 'delay_400_ms': 96.5}
 channel_muscle_bipolar = {'delay_0_ms': 78.1, 'delay_60_ms': 82.0, 'delay_100_ms': 84.3, 'delay_200_ms': 88.3, 'delay_300_ms': 90.6, 'delay_400_ms': 94.3}
-reduce_density_accuracy = [raw_convrnn_accuracy, channel_density_33, channel_density_21, channel_density_11, channel_density_8, channel_muscle_bipolar]
+reduce_density_accuracy = [raw_convrnn_accuracy, channel_density_33, channel_density_21, channel_density_11, channel_density_8, channel_area_2]
 
 
 ## reduce muscle results
@@ -33,7 +33,7 @@ channel_muscle_hdemg1 = {'delay_0_ms': 87.3, 'delay_60_ms': 90.0, 'delay_100_ms'
 channel_muscle_hdemg2 = {'delay_0_ms': 83.1, 'delay_60_ms': 89.0, 'delay_100_ms': 91.7, 'delay_200_ms': 95.6, 'delay_300_ms': 98.5, 'delay_400_ms': 99.3}
 channel_muscle_bipolar1 = {'delay_0_ms': 64.1, 'delay_60_ms': 66.0, 'delay_100_ms': 68.1, 'delay_200_ms': 70.6, 'delay_300_ms': 73.5, 'delay_400_ms': 78.3}
 channel_muscle_bipolar2 = {'delay_0_ms': 71.1, 'delay_60_ms': 77.6, 'delay_100_ms': 81.7, 'delay_200_ms': 85.9, 'delay_300_ms': 89.5, 'delay_400_ms': 90.3}
-reduce_muscle_accuracy = [raw_convrnn_accuracy, channel_muscle_hdemg1, channel_muscle_hdemg2, channel_muscle_bipolar, channel_muscle_bipolar1, channel_muscle_bipolar2]
+reduce_muscle_accuracy = [raw_convrnn_accuracy, channel_muscle_hdemg1, channel_muscle_hdemg2, channel_area_2, channel_muscle_bipolar1, channel_muscle_bipolar2]
 
 
 ## plot the accuracy for each model at different delay points

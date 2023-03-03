@@ -15,7 +15,7 @@ import os
 
 
 ## design model
-class reduced_Cnn_1d(nn.Module):
+class reduced_Cnn_1d(nn.Module):  # for the training of bipolar emg. it traits each channel separately
     def __init__(self, input_size, class_number):
         super(reduced_Cnn_1d, self).__init__()
 
@@ -237,7 +237,7 @@ class EmgDataSet(Dataset):
         self.y_data = torch.from_numpy(shuffled_data[f'{mode}_int_y'])  # size [n_samples]
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
-        return np.squeeze(self.x_data[index, :, :, :], axis=1), self.y_data[index]  # remove the channel dimension
+        return self.x_data[index, :, :, :].squeeze(0), self.y_data[index]  # remove the channel dimension
 
     def __len__(self):  # we can call len(dataset) to return the size
         return self.n_samples

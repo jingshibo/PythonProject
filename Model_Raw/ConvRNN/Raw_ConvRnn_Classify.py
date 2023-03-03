@@ -39,7 +39,7 @@ predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeo
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters,
     start_position=-int(start_before_toeoff_ms * (2 / sample_rate)), end_position=int(endtime_after_toeoff_ms * (2 / sample_rate)),
-    notchEMG=False, reordering=False)
+    notchEMG=False, reordering=False, median_filtering=False)
 emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=down_sampling)
 del emg_filtered_data
 fold = 5  # 5-fold cross validation
