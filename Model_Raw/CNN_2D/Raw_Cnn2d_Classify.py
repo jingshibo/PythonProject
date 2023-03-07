@@ -8,13 +8,13 @@ import datetime
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number5'
+subject = 'Number3'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
 # up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-# down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+# down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 sessions = [up_down_session, down_up_session]
 
 
@@ -38,7 +38,7 @@ predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeo
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters,
     start_position=-int(start_before_toeoff_ms * (2 / sample_rate)), end_position=int(endtime_after_toeoff_ms * (2 / sample_rate)),
-    notchEMG=False, reordering=False, median_filtering=False)
+    notchEMG=False, reordering=False, median_filtering=True)  # median filtering is necessary to avoid all zero values in a channel
 emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=down_sampling)
 del emg_filtered_data
 fold = 5  # 5-fold cross validation
@@ -71,7 +71,7 @@ print(datetime.datetime.now() - now)
 
 ## save model results
 model_type = 'Raw_Cnn2d'
-result_set = 1
+result_set = 0
 window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
     'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,

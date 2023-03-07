@@ -9,13 +9,13 @@ import numpy as np
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number4'
+subject = 'Number3'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
 # up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-# down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+# down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 sessions = [up_down_session, down_up_session]
 
 
@@ -58,19 +58,18 @@ channel_muscle_bipolar2 = [96]
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters,
     start_position=-int(start_before_toeoff_ms * (2 / sample_rate)), end_position=int(endtime_after_toeoff_ms * (2 / sample_rate)),
-    notchEMG=False, median_filtering=True, reordering=False)
+    notchEMG=False, reordering=False, median_filtering=True)
 emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=down_sampling)
 
 
 ## select part of the channels
-channel_selected = channel_muscle_bipolar2
-result_set = 'channel_muscle_bipolar2'
+channel_selected = channel_muscle_hdemg1
+result_set = 'channel_muscle_hdemg1'
 emg_channel_selected = Channel_Manipulation.selectSomeChannels(emg_preprocessed, channel_selected)
 # del emg_filtered_data
 fold = 5  # 5-fold cross validation
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_channel_selected)
 # del emg_preprocessed
-
 
 ##  only for bipolar emg on one muscle
 if len(channel_selected) == 1:
@@ -94,7 +93,7 @@ print(datetime.datetime.now() - now)
 
 
 ##  classify using a single cnn 2d model
-num_epochs = 40
+num_epochs = 50
 batch_size = 1024
 decay_epochs = 20
 now = datetime.datetime.now()

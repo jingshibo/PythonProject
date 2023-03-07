@@ -105,3 +105,6 @@ plt.title('DTW distance', fontweight='bold', fontsize=20)
 
 plt.legend()
 plt.show()
+
+
+##

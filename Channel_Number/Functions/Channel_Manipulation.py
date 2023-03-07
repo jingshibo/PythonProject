@@ -54,18 +54,19 @@ def inpaintImages(channel_lost_dataset, is_median_filtering=True):
                         masks = value == 0  # create a boolean mask that is True for zero elements and False for non-zero elements
                         mask = masks.astype(int)[0, :, :, 0]  # convert false to 0, true to 1 and only keep the row and column of the array
                         # convert sample dimension to channel dimension so that all samples in this loop can be processed at once
-                        images_transposed = np.reshape(np.transpose(value, (1, 2, 3, 0)), (value.shape[1], value.shape[2], -1), 'F')
+                        images_transposed = np.reshape(np.transpose(value, (1, 2, 3, 0)), (value.shape[1], value.shape[2], -1), 'C')  # must be c-contiguous order
                         image_inpainted = restoration.inpaint.inpaint_biharmonic(images_transposed, mask=mask, channel_axis=-1)  # inpaint the emg image
                         # median filtering
                         if is_median_filtering == True:
                             image_inpainted = median_filter(image_inpainted, size=3)
                         # convert the emg data to the original shape
-                        transition_value[number] = np.transpose(
-                            np.reshape(image_inpainted, (value.shape[1], value.shape[2], value.shape[3], -1), 'F'), (3, 0, 1, 2))
+                        transition_value[number] = np.transpose(  # must be c-contiguous order
+                            np.reshape(image_inpainted, (value.shape[1], value.shape[2], value.shape[3], -1), 'C'), (3, 0, 1, 2))
                         print(group_number, set_type, transition_type, number)
                     except Exception as e:
                         print(group_number, set_type, transition_type, number, e)
-
+                        transition_value[number] = np.transpose(np.reshape(image_inpainted, (value.shape[1], value.shape[2], value.shape[3],
+                        -1), 'F'), (3, 0, 1, 2))  # use the previous image instead
     return emg_inpainted
 
 

@@ -16,11 +16,11 @@ def selectSamples(emg_features, start_index, end_index):
     if emg_feature_data['emg_LWSA_features'][0].ndim == 2:  # if emg data is 1d (2 dimension matrix)
         for transition_type, transition_features in emg_feature_data.items():
             for count, value in enumerate(transition_features):
-                transition_features[count] = value[start_index: end_index + 1, :]  # only keep the feature data between start index and end index
+                transition_features[count] = value[start_index: end_index, :]  # only keep the feature data between start index and end index
     elif emg_feature_data['emg_LWSA_features'][0].ndim == 4:  # if emg data is 2d (4 dimension matrix)
         for transition_type, transition_features in emg_feature_data.items():
             for count, value in enumerate(transition_features):
-                transition_features[count] = value[:, :, :, start_index: end_index + 1]  # only keep the feature data between start index and end index
+                transition_features[count] = value[:, :, :, start_index: end_index]  # only keep the feature data between start index and end index
 
     return emg_feature_data
 
@@ -36,7 +36,7 @@ def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, pre
         for set_type, set_value in group_value.items():
             emg_sliding_features = {}  # emg features from different window positions
             if set_type == 'train_set':  # combine the features from different window positions together
-                for shift in range(0, shift_range, predict_window_shift_unit):  # shift = 0, 2, 4, 6, 。。。, 42, 44, 46, 48
+                for shift in range(0, shift_range + 1, predict_window_shift_unit):  # shift = 0, 2, 4, 6, 。。。, 42, 44, 46, 48
                     emg_feature_value = selectSamples(set_value, start_index=initial_start + shift, end_index=predict_using_window_number + shift)  # (0,16) -> (32,48)
                     for gait_event_label, gait_event_emg in emg_feature_value.items():
                         if gait_event_label in emg_sliding_features:  # check if there is already the key in the dict
@@ -44,7 +44,7 @@ def createSlidingDataset(cross_validation_groups, predict_window_shift_unit, pre
                         else:
                             emg_sliding_features[gait_event_label] = gait_event_emg
             elif set_type == 'test_set':  # put the features from different window positions separately
-                for shift in range(0, shift_range, predict_window_shift_unit):  # 0, 4, 8, 12, 16, 20, 24, 28, 32
+                for shift in range(0, shift_range + 1, predict_window_shift_unit):  # 0, 4, 8, 12, 16, 20, 24, 28, 32
                     emg_feature_value = selectSamples(set_value, start_index=initial_start + shift, end_index=predict_using_window_number + shift)
                     emg_sliding_features[f'shift_{shift}'] = emg_feature_value  # the keyword is the number of window shift
             group_value[set_type] = emg_sliding_features

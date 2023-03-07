@@ -9,13 +9,13 @@ import datetime
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Shibo'
+subject = 'Number5'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
 # up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 # down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
-up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
 sessions = [up_down_session, down_up_session]
 
 
@@ -68,7 +68,7 @@ del emg_preprocessed
 
 ##  select and recover losing channels
 now = datetime.datetime.now()
-channel_lost = channel_random_lost_5
+channel_lost = channel_corner_lost_20_upper
 emg_channel_lost = Channel_Manipulation.losingSomeTestChannels(cross_validation_groups, channel_lost)
 del cross_validation_groups
 emg_inpainted = Channel_Manipulation.inpaintImages(emg_channel_lost, is_median_filtering=False)  # recover the lost channels (inpaint + median filtering)
@@ -79,7 +79,7 @@ print(datetime.datetime.now() - now)
 
 ##  reorganize data
 data_to_process = emg_recovered
-result_set = 'channel_random_lost_5_recovered'
+result_set = 'channel_corner_lost_20_Recovered'
 now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(data_to_process, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
@@ -93,10 +93,10 @@ print(datetime.datetime.now() - now)
 
 ##  classify using a single cnn 2d model
 num_epochs = 40
-batch_size = 1024
+batch_size = 1520
 decay_epochs = 20
 now = datetime.datetime.now()
-# shuffled_data = {'group_0': shuffled_groups['group_0'], 'group_3': shuffled_groups['group_3']}
+# shuffled_data = {'group_0': shuffled_groups['group_0 '], 'group_3': shuffled_groups['group_3']}
 shuffled_data = shuffled_groups
 train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
 models, model_results = train_model.trainModel(shuffled_data, decay_epochs)

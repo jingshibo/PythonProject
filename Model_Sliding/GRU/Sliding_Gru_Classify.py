@@ -36,7 +36,7 @@ predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeo
 ## read feature data
 emg_features, emg_feature_2d = Data_Preparation.loadEmgFeature(subject, version, feature_set)
 emg_feature_data = Data_Preparation.removeSomeSamples(emg_features)  # only remove some modes here
-del emg_features, emg_feature_2d,
+del emg_features, emg_feature_2d
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_feature_data)
 del emg_feature_data  # to release memory
 
@@ -45,7 +45,7 @@ del emg_feature_data  # to release memory
 now = datetime.datetime.now()
 emg_sliding_features = Sliding_Gru_Dataset.createSlidingDataset(cross_validation_groups, predict_window_shift_unit,
     predict_using_window_number, initial_start=0)
-del cross_validation_groups
+## del cross_validation_groups
 feature_window_per_repetition = emg_sliding_features['group_0']['train_set']['emg_LWLW_features'][0].shape[0]  # how many windows for each event repetition
 normalized_groups = Sliding_Gru_Dataset.combineNormalizedDataset(emg_sliding_features, feature_window_per_repetition)
 # del emg_sliding_features

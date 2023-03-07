@@ -37,7 +37,7 @@ reduce_muscle_accuracy = [raw_convrnn_accuracy, channel_muscle_hdemg1, channel_m
 
 
 ## plot the accuracy for each model at different delay points
-accuracy = reduce_muscle_accuracy
+accuracy = reduce_area_accuracy
 # Extract the x and y values from the dictionaries
 x_values = list(accuracy[0].keys())  # Assuming all dictionaries have the same keys
 y_values = np.array([[d[key] for key in x_values] for d in accuracy])
@@ -69,4 +69,5 @@ plt.show()
 
 
 ##
+
 
