@@ -145,7 +145,7 @@ class Insole:
             # while True:
             #     await asyncio.sleep(5.0)
 
-            # only run for a given peried
+            # only run for a given period
             await asyncio.sleep(100)
             await client.stop_notify(self.notify_characteristic)
             await client.disconnect()

@@ -64,7 +64,7 @@ async def connectInsole(address):
         print("connect to", address)
 
         # set data rate
-        dataRate = 100;
+        dataRate = 100
         period = round(1000 / dataRate);
         set_dataRate = bytearray([0, 11, period])
         await client.write_gatt_char(write_characteristic, set_dataRate)

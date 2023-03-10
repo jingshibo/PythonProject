@@ -32,7 +32,7 @@ import os
 import re
 
 # Load the image
-image = cv2.imread('D:\Project\pythonProject\Test\-125009aec32cc5c5.jpg')
+image = cv2.imread('D:\Project\pythonProject\Test\\324242.jpg')
 
 # Convert the image to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -84,7 +84,7 @@ img_width = 80
 img_height = 80
 
 # Set the path to the folder containing the images
-folder_path = 'D:\Project\pythonProject\Test'
+folder_path = '/Test'
 
 # Set the name of the Excel file to read from
 filename = 'Book12.xlsx'
@@ -143,7 +143,7 @@ import os
 time = '上班'  # or '下班'
 
 # Set the path to the folder containing the images
-folder_path = 'D:\Project\pythonProject\Test'
+folder_path = '/Test'
 
 # Create an EasyOCR reader object with the desired languages
 reader = easyocr.Reader(['ch_sim', 'en'])

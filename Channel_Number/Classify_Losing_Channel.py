@@ -68,7 +68,7 @@ del emg_preprocessed
 
 ##  select and recover losing channels
 now = datetime.datetime.now()
-channel_lost = channel_corner_lost_20_upper
+channel_lost = channel_random_lost_20
 emg_channel_lost = Channel_Manipulation.losingSomeTestChannels(cross_validation_groups, channel_lost)
 del cross_validation_groups
 emg_inpainted = Channel_Manipulation.inpaintImages(emg_channel_lost, is_median_filtering=False)  # recover the lost channels (inpaint + median filtering)
@@ -79,7 +79,7 @@ print(datetime.datetime.now() - now)
 
 ##  reorganize data
 data_to_process = emg_recovered
-result_set = 'channel_corner_lost_20_Recovered'
+result_set = 'channel_random_lost_20_Recovered'
 now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(data_to_process, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)

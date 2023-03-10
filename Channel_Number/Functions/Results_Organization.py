@@ -2,6 +2,7 @@
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Results
 from Model_Sliding.GRU.Functions import Sliding_Gru_Model
+import copy
 
 
 ## define model result class
@@ -78,3 +79,39 @@ class getSubjectResults():
 
         return self.subject_results
 
+
+##  combine the results across different subject for each extract_delay key
+def combinedSubjectResults(all_subjects):
+    # extract accuracy results at each 100 delay
+    extract_delay = ['delay_0_ms', 'delay_60_ms', 'delay_100_ms', 'delay_200_ms', 'delay_300_ms', 'delay_400_ms']
+    extracted_results = copy.deepcopy(all_subjects)
+    for subject_number, subject_results in extracted_results.items():
+        for dataset, datavalue in subject_results.items():
+            for condition, results in datavalue.items():
+                for item, value in results.items():
+                    results[item] = {k: value[k] for k in extract_delay}
+
+    combined_results = {}
+    # Iterate over all the keys in the extracted_results dictionary
+    for subject_number, subject_results in extracted_results.items():
+        for dataset, datavalue in subject_results.items():
+            for condition, results in datavalue.items():
+                for item, value in results.items():
+                    # If the dataset key is not already in the combined_results dictionary, create a new dictionary for it
+                    if dataset not in combined_results:
+                        combined_results[dataset] = {}
+                    # If the condition key is not already in the dataset dictionary, create a new dictionary for it
+                    if condition not in combined_results[dataset]:
+                        combined_results[dataset][condition] = {}
+                    # If the item key is not already in the condition dictionary, create a new dictionary for it
+                    if item not in combined_results[dataset][condition]:
+                        combined_results[dataset][condition][item] = {}
+                    # Iterate over each key-value pair in the results dictionary
+                    for extract_delay_key, extract_delay_value in value.items():
+                        # If the extract_delay key is not already in the item dictionary, create a new list for it
+                        if extract_delay_key not in combined_results[dataset][condition][item]:
+                            combined_results[dataset][condition][item][extract_delay_key] = []
+                        # Add the extract_delay value for this item across all subject_number to the corresponding list
+                        combined_results[dataset][condition][item][extract_delay_key].append(extract_delay_value)
+
+    return combined_results
