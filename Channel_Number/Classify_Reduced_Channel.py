@@ -9,13 +9,11 @@ import numpy as np
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number3'
+subject = 'Number1'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-# up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-# down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
-up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+up_down_session = [0, 1, 4, 5, 6, 7, 8, 9, 10]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
 sessions = [up_down_session, down_up_session]
 
 
@@ -63,8 +61,8 @@ emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down
 
 
 ## select part of the channels
-channel_selected = channel_muscle_hdemg1
-result_set = 'channel_muscle_hdemg1'
+channel_selected = channel_area_2
+data_set = 'channel_area_2'
 emg_channel_selected = Channel_Manipulation.selectSomeChannels(emg_preprocessed, channel_selected)
 # del emg_filtered_data
 fold = 5  # 5-fold cross validation
@@ -116,7 +114,7 @@ window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms'
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
     'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
     'feature_window_per_repetition': feature_window_per_repetition}
-Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type)
+Sliding_Ann_Results.saveModelResults(subject, model_results, version, data_set, window_parameters, model_type)
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points
@@ -130,3 +128,12 @@ average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV
 accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
     predict_window_shift_unit)
 
+
+##
+import winsound
+# Your program code goes here
+# ...
+# Play sound when program is done
+duration = 1000  # milliseconds
+freq = 440  # Hz
+winsound.Beep(freq, duration)

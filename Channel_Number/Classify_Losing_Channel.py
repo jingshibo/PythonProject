@@ -9,13 +9,11 @@ import datetime
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number5'
+subject = 'Number2'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-# up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-# down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
-up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]
+down_up_session = [10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
 sessions = [up_down_session, down_up_session]
 
 
@@ -79,7 +77,7 @@ print(datetime.datetime.now() - now)
 
 ##  reorganize data
 data_to_process = emg_recovered
-result_set = 'channel_random_lost_20_Recovered'
+data_set = 'channel_random_lost_20_recovered'
 now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(data_to_process, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
@@ -110,7 +108,7 @@ window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms'
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
     'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
     'feature_window_per_repetition': feature_window_per_repetition}
-Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type)
+Sliding_Ann_Results.saveModelResults(subject, model_results, version, data_set, window_parameters, model_type)
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points
@@ -124,3 +122,12 @@ average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV
 accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
     predict_window_shift_unit)
 
+
+##
+import winsound
+# Your program code goes here
+# ...
+# Play sound when program is done
+duration = 1000  # milliseconds
+freq = 440  # Hz
+winsound.Beep(freq, duration)
