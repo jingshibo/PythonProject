@@ -62,14 +62,14 @@ class getSubjectResults():
             for model in value:
                 self.subject_results[key][model] = model_class[model].getPredictResults(self.subject, self.version, result_set, model)
                 # equivalent to the following code
-                # if model == 'Raw_Cnn2d':
-                #     self.subject_results[key][model] = Sliding_Ann_Results.getPredictResults(self.subject, self.version, result_set, model)
-                # elif model == 'Raw_ConvRnn':
-                #     self.subject_results[key][model] = Raw_ConvRnn_Results.getPredictResults(self.subject, self.version, result_set, model)
+                # if model == 'Raw_ConvRnn':
+                #     self.subject_results[key][model] = Sliding_Ann_Results.getPredictResults(self.subject, self.version, result_set, 'Raw_Cnn2d')
+                # elif model == 'Raw_Cnn2d':
+                #     self.subject_results[key][model] = Raw_ConvRnn_Results.getPredictResults(self.subject, self.version, result_set, 'Raw_ConvRnn')
                 # elif model == 'Sliding_ANN':
-                #     self.subject_results[key][model] = Sliding_Ann_Results.getPredictResults(self.subject, self.version, result_set, model)
+                #     self.subject_results[key][model] = Sliding_Ann_Results.getPredictResults(self.subject, self.version, result_set, 'Sliding_ANN')
                 # elif model == 'Sliding_GRU':
-                #     self.subject_results[key][model] = Sliding_Gru_Model.getPredictResults(self.subject, self.version, result_set, model)
+                #     self.subject_results[key][model] = Sliding_Gru_Model.getPredictResults(self.subject, self.version, result_set, 'Sliding_GRU')
 
     # get all result at once
     def getAllResults(self, result_set):
@@ -115,3 +115,4 @@ def combinedSubjectResults(all_subjects):
                         combined_results[dataset][condition][item][extract_delay_key].append(extract_delay_value)
 
     return combined_results
+

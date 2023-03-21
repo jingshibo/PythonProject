@@ -7,7 +7,7 @@ import datetime
 
 ## read emg data
 # basic information
-subject = "Number3"
+subject = "Number2"
 version = 0  # which experiment data to process
 feature_set = 0  # which feature set to use
 fold = 5  # 5-fold cross validation

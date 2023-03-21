@@ -4,7 +4,7 @@ import pandas as pd
 
 
 ##  plot the bars with all columns compared to the first column
-def plotCompareToFirstTtest(reorganized_results, dataset, legend, bonferroni_coeff=1):
+def plotCompareToFirstTtest(reorganized_results, dataset, legend, title, bonferroni_coeff=1):
     # Create sample data
     df_mean = reorganized_results[dataset]['mean']
     df_std = reorganized_results[dataset]['std']
@@ -37,19 +37,20 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, bonferroni_coe
 
                 # calculate the height and y coordinate of the significance stars
                 height = max(df_mean.iloc[i, :])
-                star_height = height + df_std.iloc[i, 0] + 2 * j
-                y_left, y_right = star_height, star_height
-
-                # add the line and significance stars ot the plot
+                line_height = height + df_std.iloc[i, 0] + 2 * j
+                y_left, y_right = line_height, line_height
+                # add the line ot the plot
                 ax.plot([x_left, x_right], [y_left, y_right], 'k-', lw=1)
+
+                # add the significance star ot the plot
                 if pval < 0.01 / bonferroni_correction:
-                    ax.text((x_left + x_right) * 0.5, star_height, "**", ha='center', va='bottom', color='r', fontsize=15)
+                    ax.text((x_left + x_right) * 0.5, line_height - 0.5, "**", ha='center', va='bottom', color='r', fontsize=15)
                 elif pval < 0.05 / bonferroni_correction:
-                    ax.text((x_left + x_right) * 0.5, star_height, "*", ha='center', va='bottom', color='r', fontsize=15)
+                    ax.text((x_left + x_right) * 0.5, line_height - 0.5, "*", ha='center', va='bottom', color='r', fontsize=15)
                 # elif pval < 0.1 / bonferroni_correction:
                 #     ax.text((x_left + x_right) * 0.5, star_height, "*", ha='center', va='bottom', color='r', fontsize=15)
                 else:  # if not significant
-                    ax.text((x_left + x_right) * 0.5, star_height, "ns", ha='center', va='bottom', color='r', fontsize=12)
+                    ax.text((x_left + x_right) * 0.5, line_height, "ns", ha='center', va='bottom', color='r', fontsize=12)
 
                 # add small vertical bars at two ends of the lines
                 left_line = ax.plot([x_left, x_left], [y_left - 0.005 * height, y_left], 'k-', lw=1)
@@ -62,29 +63,36 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, bonferroni_coe
     # Set y-axis label
     ax.set_ylabel('Prediction accuracy(%)')
     # Set plot title
-    ax.set_title('Prediction accuracy for different delay time after the toe-off event')
+    ax.set_title(title)
+
     # Set y-axis limit
-    ax.set_ylim(40, None)  # only set the lower limit
+    if df_mean.shape[1] == 5:
+        ax.set_ylim(35, 110)  # for losing channels
+    elif df_mean.shape[1] == 6:
+        ax.set_ylim(50, 115)  # for one muscle channels
+    elif df_mean.shape[1] == 10:
+        ax.set_ylim(50, 120)  # for reduced channels
+
     # get the current limits of the y-axis
     ymin, ymax = ax.get_ylim()
     # set the space between y-axis ticks to 5
     yticks = range(int(ymin), int(ymax+1), 5)
     ax.set_yticks(yticks)
+
     # Set legend position
-    ax.legend(legend)
-    # ax.legend(loc='upper right', bbox_to_anchor=(1.15, 1))
-    # # gets the current figure instance and assigns it to the variable fig
-    # fig = plt.gcf()
-    # # sets the size of the figure to be 6 inches by 6 inches
-    # fig.set_size_inches(8, 6)
-    # # adjusts the spacing between the subplots in the figure
-    # fig.subplots_adjust(right=0.8)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1))
+    # gets the current figure instance and assigns it to the variable fig
+    fig = plt.gcf()
+    # sets the size of the figure to be 6 inches by 6 inches
+    fig.set_size_inches(8, 6)
+    # adjusts the spacing between the subplots in the figure
+    fig.subplots_adjust(right=0.8)
     # Show plot
     plt.show()
 
 
 ##  plot the bars with all columns compared to the previous column
-def plotAdjacentTtest(reorganized_results, dataset, legend, bonferroni_coeff=1):
+def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_coeff=1):
     # Create sample data
     df_mean = reorganized_results[dataset]['mean']
     df_std = reorganized_results[dataset]['std']
@@ -113,19 +121,21 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, bonferroni_coeff=1):
 
                 # calculate the height and y coordinate of the significance stars
                 height = max(df_mean.iloc[i, :])
-                star_height = height + df_std.iloc[i, 0] + 1.5 * j
-                y_left, y_right = star_height, star_height
+                line_height = height + df_std.iloc[i, 0] + 2 * j
+                y_left, y_right = line_height, line_height
+                # add the line ot the plot
+                ax.plot([x_left, x_right], [y_left, y_right], 'k-', lw=1)
 
                 # add the line and significance stars ot the plot
                 ax.plot([x_left, x_right], [y_left, y_right], 'k-', lw=1)
                 if pval < 0.01 / bonferroni_correction:
-                    ax.text((x_left + x_right) * 0.5, star_height, "**", ha='center', va='bottom', color='r', fontsize=15)
+                    ax.text((x_left + x_right) * 0.5, line_height - 0.5, "**", ha='center', va='bottom', color='r', fontsize=15)
                 elif pval < 0.05 / bonferroni_correction:
-                    ax.text((x_left + x_right) * 0.5, star_height, "*", ha='center', va='bottom', color='r', fontsize=15)
+                    ax.text((x_left + x_right) * 0.5, line_height - 0.5, "*", ha='center', va='bottom', color='r', fontsize=15)
                 # elif pval < 0.1 / bonferroni_correction:
                 #     ax.text((x_left + x_right) * 0.5, star_height, "*", ha='center', va='bottom', color='r', fontsize=15)
                 else:  # if not significant
-                    ax.text((x_left + x_right) * 0.5, star_height, "ns", ha='center', va='bottom', color='r', fontsize=12)
+                    ax.text((x_left + x_right) * 0.5, line_height, "ns", ha='center', va='bottom', color='r', fontsize=12)
 
                 # add small vertical bars at two ends of the lines
                 left_line = ax.plot([x_left, x_left], [y_left - 0.005 * height, y_left], 'k-', lw=1)
@@ -138,9 +148,9 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, bonferroni_coeff=1):
     # Set y-axis label
     ax.set_ylabel('Prediction accuracy(%)')
     # Set plot title
-    ax.set_title('Prediction accuracy for different delay time after the toe-off event')
+    ax.set_title(title)
     # Set y-axis limit
-    ax.set_ylim(50, None)  # only set the lower limit
+    ax.set_ylim(60, None)  # only set the lower limit
     # get the current limits of the y-axis
     ymin, ymax = ax.get_ylim()
     # set the space between y-axis ticks to 5
@@ -148,12 +158,7 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, bonferroni_coeff=1):
     ax.set_yticks(yticks)
     # Set legend position
     ax.legend()
-    # ax.legend(loc='upper right', bbox_to_anchor=(1.15, 1))
-    # # gets the current figure instance and assigns it to the variable fig
-    # fig = plt.gcf()
-    # # sets the size of the figure to be 6 inches by 6 inches
-    # fig.set_size_inches(8, 6)
-    # # adjusts the spacing between the subplots in the figure
-    # fig.subplots_adjust(right=0.8)
+
     # Show plot
     plt.show()
+

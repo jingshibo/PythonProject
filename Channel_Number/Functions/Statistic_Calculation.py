@@ -5,7 +5,7 @@ from scipy.stats import ttest_rel
 
 
 ## calculate statistical results for each condition
-def CalcuStatValues(combined_results):
+def calcuStatValues(combined_results):
     mean_std_value = copy.deepcopy(combined_results)
     for dataset, datavalue in combined_results.items():
         if dataset != 'model_type':  # always compare the results to the hdemg convrnn model
@@ -21,6 +21,7 @@ def CalcuStatValues(combined_results):
                                 combined_results['model_type']['Raw_ConvRnn']['accuracy'][col])
                             mean_std_value[dataset][condition]['ttest'][col] = p_value
                         mean_std_value[dataset][condition]['ttest'] = pd.Series(mean_std_value[dataset][condition]['ttest'])
+
         elif dataset == 'model_type':  # always compare the results to the adjacent model
             # Define the order of the keys
             models = list(datavalue.keys())
@@ -36,6 +37,26 @@ def CalcuStatValues(combined_results):
                         t_stat, p_value = ttest_rel(datavalue[models[i]]['accuracy'][col], datavalue[models[i-1]]['accuracy'][col])
                     mean_std_value[dataset][models[i]]['ttest'][col] = p_value
                 mean_std_value[dataset][models[i]]['ttest'] = pd.Series(mean_std_value[dataset][models[i]]['ttest'])
+
+    # Adding an extra key in mean_std_value to compare the results of channels numbers
+    # datavalue = {'hdemg': combined_results['model_type']['Raw_ConvRnn'],
+    #     **combined_results['reduce_area_dataset'], **combined_results['reduce_density_dataset']}
+    # mean_std_value['reduce_number_dataset'] = datavalue
+    # # Define the order of the keys
+    # models = ['hdemg', 'channel_area_35', 'channel_density_33', 'channel_area_25', 'channel_density_21', 'channel_area_15',
+    #                 'channel_density_11', 'channel_density_8', 'channel_area_6', 'channel_area_2']
+    # for i in range(0, len(models)):
+    #     mean_std_value['reduce_number_dataset'][models[i]]['accuracy'] = pd.DataFrame(datavalue[models[i]]['accuracy'])
+    #     mean_std_value['reduce_number_dataset'][models[i]]['mean'] = pd.DataFrame(datavalue[models[i]]['accuracy']).mean()
+    #     mean_std_value['reduce_number_dataset'][models[i]]['std'] = pd.DataFrame(datavalue[models[i]]['accuracy']).std()
+    #     mean_std_value['reduce_number_dataset'][models[i]]['ttest'] = {}
+    #     for col in mean_std_value['reduce_number_dataset'][models[i]]['accuracy'].columns:
+    #         if i == 0:  # models[0] == 'Raw_ConvRnn'
+    #             t_stat, p_value = ttest_rel(datavalue[models[i]]['accuracy'][col], datavalue[models[i]]['accuracy'][col])
+    #         else:
+    #             t_stat, p_value = ttest_rel(datavalue[models[i]]['accuracy'][col], datavalue[models[i - 1]]['accuracy'][col])
+    #         mean_std_value['reduce_number_dataset'][models[i]]['ttest'][col] = p_value
+    #     mean_std_value['reduce_number_dataset'][models[i]]['ttest'] = pd.Series(mean_std_value['reduce_number_dataset'][models[i]]['ttest'])
 
     return mean_std_value
 
@@ -70,7 +91,19 @@ def reorganizeStatResults(mean_std_value):
         for key in keys:
             reorganized_results[dataset][key] = pd.DataFrame(reorganized_results[dataset][key])
 
+    # add an additional column for comparison of channel number
+    reorganized_results['reduce_number_dataset'] = {}
+    for key in keys:
+        reorganized_results['reduce_number_dataset'][key] = pd.concat([reorganized_results['reduce_area_dataset'][key],
+            reorganized_results['reduce_density_dataset'][key]], axis=1).T.drop_duplicates().T
+        reorganized_results['reduce_number_dataset'][key] = reorganized_results['reduce_number_dataset'][key][
+                ['hdemg', 'channel_area_35', 'channel_density_33', 'channel_area_25', 'channel_density_21', 'channel_area_15',
+                    'channel_density_11', 'channel_density_8', 'channel_area_6', 'channel_area_2']]
+
     return reorganized_results
+
+
+
 
 
 

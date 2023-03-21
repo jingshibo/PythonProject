@@ -2,9 +2,9 @@
 from Test import Automatic_Excel_Inserting
 
 ## 设置存储参数，这三个参数每次使用时都要进行设置。上面两个是图片文件夹的地址，下面一个是excel文件的名称。
-shangban_image_folder_path = '/Test'  # 上班图片所在的文件夹
-xiaban_image_folder_path = '/Test'  # 下班图片所在的文件夹
-excel_folder_path = '/Test'  # 设置excel所在的文件夹
+shangban_image_folder_path = 'D:\Project\pythonProject\Test'  # 上班图片所在的文件夹
+xiaban_image_folder_path = 'D:\Project\pythonProject\Test'  # 下班图片所在的文件夹
+excel_folder_path = 'D:\Project\pythonProject\Test'  # 设置excel所在的文件夹
 excel_filename = 'Book2.xlsx'  # excel文件的名称, 必须加上后缀 .xlxs
 
 
