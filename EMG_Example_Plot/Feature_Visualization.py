@@ -9,7 +9,7 @@ from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 from Models.Utility_Functions import Data_Preparation
 from Models.ANN.Functions import Ann_Dataset
-from EMG_Example_Plot.Utility_Functions import PCA_Feature
+from EMG_Example_Plot.Utility_Functions import PCA_Features
 import datetime
 import numpy as np
 import torch
@@ -82,19 +82,19 @@ sessions = [up_down_session, down_up_session]
 # cnn_labels = np.concatenate(cnn_labels)
 # feature_example_set = 1
 # feature_type = 'cnn'
-# PCA_Feature.saveManualFeatures(subject, version, feature_example_set, flatten_cnn_features, cnn_labels, feature_type)  # save features
+# PCA_Feature.saveFeatureExamples(subject, version, feature_example_set, flatten_cnn_features, cnn_labels, feature_type)  # save features
 
 
 ## load the cnn feature examples
 feature_example_set = 0
 feature_type = 'cnn'
-cnn_features, cnn_labels = PCA_Feature.loadFeatureExamples(subject, version, feature_example_set, feature_type)
+cnn_features, cnn_labels = PCA_Features.loadFeatureExamples(subject, version, feature_example_set, feature_type)
 indices = np.where(np.isin(cnn_labels, [4, 5, 6]))[0]  # only keep the indices of three selected modes
 cnn_feature_to_pca = cnn_features[indices.tolist(), :]
 cnn_labels_to_pca = cnn_labels[indices.tolist()]
 
 ##  cnn features pca calculation
-cnn_feature_after_pca = PCA_Feature.calculatePca(cnn_feature_to_pca, dimension=3)
+cnn_feature_after_pca = PCA_Features.calculatePca(cnn_feature_to_pca, dimension=3)
 
 
 
@@ -122,17 +122,17 @@ cnn_feature_after_pca = PCA_Feature.calculatePca(cnn_feature_to_pca, dimension=3
 ## load the mannual feature examples
 feature_example_set = 0
 feature_type = 'manual'
-manual_features, manual_labels = PCA_Feature.loadFeatureExamples(subject, version, feature_example_set, feature_type)
+manual_features, manual_labels = PCA_Features.loadFeatureExamples(subject, version, feature_example_set, feature_type)
 indices = np.where(np.isin(manual_labels, [4, 5, 6]))[0]  # only keep the indices of three selected modes
 manual_features_to_pca = manual_features[indices.tolist(), :]
 manual_labels_to_pca = manual_labels[indices.tolist()]
 
 ##  manual features pca calculation
-manual_feature_after_pca = PCA_Feature.calculatePca(manual_features_to_pca, dimension=3)
+manual_feature_after_pca = PCA_Features.calculatePca(manual_features_to_pca, dimension=3)
 
 
 
 ##  scatter plot reduced-dimensional data
-
+PCA_Features.plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_after_pca, manual_labels_to_pca)
 
 

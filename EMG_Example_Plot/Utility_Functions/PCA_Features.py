@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 
-##  save manual features
+##  save example features
 def saveFeatureExamples(subject, version, feature_example_set, features, labels, feature_type):
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\comparison_data'
     data_file = f'subject_{subject}_Experiment_{version}_{feature_type}_features_set_{feature_example_set}.npy'
@@ -20,7 +20,7 @@ def saveFeatureExamples(subject, version, feature_example_set, features, labels,
     np.save(data_path, labels)
 
 
-##  load manual features
+##  load example features
 def loadFeatureExamples(subject, version, feature_example_set, feature_type):
     data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\comparison_data'
     data_file = f'subject_{subject}_Experiment_{version}_{feature_type}_features_set_{feature_example_set}.npy'
@@ -34,7 +34,7 @@ def loadFeatureExamples(subject, version, feature_example_set, feature_type):
 
 
 ##  save the trained cnn models from 5 groups
-def saveModels(subject, version, models, model_type):
+def savePytorchModels(subject, version, models, model_type):
     # save only the parameters
     for group_number in range(5):
         data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\models'
@@ -51,7 +51,7 @@ def saveModels(subject, version, models, model_type):
 
 
 ##  load the trained cnn models from 5 groups
-def loadModels(subject, version, model_type):
+def loadPytorchModels(subject, version, model_type):
     # load only the parameters
     load_model_parameters = []
     for group_number in range(5):

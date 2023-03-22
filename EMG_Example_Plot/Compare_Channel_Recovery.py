@@ -1,7 +1,13 @@
+'''
+    select a sample to plot the hdemg image before and after channel lost as well as recovery
+'''
+
+
 ## import
 from Pre_Processing import Preprocessing
 from Models.Utility_Functions import Data_Preparation
 from Channel_Number.Functions import Channel_Manipulation
+from EMG_Example_Plot.Utility_Functions import Save_Results
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -36,8 +42,7 @@ predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeo
 channel_random_lost_5 = [3, 10, 32, 46, 50]
 channel_random_lost_10 = [2, 12, 19, 22, 26, 43, 46, 49, 54, 64]
 channel_random_lost_15 = [3, 7, 8, 16, 19, 23, 27, 32, 38, 39, 41, 46, 56, 59, 63]
-channel_random_lost_20 = [1, 4, 6, 12, 13, 14, 15, 18, 22, 28, 31, 35, 39, 43, 46, 48, 51, 55, 60, 62]
-# channel_random_lost_25 = [9, 37, 36, 25, 26, 46, 61, 20, 14, 8, 57, 2, 62, 16, 35, 44, 45, 31, 52, 29, 54, 41, 23, 58, 47]
+channel_random_lost_20 = [1, 4, 6, 12, 13, 15, 18, 22, 28, 31, 35, 38, 39, 43, 46, 48, 51, 55, 60, 62]
 
 channel_corner_lost_5_upper = [0, 13, 26, 39, 52]
 channel_corner_lost_10_upper = [0, 1, 2, 3, 13, 14, 15, 26, 27, 39]
@@ -69,9 +74,9 @@ random_emg_inpainted = Channel_Manipulation.inpaintImages(random_emg_channel_los
 random_original = np.transpose(np.reshape(cross_validation_groups['group_0']['test_set']['emg_LWSA'][0], (-1, 13, 5, 2), 'F'), (0, 3, 1, 2))
 random_lost_transposed = np.transpose(random_emg_channel_lost['group_0']['test_set']['emg_LWSA'][0], (0, 3, 1, 2))
 random_inpaint_transposed = np.transpose(random_emg_inpainted['group_0']['test_set']['emg_LWSA'][0], (0, 3, 1, 2))
-random_original_normal = (random_original - np.mean(random_original, axis=0, keepdims=True)) / np.std(random_inpaint_transposed, axis=0, keepdims=True)
-random_lost_normal = (random_lost_transposed - np.mean(random_lost_transposed, axis=0, keepdims=True)) / np.std(random_inpaint_transposed, axis=0, keepdims=True)
-random_inpaint_normal = (random_inpaint_transposed - np.mean(random_inpaint_transposed, axis=0, keepdims=True)) / np.std(random_inpaint_transposed, axis=0, keepdims=True)
+random_original_normal = (random_original - np.mean(random_original, axis=0, keepdims=True)) / np.std(random_original, axis=0, keepdims=True)
+random_lost_normal = (random_lost_transposed - np.mean(random_lost_transposed, axis=0, keepdims=True)) / np.std(random_original, axis=0, keepdims=True)
+random_inpaint_normal = (random_inpaint_transposed - np.mean(random_inpaint_transposed, axis=0, keepdims=True)) / np.std(random_original, axis=0, keepdims=True)
 
 
 ##  recover 20 corner lost channels
@@ -81,26 +86,34 @@ corner_emg_inpainted = Channel_Manipulation.inpaintImages(corner_emg_channel_los
 corner_original = np.transpose(np.reshape(cross_validation_groups['group_0']['test_set']['emg_LWSA'][0], (-1, 13, 5, 2), 'F'), (0, 3, 1, 2))
 corner_lost_transposed = np.transpose(corner_emg_channel_lost['group_0']['test_set']['emg_LWSA'][0], (0, 3, 1, 2))
 corner_inpaint_transposed = np.transpose(corner_emg_inpainted['group_0']['test_set']['emg_LWSA'][0], (0, 3, 1, 2))
-corner_original_normal = (corner_original - np.mean(corner_original, axis=0, keepdims=True)) / np.std(corner_inpaint_transposed, axis=0, keepdims=True)
-corner_lost_normal = (corner_lost_transposed - np.mean(corner_lost_transposed, axis=0, keepdims=True)) / np.std(corner_inpaint_transposed, axis=0, keepdims=True)
-corner_inpaint_normal = (corner_inpaint_transposed - np.mean(corner_inpaint_transposed, axis=0, keepdims=True)) / np.std(corner_inpaint_transposed, axis=0, keepdims=True)
+corner_original_normal = (corner_original - np.mean(corner_original, axis=0, keepdims=True)) / np.std(corner_original, axis=0, keepdims=True)
+corner_lost_normal = (corner_lost_transposed - np.mean(corner_lost_transposed, axis=0, keepdims=True)) / np.std(corner_original, axis=0, keepdims=True)
+corner_inpaint_normal = (corner_inpaint_transposed - np.mean(corner_inpaint_transposed, axis=0, keepdims=True)) / np.std(corner_original, axis=0, keepdims=True)
 
 
-## create a figure with four subplot of four hdemg heatmaps
+## select a hdemg sample to illustrate channel lost senarios
 timestamp = 600
 muscle = 0
-random_original_image = random_original_normal[timestamp, muscle, :, :]
 random_emg_lost_image = random_lost_normal[timestamp, muscle, :, :]
+random_original_image = random_original_normal[timestamp, muscle, :, :]
 random_emg_inpainted_image = random_inpaint_normal[timestamp, muscle, :, :]
-corner_original_image = corner_original_normal[timestamp, muscle, :, :]
 corner_emg_lost_image = corner_lost_normal[timestamp, muscle, :, :]
+corner_original_image = corner_original_normal[timestamp, muscle, :, :]
 corner_emg_inpainted_image = corner_inpaint_normal[timestamp, muscle, :, :]
 
+hdemg_channel_lost = [random_emg_lost_image, random_original_image, random_emg_inpainted_image, corner_emg_lost_image,
+    corner_original_image, corner_emg_inpainted_image]
+
+# feature_type = 0
+# Save_Results.saveChannelLostHdemg(subject, version, feature_type, hdemg_channel_lost)
+# emg_list = Save_Results.loadChannelLostHdemg(subject, version, feature_type)
+
+
+## plot a figure with four subplot of four hdemg heatmaps
 fig, axs = plt.subplots(2, 3, figsize=(10, 10))
 
 # Plot the data in each subplot
-for ax, data in zip(axs.flatten(), [random_emg_lost_image, random_original_image, random_emg_inpainted_image, corner_emg_lost_image,
-    corner_original_image, corner_emg_inpainted_image]):
+for ax, data in zip(axs.flatten(), hdemg_channel_lost):
     im = ax.imshow(data, cmap='jet')
     fig.colorbar(im, ax=ax)
     # Add text annotations to each grid
@@ -110,11 +123,13 @@ for ax, data in zip(axs.flatten(), [random_emg_lost_image, random_original_image
 
 # set the title of each subplot
 axs[0, 0].set_title("random_lost_emg")
-axs[0, 1].set_title("random_inpainted_emg")
-axs[0, 2].set_title("random_original_emg")
+axs[0, 1].set_title("random_original_emg")
+axs[0, 2].set_title("random_inpainted_emg")
 axs[1, 0].set_title("corner_lost_emg")
-axs[1, 1].set_title("corner_inpainted_emg")
-axs[1, 2].set_title("corner_original_image")
+axs[1, 1].set_title("corner_original_image")
+axs[1, 2].set_title("corner_inpainted_emg")
 
 fig.suptitle("HDEMG images before and after recovery")
+
+
 
