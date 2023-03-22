@@ -178,7 +178,7 @@ def readAlignParameters(subject, session, mode, version):
         emg_start_index = align_parameter['emg_start_index'].iloc[0]
         emg_end_index = align_parameter['emg_end_index'].iloc[0]
 
-        return left_start_index, right_start_index, left_end_index, right_end_index, emg_start_index, emg_end_index
+        return right_start_index, left_start_index, right_end_index, left_end_index, emg_start_index, emg_end_index
 
 
 ## save all sensor data after alignment into a csc file

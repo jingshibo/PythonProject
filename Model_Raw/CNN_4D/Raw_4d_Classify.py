@@ -53,6 +53,7 @@ normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_da
 del sliding_window_dataset
 shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
 del normalized_groups
+# reshape the emg data to match the physical grid
 for group_number, group_value in shuffled_groups.items():
     group_value['train_feature_x'] = np.reshape(group_value['train_feature_x'], (feature_window_size, 13, 10, 1, -1), "F")
     group_value['test_feature_x'] = np.reshape(group_value['test_feature_x'], (feature_window_size, 13, 10, 1, -1), "F")

@@ -86,11 +86,11 @@ if __name__ == '__main__':
     # down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     # sessions = [up_down_session, down_up_session]
 
-    subject = 'Number4'
+    subject = 'Number2'
     version = 0  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
-    up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
+    up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]
+    down_up_session = [10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
     sessions = [up_down_session, down_up_session]
 
     # Feature extraction
@@ -102,12 +102,11 @@ if __name__ == '__main__':
     feature_set = 0  # there may be multiple sets of features to be calculated for comparison
     Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
 
-
-    subject = 'Number5'
+    subject = 'Number1'
     version = 0  # the data from which experiment version to process
     modes = ['up_down', 'down_up']
-    up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+    up_down_session = [0, 1, 4, 5, 6, 7, 8, 9, 10]
+    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
     sessions = [up_down_session, down_up_session]
 
     # Feature extraction

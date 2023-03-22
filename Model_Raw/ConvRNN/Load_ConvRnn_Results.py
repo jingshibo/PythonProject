@@ -3,6 +3,10 @@ get oll subject's accuracy and confusion matrix at each delay point. display and
 '''
 
 ## import
+import copy
+
+import pandas as pd
+
 from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Results
 from Models.Utility_Functions import Confusion_Matrix
 import matplotlib.pyplot as plt
@@ -91,7 +95,6 @@ for delay_time, delay_value in average_cm.items():
     average_cm[delay_time] = delay_value / len(all_subjects)
 
 
-
 ##  print accuracy results
 # subject = 'Shibo'
 # accuracy = all_subjects[f'{subject}']['accuracy']
@@ -135,3 +138,44 @@ cm_call = average_cm[f'delay_{delay}_ms']
 class_labels = ['LW-LW', 'LW-SA', 'LW-SD', 'LW-SS', 'SA-LW', 'SA-SA', 'SA-SS', 'SD-LW', 'SD-SD', 'SD-SS', 'SS-LW', 'SS-SA', 'SS-SD']
 plt.figure()
 Confusion_Matrix.plotConfusionMatrix(cm_call, class_labels, normalize=False)
+
+
+## extract the results from each transition mode
+delay_groups = list(all_subjects['Number5']['accuracy'].keys())  # list all transition types
+delay_list = ['delay_0_ms', 'delay_60_ms', 'delay_100_ms', 'delay_200_ms', 'delay_300_ms', 'delay_400_ms']
+
+mean_list = []
+cm_list = []
+for i in range(13):
+    total_accuracy = {delay_time: [] for delay_time in delay_groups if delay_time in delay_list}  # initialize average accuracy list
+    total_cm = {delay_time: [] for delay_time in delay_groups if delay_time in delay_list}  # initialize average cm list
+
+    for subject_number, subject_results in all_subjects.items():
+        for key, value in subject_results.items():
+            for delay_time, delay_value in value.items():
+                if delay_time in ['delay_0_ms', 'delay_60_ms', 'delay_100_ms', 'delay_200_ms', 'delay_300_ms', 'delay_400_ms']:
+                    if key == 'accuracy':
+                        total_accuracy[delay_time].append(delay_value)
+                    elif key == 'cm_call':
+                        total_cm[delay_time].append(delay_value[i, i])  # only select the SDSS mode
+
+    mean_cm = {delay_time: 0 for delay_time in delay_groups if delay_time in delay_list}
+    std_cm = {delay_time: 0 for delay_time in delay_groups if delay_time in delay_list}
+    for delay, value in total_cm.items():
+        mean_cm[delay] = (pd.DataFrame(total_cm[delay])).mean()
+        std_cm[delay] = (pd.DataFrame(total_cm[delay])).std()
+
+    mean_list.append(mean_cm)
+    cm_list.append(std_cm)
+
+# plot the accuracy of a certain mode
+mode = 9
+mean_cm = pd.DataFrame(mean_list[mode]).T
+std_cm = pd.DataFrame(cm_list[mode]).T
+# ax = mean_cm.plot.bar()
+ax = mean_cm.plot.bar(yerr=std_cm, capsize=4, width=0.8)
+# Add values on top of the bars
+for i in range(mean_cm.shape[0]):
+    plt.text(i, mean_cm.iloc[i] + 0.01, str(round(mean_cm.iloc[i], 3).values), ha='center')
+
+

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder
-
+import random
 
 ##  seperate data from each repetitions using sliding feature windows
 def separateEmgData(cross_validation_groups, feature_window_size, increment=64):
@@ -67,9 +67,9 @@ def shuffleTrainingSet(normalized_groups):
     for group_number, group_value in shuffled_groups.items():
         data_number = group_value['train_feature_x'].shape[-1]
         # Shuffles the indices
-        idx = np.arange(data_number)
-        np.random.shuffle(idx)
-        train_idx = idx[: int(data_number)]
+        idx = np.arange(data_number).tolist()
+        random.Random(5).shuffle(idx)
+        train_idx = np.array(idx)[: int(data_number)]
         # shuffle the data
         group_value['train_feature_x'], group_value['train_int_y'], group_value['train_onehot_y'], group_value['test_feature_x'] = (
         group_value['train_feature_x'][:, :, train_idx])[:, :, np.newaxis, :], group_value['train_int_y'][train_idx], group_value[

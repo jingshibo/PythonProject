@@ -79,7 +79,7 @@ idx1_3d = np.where(bipolar_samples[:, :, 0] == bipolar1_emg1)
 idx2_3d = np.where(bipolar_samples[:, :, 1] == bipolar1_emg2)
 idx1 = np.stack(idx1_3d, axis=1)
 idx2 = np.stack(idx2_3d, axis=1)
-# Find the indices where idx1 and idx2 have the same positions
+# Find the indices where idx1 and idx2 have the same values
 indices = np.where((idx1[:, None, :] == idx2).all(axis=2))
 sample_number = idx1[indices[0][1]][0]
 timestamp = idx1[indices[0][1]][1]

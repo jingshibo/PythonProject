@@ -32,13 +32,13 @@ import os
 import re
 
 # Load the image
-image = cv2.imread('D:\Project\pythonProject\Test\\324242.jpg')
+image = cv2.imread('D:\Project\pythonProject\Test\\sdfa.jpg')
 
 # Convert the image to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # Threshold the grayscale image to create a binary mask of the watermark
-_, mask = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY)
+_, mask = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
 # Apply the mask to the original image to extract the watermark
 watermark = cv2.bitwise_and(image, image, mask=mask)
@@ -52,7 +52,7 @@ reader = easyocr.Reader(['ch_sim', 'en'])
 results = reader.readtext(watermark)
 
 for result in results:
-    if '深圳市:' in result[1]:
+    if ('深圳市' or '区') in result[1]:
         text = result[1]
         word_to_remove = "深圳市:"
         text = text.replace(word_to_remove, "")

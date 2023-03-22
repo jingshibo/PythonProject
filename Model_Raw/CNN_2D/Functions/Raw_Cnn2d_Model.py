@@ -72,20 +72,27 @@ class Raw_Cnn_2d(nn.Module):
             elif isinstance(m, nn.Linear):
                 pass
 
-    def forward(self, x):
+    def forward(self, x, intermediate_features=False):
         x = self.convolutional_layer(x)
+        cnn_features = x.detach().clone()
         x = torch.flatten(x, 1)
+        flatten_features = x.detach().clone()
         x = self.linear_layer(x)
         # if self.training is False:
         #     x = F.softmax(x, dim=1)
-        return x
+
+        # obtain intermediate_features
+        if intermediate_features:
+            return x, cnn_features, flatten_features
+        else:
+            return x
 
 print("change dropout!")
 
 
 ## model summary
-model = Raw_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
-summary(model, input_size=(1500, 1, 350, 130))
+# model = Raw_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
+# summary(model, input_size=(1500, 1, 350, 130))
 
 
 ## training
@@ -224,8 +231,42 @@ class ModelTraining():
 
         return np.array(test_true_labels), np.array(test_predict_softmax), np.array(test_predict_labels)
 
+    # extract intermediate features
+    def extractIntermediateFeatures(self, input_data, trained_parameters):
+        # extract the dataset
+        input_size = input_data['train_feature_x'].shape[2]
+        class_number = len(set(input_data['train_int_y']))
+        data_set = self.selectSamples(input_data)
+
+        # dataset of a group
+        train_data = EmgDataSet(data_set, 'train')
+        self.train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=0)
+        test_data = EmgDataSet(data_set, 'test')
+        self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
+
+        # loading trained model parameters
+        self.model = Raw_Cnn_2d(input_size, class_number).to(self.device)  # move the model to GPU
+        self.model.load_state_dict(trained_parameters)
+        self.model.train(False)
+
+        # intermediate features
+        cnn_features = []
+        flatten_features = []
+        true_labels = []
+
+        with torch.no_grad():  # close autograd
+            # loop over each batch
+            for i, test_data in enumerate(self.test_loader):
+                test_inputs, test_labels = test_data[0].to(self.device), test_data[1].to(self.device)
+                test_output, cnn_feature, flatten_feature = self.model(test_inputs, intermediate_features=True)
+                true_labels.append(test_labels.cpu().numpy())
+                cnn_features.append(cnn_feature.cpu().numpy())
+                flatten_features.append(flatten_feature.cpu().numpy())
+
+        return true_labels, flatten_features, cnn_features
+
     # select specific channels for model training and testing
-    def selectSamples(self, group_value, select_channels, bipolar_position=(0, 0)):
+    def selectSamples(self, group_value, select_channels='emg_all', bipolar_position=(0, 0)):
         # training dataset
         if select_channels == 'emg_all':
             return group_value
