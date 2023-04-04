@@ -1,5 +1,5 @@
 '''
-    select a sample to plot the hdemg image before and after channel lost as well as recovery
+    select an example to show the hdemg image before and after channel lost as well as recovery
 '''
 
 
@@ -110,26 +110,30 @@ hdemg_channel_lost = [random_emg_lost_image, random_original_image, random_emg_i
 
 
 ## plot a figure with four subplot of four hdemg heatmaps
-fig, axs = plt.subplots(2, 3, figsize=(10, 10))
+fig, axs = plt.subplots(2, 3, figsize=(15, 15))
 
 # Plot the data in each subplot
+font_size = 16
 for ax, data in zip(axs.flatten(), hdemg_channel_lost):
-    im = ax.imshow(data, cmap='jet')
-    fig.colorbar(im, ax=ax)
+    im = ax.imshow(data, cmap='jet', aspect='auto')
+    ax.tick_params(axis='x', labelsize=font_size)
+    ax.tick_params(axis='y', labelsize=font_size)
     # Add text annotations to each grid
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            text = ax.annotate("{:.2f}".format(data[i, j]), xy=(j, i), ha='center', va='center', color='black', fontsize=6)
+            text = ax.annotate("{:.2f}".format(data[i, j]), xy=(j, i), ha='center', va='center', color='black', fontsize=font_size-4)
+    color_bar = fig.colorbar(im, ax=ax)
+    color_bar.ax.tick_params(labelsize=font_size)
 
 # set the title of each subplot
-axs[0, 0].set_title("random_lost_emg")
-axs[0, 1].set_title("random_original_emg")
-axs[0, 2].set_title("random_inpainted_emg")
-axs[1, 0].set_title("corner_lost_emg")
-axs[1, 1].set_title("corner_original_image")
-axs[1, 2].set_title("corner_inpainted_emg")
+axs[0, 0].set_title("(a) Random Channel Loss")
+axs[0, 1].set_title("(b) Original HDsEMG Signal")
+axs[0, 2].set_title("(c) Random Loss With Recovery")
+axs[1, 0].set_title("(d) Corner Channel Loss")
+axs[1, 1].set_title("(e) Original HDsEMG Signal")
+axs[1, 2].set_title("(f) Corner Loss With Recovery")
 
-fig.suptitle("HDEMG images before and after recovery")
+# fig.suptitle("Recovered HDsEMG Signals with 30% Random or Corner Channel Loss")
 
 
 

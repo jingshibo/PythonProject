@@ -100,8 +100,10 @@ def calculatePca(input_features, dimension=3):
 
 ## plot scatter pca features
 def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_after_pca, manual_labels_to_pca):
-    labels = ['SASA', 'SASS', 'SALW']  # order of number 5,6,4
+    labels = ['SA-SA', 'SA-SS', 'SA-LW']  # order of number 5,6,4
     colors = ['r', 'g', 'b']
+    font_size = 16
+    label_pad = 20
     colormap = ListedColormap(colors)  # define colors for 3 categories
     fig = plt.figure(figsize=(10, 5))
 
@@ -112,12 +114,16 @@ def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_aft
 
     ax_1 = fig.add_subplot(121, projection='3d')
     ax_1.scatter(x_cnn, y_cnn, z_cnn, c=cat_cnn, cmap=colormap, edgecolors="black")
-    ax_1.set_xlabel('PCA 1')
-    ax_1.set_ylabel('PCA 2')
-    ax_1.set_zlabel('PCA 3')
+    ax_1.set_xlabel('PCA 1', fontsize=font_size, labelpad=label_pad)
+    ax_1.set_ylabel('PCA 2', fontsize=font_size, labelpad=label_pad)
+    ax_1.set_zlabel('PCA 3', fontsize=font_size, labelpad=label_pad)
+    # Set the font size of the axis ticks
+    ax_1.tick_params(axis='x', labelsize=font_size)
+    ax_1.tick_params(axis='y', labelsize=font_size)
+    ax_1.tick_params(axis='z', labelsize=font_size)
     handles = [plt.Line2D([], [], color=colors[i], marker='o', linestyle='', label=labels[i]) for i in range(len(labels))]
-    plt.legend(handles=handles)
-    ax_1.set_title('The reduced-dimensional CNN features from PCA')
+    plt.legend(handles=handles, fontsize=font_size)
+    ax_1.set_title('(a) CNN-Extracted Features with PCA Dimension Reduction')
 
     x_manual = manual_feature_after_pca[:, 0]
     y_manual = manual_feature_after_pca[:, 1]
@@ -126,11 +132,14 @@ def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_aft
 
     ax_2 = fig.add_subplot(122, projection='3d')
     ax_2.scatter(x_manual, y_manual, z_manual, c=cat_manual, cmap=colormap, edgecolors="black")
-    ax_2.set_xlabel('PCA 1')
-    ax_2.set_ylabel('PCA 2')
-    ax_2.set_zlabel('PCA 3')
+    ax_2.set_xlabel('PCA 1', fontsize=font_size, labelpad=label_pad)
+    ax_2.set_ylabel('PCA 2', fontsize=font_size, labelpad=label_pad)
+    ax_2.set_zlabel('PCA 3', fontsize=font_size, labelpad=label_pad)
+    # Set the font size of the axis ticks
+    ax_2.tick_params(axis='x', labelsize=font_size)
+    ax_2.tick_params(axis='y', labelsize=font_size)
+    ax_2.tick_params(axis='z', labelsize=font_size)
     handles = [plt.Line2D([], [], color=colors[i], marker='o', linestyle='', label=labels[i]) for i in range(len(labels))]
-    plt.legend(handles=handles)
-    ax_2.set_title('The reduced-dimensional conventional features from PCA')
-
-    fig.suptitle('Comparing CNN-extracted and Conventional Features Using PCA Dimension Reduction Visualization', fontsize=12)
+    plt.legend(handles=handles, fontsize=font_size)
+    ax_2.set_title('(b) Manually-Extracted Features with PCA Dimension Reduction')
+    # fig.suptitle('Comparing CNN-extracted and Manually-Extracted Features Using PCA Dimension Reduction Visualization', fontsize=12)

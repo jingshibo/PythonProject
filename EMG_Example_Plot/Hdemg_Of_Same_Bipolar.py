@@ -71,14 +71,14 @@ sessions = [up_down_session, down_up_session]
 # sample_number = 0
 # timestamp = 0
 #
-# bipolar1_emg1 = bipolar_samples[sample_number, timestamp, 0]
-# bipolar1_emg2 = bipolar_samples[sample_number, timestamp, 1]
-# hdemg1_emg1 = hdemg_samples[sample_number, timestamp, :, 0:5]
-# hdemg1_emg2 = hdemg_samples[sample_number, timestamp, :, 5:10]
+# bipolar_time1_device1 = bipolar_samples[sample_number, timestamp, 0]
+# bipolar_time1_device2 = bipolar_samples[sample_number, timestamp, 1]
+# hdemg_time1_device1 = hdemg_samples[sample_number, timestamp, :, 0:5]
+# hdemg_time1_device2 = hdemg_samples[sample_number, timestamp, :, 5:10]
 #
 # # Find the indices of the elements that have the same bipolar values val1 and val2 in the third dimension
-# idx1_3d = np.where(bipolar_samples[:, :, 0] == bipolar1_emg1)
-# idx2_3d = np.where(bipolar_samples[:, :, 1] == bipolar1_emg2)
+# idx1_3d = np.where(bipolar_samples[:, :, 0] == bipolar_time1_device1)
+# idx2_3d = np.where(bipolar_samples[:, :, 1] == bipolar_time1_device2)
 # idx1 = np.stack(idx1_3d, axis=1)
 # idx2 = np.stack(idx2_3d, axis=1)
 # # Find the indices where idx1 and idx2 have the same values
@@ -87,16 +87,16 @@ sessions = [up_down_session, down_up_session]
 # timestamp = idx1[indices[0][1]][1]
 #
 # # extract another frame of hdemg signal with the same bipolar value as the previous hdemg signal
-# bipolar2_emg1 = bipolar_samples[sample_number, timestamp, 0]
-# bipolar2_emg2 = bipolar_samples[sample_number, timestamp, 1]
-# hdemg2_emg1 = hdemg_samples[sample_number, timestamp, :, 0:5]
-# hdemg2_emg2 = hdemg_samples[sample_number, timestamp, :, 5:10]
+# bipolar_time2_device1 = bipolar_samples[sample_number, timestamp, 0]
+# bipolar_time2_device2 = bipolar_samples[sample_number, timestamp, 1]
+# hdemg_time2_device1 = hdemg_samples[sample_number, timestamp, :, 0:5]
+# hdemg_time2_device2 = hdemg_samples[sample_number, timestamp, :, 5:10]
 #
-# save hdemg and bipoalr emg examples
-# hdemg_data = [hdemg1_emg1, hdemg1_emg2, hdemg2_emg1, hdemg2_emg2]
-# bipolar_data = [bipolar1_emg1, bipolar1_emg2, bipolar2_emg1, bipolar2_emg2]
+# # save hdemg and bipoalr emg examples
+# hdemg_data = [hdemg_time1_device1, hdemg_time2_device1, hdemg_time1_device2, hdemg_time2_device2]
+# bipolar_data = [bipolar_time1_device1, bipolar_time2_device1, bipolar_time1_device2, bipolar_time2_device2]
 # feature_type = 1
-# Save_Results.saveHdemgWithSameBipolar(subject, version, feature_type, hdemg_data, bipolar_data, )
+# Save_Results.saveHdemgWithSameBipolar(subject, version, feature_type, hdemg_data, bipolar_data)
 
 
 ## load hdemg and bipoalr emg examples
@@ -105,25 +105,33 @@ hdemg_data, bipolar_data = Save_Results.loadFeatureExamples(subject, version, fe
 
 
 ## create a figure with four subplot of four hdemg heatmaps
-fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+fig, axs = plt.subplots(1, 4, figsize=(10, 10))
 
 # Plot the data in each subplot
+font_size = 20
 for ax, data, number in zip(axs.flatten(), hdemg_data, bipolar_data):
     im = ax.imshow(data, cmap='jet', interpolation='bicubic')
+    ax.tick_params(axis='x', labelsize=font_size)
+    ax.tick_params(axis='y', labelsize=font_size)
+    ax.set_xticks(np.arange(0, 5, 2))
     circle1 = plt.Circle((2, 5), 0.3, color='r', fill=False)
     circle2 = plt.Circle((2, 7), 0.3, color='r', fill=False)
     ax.add_artist(circle1)
     ax.add_artist(circle2)
-    ax.text(2, 6, number, fontsize=12, color='red', ha='center', va='center')
-    fig.colorbar(im, ax=ax)
+    ax.text(2, 6, number, fontsize=font_size, color='red', ha='center', va='center')
+    color_bar = fig.colorbar(im, ax=ax, shrink=0.75)
+    color_bar.ax.tick_params(labelsize=font_size)
+
+# Adjust the distance between the subplots
+fig.subplots_adjust(wspace=0.5)
 
 # set the title of each subplot
-axs[0, 0].set_title("RF signals from LWLW")
-axs[0, 1].set_title("TA signals from LWLW")
-axs[1, 0].set_title("RF signals from LWSA")
-axs[1, 1].set_title("TA signals from LWSA")
+axs[0].set_title("(a) RF signals from LW-LW")
+axs[1].set_title("(b) RF signals from LW-SA")
+axs[2].set_title("(c) TA signals from LW-LW")
+axs[3].set_title("(d) TA signals from LW-SA")
 
-fig.suptitle("HDEMG signals from different modes with the same bipolar emg value")
+# fig.suptitle("HDsEMG Signals With Same Bipolar EMG Values but Different Muscle Activity")
 
 
 
