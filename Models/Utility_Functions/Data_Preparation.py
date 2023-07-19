@@ -65,14 +65,17 @@ def removeSomeSamples(emg_all_data, start_index=0, end_index=-1, is_down_samplin
 
 
 ## create k-fold cross validation groups
-def crossValidationSet(fold, emg_feature_data):
+def crossValidationSet(fold, emg_feature_data, shuffle=True):
     cross_validation_groups = {}  # 5 groups of cross validation set
     for i in range(fold):
         train_set = {}  # store train set of all gait events for each group
         test_set = {}  # store test set of all gait events for each group
         for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
             # shuffle the list (important)
-            random.Random(5).shuffle(gait_event_features)  # 5 is a seed
+            if shuffle:
+                random.Random(5).shuffle(gait_event_features)  # 5 is a seed
+            else:
+                pass
             # separate the training and test set
             test_set[gait_event_label] = gait_event_features[
             int(len(gait_event_features) * i / fold): int(len(gait_event_features) * (i + 1) / fold)]

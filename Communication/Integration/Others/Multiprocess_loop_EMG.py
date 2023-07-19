@@ -6,8 +6,8 @@ import os
 from bleak import BleakClient, BleakScanner
 import datetime
 from functools import partial
-from Integration.Utility_Functions.Insole_Struct import *
-from Integration.Utility_Functions import Emg_Asyncio_Class
+from Communication.Integration.Utility_Functions.Insole_Struct import *
+from Communication.Integration.Utility_Functions import Connect_Emg
 import copy
 
 ## Initialization
@@ -47,7 +47,6 @@ clib.GetMatrixLoadInfo.argtypes = [c_uint]
 clib.ResetStrideInfo.restype = None
 clib.ResetStrideInfo.argtypes = [c_int]
 
-
 ## scan bluetooth device
 async def scanBle():
     async with BleakScanner(adapter="hci1") as scanner:
@@ -73,7 +72,7 @@ def callbackInsole(client, datalist, handle, ble_data):
         left_data.append(matrix_load)
         left_timestamp.append(stride_value.time)
         run_time = datetime.datetime.now()
-        print("OS time:", run_time - initial_time, "insole time:", stride_value.time, "left_data:", len(left_data))
+        print("OS time:", run_time-initial_time, "insole time:", stride_value.time, "left_data:", len(left_data))
 
     elif client.address == right_insole_address:
         ble_number = list(ble_data)
@@ -89,7 +88,7 @@ def callbackInsole(client, datalist, handle, ble_data):
         right_data.append(matrix_load)
         right_timestamp.append(stride_value.time)
         run_time = datetime.datetime.now()
-        print("OS time:", run_time - initial_time, "insole time:", stride_value.time, "right_data:", len(right_data))
+        print("OS time:", run_time-initial_time, "insole time:", stride_value.time, "right_data:", len(right_data))
 
     elif client.address == third_insole_address:
         ble_number = list(ble_data)
@@ -105,7 +104,7 @@ def callbackInsole(client, datalist, handle, ble_data):
         third_data.append(matrix_load)
         third_timestamp.append(stride_value.time)
         run_time = datetime.datetime.now()
-        print("OS time:", run_time - initial_time, "insole time:", stride_value.time, "third_data:", len(third_data))
+        print("OS time:", run_time-initial_time, "insole time:", stride_value.time, "third_data:", len(third_data))
     datalist.append(ble_number)
 
     # print(present_time - initial_time)
@@ -131,6 +130,7 @@ async def connectInsole(address):
         await client.write_gatt_char(write_characteristic, set_dataRate)
         print("connect to", address)
 
+        # if address == left_insole_address:
         # callback method
         try:
             datalist = []
@@ -142,28 +142,22 @@ async def connectInsole(address):
         except Exception as e:
             print(e)
 
-        # # loop method
-        # init_time = datetime.datetime.now()
-        # end_time = init_time + datetime.timedelta(seconds=10)
-        # while datetime.datetime.now() < end_time:
-        #     model_number = await client.read_gatt_char(read_characteristic)
-        #     if address == left_insole_address:
-        #         left_data.append(model_number)
-        #         print(datetime.datetime.now() - init_time, "left:", len(left_data))
-        #     if address == right_insole_address:
-        #         right_data.append(model_number)
-        #         print(datetime.datetime.now() - init_time, "right:", len(right_data))
-        # await client.disconnect()
+        # elif address == right_insole_address:
+        #     # loop method
+        #     init_time = datetime.datetime.now()
+        #     end_time = init_time + datetime.timedelta(seconds=10)
+        #     while datetime.datetime.now() < end_time:
+        #         model_number = await client.read_gatt_char(read_characteristic)
+        #         if address == left_insole_address:
+        #             left_data.append(model_number)
+        #             print(datetime.datetime.now() - init_time, "left:", len(left_data))
+        #         if address == right_insole_address:
+        #             right_data.append(model_number)
+        #             print(datetime.datetime.now() - init_time, "right:", len(right_data))
+        #     await client.disconnect()
 
     except Exception as e:
         print(e)
-
-
-def task(addresses, emg_device):
-    print("process:", os.getpid(), "thread:", threading.get_ident())
-    loop = asyncio.get_event_loop()
-    output = loop.run_until_complete(
-        asyncio.gather(*(connectInsole(address) for address in addresses), emg_device.connect_to_sq()))
 
 
 def task1(addresses):
@@ -171,43 +165,22 @@ def task1(addresses):
     loop = asyncio.get_event_loop()
     output = loop.run_until_complete(asyncio.gather(*(connectInsole(address) for address in addresses)))
 
-
-def task2(emg_device):
+def task2():
     print("process:", os.getpid(), "thread:", threading.get_ident())
-    loop = asyncio.get_event_loop()
-    output = loop.run_until_complete(emg_device.connect_to_sq())
+    Connect_Emg.connectEmg()
 
 
 if __name__ == "__main__":
+
     addresses = [left_insole_address, right_insole_address]
-    emg_device = Emg_Asyncio_Class.Sessantaquattro(buffsize=200)
 
-    # process1 = multiprocessing.Process(target=task1, args=(addresses,))
-    # process2 = multiprocessing.Process(target=task2, args=(emg_device,))
-    # process1.start()
-    # process2.start()
-    # process1.join()
-    # process2.join()
+    process1 = multiprocessing.Process(target=task1, args=(addresses,))
+    process2 = multiprocessing.Process(target=task2)
 
-    process = multiprocessing.Process(target=task, args=(addresses, emg_device))
-    process.start()
-    process.join()
+    process1.start()
+    process2.start()
+
+    process1.join()
+    process2.join()
 
     pass
-
-# async def main(addresses):
-#     task1 = asyncio.create_task(connectInsole(addresses[0]))
-#     task2 = asyncio.create_task(connectInsole(addresses[1]))
-#
-#     loop = asyncio.get_running_loop()
-#
-#     with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
-#         f1 = executor.submit(Connect_Emg.connectEmg)
-#         await task1
-#         await task2
-#
-#         # coros = [await loop.run_in_executor(executor, partial(connectInsole, addresses[0]))]  # this returns a coroutine object
-#         # results = [await f for f in asyncio.as_completed(coros)]
-#
-#
-#         # print(results)

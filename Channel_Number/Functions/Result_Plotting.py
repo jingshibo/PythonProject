@@ -45,9 +45,9 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonf
 
                 # add the significance star ot the plot
                 if pval < 0.01 / bonferroni_correction:
-                    ax.text((x_left + x_right) * 0.5, line_height - 0.8, "**", ha='center', va='bottom', color='r', fontsize=20)
+                    ax.text((x_left + x_right) * 0.5, line_height - 1, "**", ha='center', va='bottom', color='r', fontsize=20)
                 elif pval < 0.05 / bonferroni_correction:
-                    ax.text((x_left + x_right) * 0.5, line_height - 0.8, "*", ha='center', va='bottom', color='r', fontsize=20)
+                    ax.text((x_left + x_right) * 0.5, line_height - 1, "*", ha='center', va='bottom', color='r', fontsize=20)
                 # elif pval < 0.1 / bonferroni_correction:
                 #     ax.text((x_left + x_right) * 0.5, star_height, "*", ha='center', va='bottom', color='r', fontsize=15)
                 else:  # if not significant
@@ -58,7 +58,7 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonf
                 right_line = ax.plot([x_right, x_right], [y_right - 0.005 * height, y_right], 'k-', lw=1)
 
     # Set x-axis
-    x_label = ax.set_xlabel('Prediction time delay(ms)', fontsize=font_size)  # Set x-axis label
+    x_label = ax.set_xlabel('Prediction Delay Relative to Toe-off Moment(ms)', fontsize=font_size)  # Set x-axis label
     # Set the x-tick positions and labels
     # x_ticks = list(range(len(ax.get_xticklabels())))
     # ax.set_xticks(x_ticks)
@@ -77,7 +77,7 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonf
     ymin, ymax = ax.get_ylim()  # get the current limits of the y-axis
     yticks = range(int(ymin), int(ymax+1), 5)  # set the space between y-axis ticks to 5
     ax.set_yticks(yticks)
-    ax.set_ylabel('Prediction accuracy(%)', fontsize=font_size)  # Set y-axis label
+    ax.set_ylabel('Prediction Accuracy(%)', fontsize=font_size)  # Set y-axis label
 
     # Set figure display
     ax.tick_params(axis='both', labelsize=font_size)
@@ -143,7 +143,7 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_co
                 right_line = ax.plot([x_right, x_right], [y_right - 0.005 * height, y_right], 'k-', lw=1)
 
     # Set x-axis
-    x_label = ax.set_xlabel('Prediction time delay(ms)', fontsize=font_size)  # Set x-axis label
+    x_label = ax.set_xlabel('Prediction Delay Relative to Toe-off Moment(ms)', fontsize=font_size)  # Set x-axis label
     x_tick_labels = [label.get_text() for label in ax.get_xticklabels()]
     x_tick_ms = [string[string.find('_')+1: string.find('_', string.find('_')+1)] for string in x_tick_labels]  # extract only the delay value
     ax.set_xticklabels(x_tick_ms, rotation=0)  # set x-tick value
@@ -153,7 +153,7 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_co
     ymin, ymax = ax.get_ylim()  # get the current limits of the y-axis
     yticks = range(int(ymin), int(ymax+1), 5)  # set the space between y-axis ticks to 5
     ax.set_yticks(yticks)
-    ax.set_ylabel('Prediction accuracy(%)', fontsize=font_size)  # Set y-axis label
+    ax.set_ylabel('Prediction Accuracy(%)', fontsize=font_size)  # Set y-axis label
 
     # set figure display
     ax.tick_params(axis='both', labelsize=font_size)

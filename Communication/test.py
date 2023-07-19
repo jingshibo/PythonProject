@@ -86,7 +86,7 @@
 
 ## load library
 if __name__ == "__main__":
-    from Insole.Insole_Struct import *
+    from Communication.Insole.Insole_Struct import *
     import copy
     clib = cdll.LoadLibrary("./API/libStrideAnalytics_x86_64.so")
     clib.InitUser(0, 0, 0, 0, 2, 1, 0)

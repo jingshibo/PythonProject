@@ -1,8 +1,6 @@
 ##
 import Emg_Asyncio_Class
-import datetime
 import asyncio
-import socket
 
 ##
 window_size = 200  # 100ms

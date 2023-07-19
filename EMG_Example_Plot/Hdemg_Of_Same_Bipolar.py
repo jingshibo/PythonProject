@@ -118,7 +118,7 @@ for ax, data, number in zip(axs.flatten(), hdemg_data, bipolar_data):
     circle2 = plt.Circle((2, 7), 0.3, color='r', fill=False)
     ax.add_artist(circle1)
     ax.add_artist(circle2)
-    ax.text(2, 6, number, fontsize=font_size, color='red', ha='center', va='center')
+    ax.text(2, 6, number, fontsize=font_size, color='white', ha='center', va='center')
     color_bar = fig.colorbar(im, ax=ax, shrink=0.75)
     color_bar.ax.tick_params(labelsize=font_size)
 

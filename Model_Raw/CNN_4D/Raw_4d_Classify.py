@@ -8,6 +8,7 @@ from Model_Sliding.ANN.Functions import Sliding_Ann_Results
 import datetime
 import numpy as np
 
+
 ##  read sensor data and filtering
 # basic information
 subject = 'Shibo'

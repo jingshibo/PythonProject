@@ -120,7 +120,7 @@ def getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window
 
 
 ##  save the model results to disk
-def saveModelResults(subject, model_results, version, result_set, window_parameters, model_type):
+def saveModelResults(subject, model_results, version, result_set, window_parameters, model_type, project='Insole_Emg'):
     results = copy.deepcopy(model_results)
     for result in results:
         result['true_value'] = result['true_value'].tolist()
@@ -128,7 +128,7 @@ def saveModelResults(subject, model_results, version, result_set, window_paramet
         result['predict_value'] = result['predict_value'].tolist()
         result['window_parameters'] = window_parameters
 
-    data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
+    data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
@@ -137,8 +137,8 @@ def saveModelResults(subject, model_results, version, result_set, window_paramet
 
 
 ##  read the model results from disk
-def loadModelResults(subject, version, result_set, model_type):
-    data_dir = f'D:\Data\Insole_Emg\subject_{subject}\Experiment_{version}\model_results'
+def loadModelResults(subject, version, result_set, model_type, project='Insole_Emg'):
+    data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
@@ -154,8 +154,8 @@ def loadModelResults(subject, version, result_set, model_type):
 
 
 ##  read the model results from disk
-def getPredictResults(subject, version, result_set, model_type):
-    model_results = loadModelResults(subject, version, result_set, model_type)
+def getPredictResults(subject, version, result_set, model_type, project='Insole_Emg'):
+    model_results = loadModelResults(subject, version, result_set, model_type, project)
     feature_window_increment_ms = model_results[0]['window_parameters']['feature_window_increment_ms']
     feature_window_per_repetition = model_results[0]['window_parameters']['feature_window_per_repetition']
     predict_window_shift_unit = model_results[0]['window_parameters']['predict_window_shift_unit']

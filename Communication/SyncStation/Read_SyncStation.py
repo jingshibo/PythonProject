@@ -1,4 +1,4 @@
-from SyncStation import SyncStation_Class
+from Communication.SyncStation import SyncStation_Class
 import datetime
 
 

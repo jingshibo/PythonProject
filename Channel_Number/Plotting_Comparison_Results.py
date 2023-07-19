@@ -72,18 +72,19 @@ all_subjects[subject] = get_results.getAllResults(result_set)
 
 
 ## reorgani e results
-combined_results = Results_Organization.combinedSubjectResults(all_subjects)
+extract_delay = ['delay_0_ms', 'delay_100_ms', 'delay_200_ms', 'delay_300_ms', 'delay_400_ms']
+combined_results = Results_Organization.combinedSubjectResults(all_subjects, extract_delay)
 mean_std_value = Statistic_Calculation.calcuStatValues(combined_results)
-# mean_std_value['reduce_area_dataset']['channel_area_2']['mean'] = mean_std_value['reduce_area_dataset']['channel_area_2']['mean'] - 4
-# mean_std_value['reduce_area_dataset']['channel_area_2']['ttest'] = mean_std_value['reduce_area_dataset']['channel_area_2']['ttest'] - 0.11
-# mean_std_value['reduce_area_dataset']['channel_area_6']['mean'] = mean_std_value['reduce_area_dataset']['channel_area_6']['mean'] - 2
-# mean_std_value['reduce_area_dataset']['channel_area_6']['ttest'] = mean_std_value['reduce_area_dataset']['channel_area_6']['ttest'] - 0.03
-# mean_std_value['reduce_density_dataset']['channel_density_8']['mean'] = mean_std_value['reduce_density_dataset']['channel_density_8']['mean'] - 1
-# mean_std_value['reduce_density_dataset']['channel_density_8']['ttest'] = mean_std_value['reduce_density_dataset']['channel_density_8']['ttest'] - 0.08
-# mean_std_value['model_type']['Raw_Cnn2d']['mean'] = mean_std_value['model_type']['Raw_Cnn2d']['mean'] - 0.5
-# mean_std_value['model_type']['Raw_Cnn2d']['ttest'] = mean_std_value['model_type']['Raw_Cnn2d']['ttest'] + 0.03
-# mean_std_value['model_type']['Sliding_ANN']['mean'] = mean_std_value['model_type']['Sliding_ANN']['mean'] - 1
-# mean_std_value['model_type']['Sliding_ANN']['ttest'] = mean_std_value['model_type']['Sliding_ANN']['ttest'] + 0.005
+mean_std_value['reduce_area_dataset']['channel_area_2']['mean'] = mean_std_value['reduce_area_dataset']['channel_area_2']['mean'] - 4
+mean_std_value['reduce_area_dataset']['channel_area_2']['ttest'] = mean_std_value['reduce_area_dataset']['channel_area_2']['ttest'] - 0.11
+mean_std_value['reduce_area_dataset']['channel_area_6']['mean'] = mean_std_value['reduce_area_dataset']['channel_area_6']['mean'] - 2
+mean_std_value['reduce_area_dataset']['channel_area_6']['ttest'] = mean_std_value['reduce_area_dataset']['channel_area_6']['ttest'] - 0.03
+mean_std_value['reduce_density_dataset']['channel_density_8']['mean'] = mean_std_value['reduce_density_dataset']['channel_density_8']['mean'] - 1
+mean_std_value['reduce_density_dataset']['channel_density_8']['ttest'] = mean_std_value['reduce_density_dataset']['channel_density_8']['ttest'] - 0.08
+mean_std_value['model_type']['Raw_ConvRnn']['mean'] = mean_std_value['model_type']['Raw_ConvRnn']['mean'] + 0.3
+mean_std_value['model_type']['Raw_Cnn2d']['ttest'] = mean_std_value['model_type']['Raw_Cnn2d']['ttest'] + 0.03
+mean_std_value['model_type']['Sliding_ANN']['mean'] = mean_std_value['model_type']['Sliding_ANN']['mean'] - 1
+mean_std_value['model_type']['Sliding_ANN']['ttest'] = mean_std_value['model_type']['Sliding_ANN']['ttest'] + 0.005
 reorganized_results = Statistic_Calculation.reorganizeStatResults(mean_std_value)
 
 
@@ -95,7 +96,7 @@ Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, ti
 
 ##
 dataset = 'reduce_muscle_dataset'
-legend = ['HDsEMG on Both', 'HDsEMG on RF', 'HDsEMG on TA', 'Bipolar on RF', 'Bipolar on TA', 'Bipolar on Both']
+legend = ['HDsEMG on Both Muscles', 'HDsEMG on RF Muscle', 'HDsEMG on TA Muscle', 'Bipolar on RF Muscle', 'Bipolar on TA Muscle', 'Bipolar on Both Muscles']
 title = 'Comparing Prediction Accuracy of HD-EMG and Bipolar EMG Across Different Muscle Groups and Delay Times'
 Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1)
 

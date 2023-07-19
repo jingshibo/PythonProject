@@ -3,7 +3,7 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 from datetime import datetime
 from functools import partial
-from Insole.Insole_Struct import *
+from Communication.Insole.Insole_Struct import *
 import copy
 
 ##

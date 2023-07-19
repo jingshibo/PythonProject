@@ -81,9 +81,8 @@ class getSubjectResults():
 
 
 ##  combine the results across different subject for each extract_delay key
-def combinedSubjectResults(all_subjects):
+def combinedSubjectResults(all_subjects, extract_delay):
     # extract accuracy results at each 100 delay
-    extract_delay = ['delay_0_ms', 'delay_60_ms', 'delay_100_ms', 'delay_200_ms', 'delay_300_ms', 'delay_400_ms']
     extracted_results = copy.deepcopy(all_subjects)
     for subject_number, subject_results in extracted_results.items():
         for dataset, datavalue in subject_results.items():

@@ -113,7 +113,7 @@ class ModelTraining():
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
 
-        #  train the model
+    #  train the model
     def trainModel(self, shuffled_groups, decay_epochs, select_channels='emg_all'):
         models = []
         results = []
@@ -348,3 +348,4 @@ class AdMSoftmaxLoss(nn.Module):
         denominator = torch.exp(numerator) + torch.sum(torch.exp(self.s * excl), dim=1)
         L = numerator - torch.log(denominator)
         return -torch.mean(L)
+

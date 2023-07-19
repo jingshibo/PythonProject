@@ -4,11 +4,10 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import datetime
 from functools import partial
-from Integration.Utility_Functions.Insole_Struct import *
+from Communication.Integration.Utility_Functions.Insole_Struct import *
 import copy
 from ctypes import *
 import numpy as np
-import pandas as pd
 import csv
 import os
 

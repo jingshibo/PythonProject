@@ -1,4 +1,4 @@
-from Insole.Insole_Struct import *
+from Communication.Insole.Insole_Struct import *
 
 
 ## load library

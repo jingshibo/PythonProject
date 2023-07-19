@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 ## model set
 all_subjects = {}  # save all subject results
-model_type = 'raw_Cnn2d'
+model_type = 'Raw_Cnn2d'
 result_set = 0
 
 ## get model results. Note: different from the GRU method, here you can decide the shift_unit as you want.
@@ -54,8 +54,16 @@ all_subjects[subject] = subject_results
 # subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type)
 # all_subjects[subject] = subject_results
 
+
+##
+subject = 'Test'
+version = 1
+subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type, project='Generative_Model')
+all_subjects[subject] = subject_results
+
+
 ##  average accuracy across subjects
-delay_groups = list(all_subjects['Number5']['accuracy'].keys())  # list all transition types
+delay_groups = list(all_subjects['Test']['accuracy'].keys())  # list all transition types
 average_accuracy = {delay_time: 0 for delay_time in delay_groups}  # initialize average accuracy list
 average_cm = {delay_time: 0 for delay_time in delay_groups}  # initialize average cm list
 
@@ -85,14 +93,14 @@ fig, ax = plt.subplots()
 bars = ax.bar(range(len(accuracy)), y_value)
 ax.set_xticks(range(len(accuracy)), x_label)
 ax.bar_label(bars)
-ax.set_ylim([90, 100])
+ax.set_ylim([60, 100])
 ax.set_xlabel('prediction time delay(ms)')
 ax.set_ylabel('prediction accuracy(%)')
 plt.title('Prediction accuracy for the prediction at different delay points')
 
 
 ##  print confusion matrix
-delay = 300
+delay = 00
 cm_call = average_cm[f'delay_{delay}_ms']
 # subject = 'Shibo'
 # cm_call = all_subjects[f'{subject}']['cm_call'][f'delay_{delay}_ms']

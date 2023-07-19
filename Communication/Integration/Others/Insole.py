@@ -1,7 +1,7 @@
 ## import modules
 import asyncio
 import datetime
-from Integration.Utility_Functions import Insole_Asyncio_Class
+from Communication.Integration.Utility_Functions import Insole_Asyncio_Class
 
 
 ## main body

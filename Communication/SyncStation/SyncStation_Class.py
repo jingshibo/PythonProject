@@ -2,7 +2,8 @@ import socket
 import asyncio
 import numpy as np
 import datetime
-from SyncStation import CRC8_Calculation
+from Communication.SyncStation import CRC8_Calculation
+
 
 class SyncStation():
     def __init__(self, buffsize=200):

@@ -4,8 +4,8 @@ import multiprocessing
 from bleak import BleakClient, BleakScanner
 from datetime import datetime
 from functools import partial
-from Insole.Insole_Struct import *
-import EMG.Connect_Emg
+from Communication.Insole.Insole_Struct import *
+import Communication.EMG.Connect_Emg
 import copy
 
 ## Initialization
@@ -126,7 +126,7 @@ async def connectInsole(address):
 
 
 async def main(addresses):
-    p = multiprocessing.Process(target=EMG.Connect_Emg.connectEmg)
+    p = multiprocessing.Process(target=Communication.EMG.Connect_Emg.connectEmg)
     p.start()
     await asyncio.gather(*(connectInsole(address) for address in addresses))
     p.join()
