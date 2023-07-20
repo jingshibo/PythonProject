@@ -20,7 +20,7 @@ class ModelTraining():
         self.display_step = display_step
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
-        self.current_step = 1
+        self.current_step = 0
         self.gen_AB = None
         self.gen_BA = None
         self.disc_A = None
@@ -54,13 +54,17 @@ class ModelTraining():
         self.disc_A = CycleGAN_Model.Discriminator(dim_A).to(self.device)
         self.disc_B = CycleGAN_Model.Discriminator(dim_B).to(self.device)
 
-        # optimizer
-        lr = 0.0002  # initial learning rate
+        # training parameters
+        lr = 0.001  # initial learning rate
+        lr_decay_rate = 0.3
         weight_decay = 0.0001
+        decay_steps = self.decay_epochs * len(self.train_loader)
+
+        # optimizer
         self.gen_opt = torch.optim.Adam(list(self.gen_AB.parameters()) + list(self.gen_BA.parameters()), lr=lr, weight_decay=weight_decay,
-            betas=(0.5, 0.999))
-        self.disc_A_opt = torch.optim.Adam(self.disc_A.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.5, 0.999))
-        self.disc_B_opt = torch.optim.Adam(self.disc_B.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.5, 0.999))
+            betas=(0.9, 0.999))
+        self.disc_A_opt = torch.optim.Adam(self.disc_A.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.9, 0.999))
+        self.disc_B_opt = torch.optim.Adam(self.disc_B.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.9, 0.999))
 
         # loss function
         adv_criterion = nn.MSELoss()  # an adversarial loss function to keep track of how well the GAN is fooling the discriminator
@@ -68,10 +72,9 @@ class ModelTraining():
         self.loss_fn = CycleGAN_Model.LossFunction(adv_criterion, recon_criterion)
 
         # learning rate scheduler
-        decay_steps = self.decay_epochs * len(self.train_loader)
-        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps, gamma=0.1)  # adjusted learning rate
-        self.lr_disc_A_opt = torch.optim.lr_scheduler.StepLR(self.disc_A_opt, step_size=decay_steps, gamma=0.1)  # adjusted learning rate
-        self.lr_disc_B_opt = torch.optim.lr_scheduler.StepLR(self.disc_B_opt, step_size=decay_steps, gamma=0.1)  # adjusted learning rate
+        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps, gamma=lr_decay_rate)  # adjusted learning rate
+        self.lr_disc_A_opt = torch.optim.lr_scheduler.StepLR(self.disc_A_opt, step_size=decay_steps, gamma=lr_decay_rate)  # adjusted learning rate
+        self.lr_disc_B_opt = torch.optim.lr_scheduler.StepLR(self.disc_B_opt, step_size=decay_steps, gamma=lr_decay_rate)  # adjusted learning rate
 
         # train and test the model of a group
         for epoch_number in range(self.num_epochs):  # loop over each epoch
@@ -129,7 +132,7 @@ class ModelTraining():
             self.mean_generator_loss += gen_loss.item() / self.display_step
 
             # Visualization code ###
-            if self.current_step % self.display_step == 0:
+            if self.current_step % self.display_step == 0 and self.current_step != 0:
                 print(f"Epoch {epoch_number}: Step {self.current_step}: Generator (U-Net) loss: {self.mean_generator_loss}, Discriminator "
                       f"loss: "f"{self.mean_discriminator_loss}")
                 self.mean_generator_loss = 0
@@ -147,7 +150,7 @@ class EmgDataSet(Dataset):
     def __init__(self, old_emg, new_emg):
         # here the first column is the class label, the rest are the features
         self.old_data = torch.from_numpy(old_emg)  # size [n_samples, n_channel, length, width]
-        self.new_data = torch.from_numpy(new_emg)  # size [n_samples, n_channel, length, width]
+        self.new_data = torch.from_numpy(new_emg)  # size [n_sampl    es, n_channel, length, width]
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
         return self.old_data[index, :, :, :], self.new_data[index, :, :, :]

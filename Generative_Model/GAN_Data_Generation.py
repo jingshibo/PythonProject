@@ -3,7 +3,7 @@ from Pre_Processing import Preprocessing
 from Models.Utility_Functions import Data_Preparation
 import datetime
 import numpy as np
-from Generative_Model.Functions import CycleGAN_Training, CycleGAN_Testing, Model_storage, Visualization
+from Generative_Model.Functions import CycleGAN_Training, GAN_Testing, Model_Storage, Visualization, Data_Processing
 
 
 ##  define windows
@@ -69,65 +69,53 @@ del emg_preprocessed
 
 
 ## visualize data distribution
-Visualization.plotHistPercentage(new_emg_images)
-Visualization.plotHistByClass(new_emg_images)
+Visualization.plotHistPercentage(old_emg_images)
+Visualization.plotHistByClass(old_emg_images)
 
 
+## clip the values and normalize data
+limit = 1500
+old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_images, limit=limit)
+new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_images, limit=limit)
 
 
+##  train generative models
+old_LWLW_data = old_emg_normalized['emg_LWLW']
+new_LWLW_data = new_emg_normalized['emg_LWLW']
 
-## extract images
-old_LWLW_data = np.vstack(old_emg_images['emg_LWLW'])  # size [n_samples, n_channel, length, width]
-new_LWLW_data = np.vstack(old_emg_images['emg_LWLW'])  # size [n_samples, n_channel, length, width]
-old_LWSA_data = np.vstack(old_emg_images['emg_LWLW'])  # size [n_samples, n_channel, length, width]
-new_LWSA_data = np.vstack(old_emg_images['emg_LWLW'])  # size [n_samples, n_channel, length, width]
-
-
-## normalize data
-
-
-
-
-##
-bin_values
-
-##  generate data
 num_epochs = 10  # the number of times you iterate through the entire dataset when training
-decay_epochs = 10
-batch_size = 512  # the number of images per forward/backward pass
+decay_epochs = 4
+batch_size = 1024  # the number of images per forward/backward pass
 
 now = datetime.datetime.now()
-train_model = CycleGAN_Training.ModelTraining(num_epochs, batch_size, decay_epochs, display_step=19)
+train_model = CycleGAN_Training.ModelTraining(num_epochs, batch_size, decay_epochs, display_step=int(len(old_LWLW_data)/batch_size))
 gan_models = train_model.trainModel(old_LWLW_data, new_LWLW_data)
 print(datetime.datetime.now() - now)
 
+
+##  save gan models
 # model path
 subject = 'Test'
 version = 1  # the data from which experiment version to process
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
-
-
-##  save gan models
-Model_storage.saveModels(gan_models, subject, version, model_type, model_name)
+Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='Generative_Model')
 
 
 ##  load gan models
-gan_models = Model_storage.loadModels(subject, version, model_type, model_name)
+gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Generative_Model')
 
 
 ## generate new data
 new_LWSA_data = np.vstack(old_emg_images['emg_LWSA'])  # size [n_samples, n_channel, length, width]
 batch_size = 1024
 now = datetime.datetime.now()
-generator_model = CycleGAN_Testing.ModelTesting(gan_models['gen_BA'], batch_size)
+generator_model = GAN_Testing.ModelTesting(gan_models['gen_BA'], batch_size)
 fake_old_LWSA_data = generator_model.testModel(new_LWLW_data)
 print(datetime.datetime.now() - now)
 
 
 ## discriminate data
-discriminator_model = CycleGAN_Testing.ModelTesting(gan_models['disc_A'], batch_size)
+discriminator_model = GAN_Testing.ModelTesting(gan_models['disc_A'], batch_size)
 discriminate_fake_old = discriminator_model.testModel(fake_old_LWSA_data)
-
-
 

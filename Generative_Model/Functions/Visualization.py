@@ -36,7 +36,7 @@ def plotHistByClass(emg_images):
         # Calculate the weights for percentages
         weights = np.ones_like(combined_array) / len(combined_array)
         # Plot the histogram
-        axs[i].hist(combined_array, bins=300, weights=weights)
+        axs[i].hist(combined_array, bins=300, weights=weights, cumulative=True)
         axs[i].set_title(f'Histogram for {key}')
 
     # Remove unused subplots

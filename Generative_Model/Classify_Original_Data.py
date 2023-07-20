@@ -3,11 +3,19 @@ from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Generative_Model.Functions import Classify_Testing, Model_storage
+from Generative_Model.Functions import Classify_Testing, Model_Storage
 import datetime
 
 
-##  define windows
+## load pretrained model
+subject = 'Number4'
+version = 0  # the data from which experiment version to process
+model_type = 'Raw_Cnn2d'
+model_name = list(range(5))
+classify_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Insole_Emg')
+
+
+## define windows
 down_sampling = True
 start_before_toeoff_ms = 450
 endtime_after_toeoff_ms = 400
@@ -22,27 +30,14 @@ predict_window_shift_unit = int(predict_window_increment_ms / feature_window_inc
 predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
 predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeoff_ms - predict_window_ms) / predict_window_increment_ms) + 1
 
-# pretrained model path
-subject = 'Test'
-version = 1  # the data from which experiment version to process
-model_type = 'Pretrained'
-model_name = ['Raw_Cnn2d']
 
-##  save pretrained model
-Model_storage.saveModels(model, subject, version, model_type, model_name)
-
-## load pretrained model
-classify_model = Model_storage.loadModels(subject, version, model_type, model_name)
-
-
-
-
-##  load new data to classify using the pretrained model
-subject = 'Number4'
-version = 0  # the data from which experiment version to process
+## read new data to classify using the pretrained model
+subject = 'Number5'
+version = 0  # the data from which experiment ver
+# sion to process
 modes = ['up_down', 'down_up']
 up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
+down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
 sessions = [up_down_session, down_up_session]
 
 
@@ -58,12 +53,12 @@ cross_validation_groups = Data_Preparation.crossValidationSet(fold, emg_preproce
 del emg_preprocessed
 
 
-##  reorganize data
+## reorganize data
 now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 del cross_validation_groups
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset)
+normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize='scaling', limit=1500)
 del sliding_window_dataset
 shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
 del normalized_groups
@@ -74,7 +69,7 @@ print(datetime.datetime.now() - now)
 batch_size = 1024
 now = datetime.datetime.now()
 # train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size)
-test_model = Classify_Testing.ModelTesting(classify_model, batch_size)
+test_model = Classify_Testing.ModelTesting(classify_models[0], batch_size)  # select one pretrained model for classifying data
 model_results = test_model.testModel(shuffled_groups)
 print(datetime.datetime.now() - now)
 

@@ -23,7 +23,7 @@ def separateEmgData(cross_validation_groups, feature_window_size, increment=64):
 
 
 ##  combine data of all gait events into a single dataset
-def combineNormalizedDataset(sliding_window_dataset):
+def combineNormalizedDataset(sliding_window_dataset, normalize='z-score', limit=2000):
     normalized_groups = {}
     for group_number, group_value in sliding_window_dataset.items():
         # initialize training set and test set for each group
@@ -43,10 +43,25 @@ def combineNormalizedDataset(sliding_window_dataset):
         sliding_window_dataset[group_number] = []  # delete data to release the memory
 
         # normalization
-        mean_x = np.mean(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
-        std_x = np.std(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
-        train_feature_x = (np.concatenate(train_feature_x, axis=-1) - mean_x) / std_x
-        test_feature_x = (np.concatenate(test_feature_x, axis=-1) - mean_x) / std_x
+        def normalizeMinMax(array):  # normalize the value to [-1, 1]
+            min_val = -limit
+            max_val = limit
+            normalized_array = 2 * ((array - min_val) / (max_val - min_val)) - 1
+            return normalized_array
+
+        if normalize == 'z-score':  # mean-std method
+            mean_x = np.mean(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
+            std_x = np.std(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
+            train_feature_x = (np.concatenate(train_feature_x, axis=-1) - mean_x) / std_x
+            test_feature_x = (np.concatenate(test_feature_x, axis=-1) - mean_x) / std_x
+        elif normalize == 'scaling':  # min-max method
+            train_feature_x = [np.clip(array, -limit, limit) for array in train_feature_x]
+            test_feature_x = [np.clip(array, -limit, limit) for array in test_feature_x]
+            train_feature_x = np.concatenate([normalizeMinMax(array) for array in train_feature_x], axis=-1)
+            test_feature_x = np.concatenate([normalizeMinMax(array) for array in test_feature_x], axis=-1)
+        elif normalize is None:  # no normalization
+            train_feature_x = np.concatenate(train_feature_x, axis=-1)
+            test_feature_x = np.concatenate(test_feature_x, axis=-1)
 
         # one-hot encode categories (according to the alphabetical order)
         train_int_y = LabelEncoder().fit_transform(train_feature_y)

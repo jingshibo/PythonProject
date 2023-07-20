@@ -87,7 +87,7 @@ class Raw_Cnn_2d(nn.Module):
         else:
             return x
 
-print("change dropout!")
+# print("change dropout!")
 
 
 ## model summary

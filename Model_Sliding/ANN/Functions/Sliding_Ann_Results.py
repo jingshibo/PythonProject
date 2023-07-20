@@ -165,12 +165,12 @@ def getPredictResults(subject, version, result_set, model_type, project='Insole_
     sliding_majority_vote_by_group = SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
         predict_window_shift_unit, predict_using_window_number, initial_start=0)
     accuracy_bygroup, cm_bygroup = getAccuracyPerGroup(sliding_majority_vote_by_group)
+
     # calculate the accuracy and cm. Note: the first dimension refers to each delay
     average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(
         accuracy_bygroup, cm_bygroup)
     accuracy, cm_recall = getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
         predict_window_shift_unit)
-
     subject_results = {'accuracy': accuracy, 'cm_call': cm_recall}
 
     return subject_results

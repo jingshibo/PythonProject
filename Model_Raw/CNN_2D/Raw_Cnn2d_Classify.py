@@ -3,16 +3,19 @@ from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Generative_Model.Functions import Model_Storage
 import datetime
 
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number5'
+subject = 'Number4'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
 up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
+# up_down_session = [0]
+# down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 
 
@@ -36,7 +39,7 @@ predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeo
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters,
     start_position=-int(start_before_toeoff_ms * (2 / sample_rate)), end_position=int(endtime_after_toeoff_ms * (2 / sample_rate)),
-    notchEMG=False, reordering=False, median_filtering=True)  # median filtering is necessary to avoid all zero values in a channel
+    notchEMG=False, reordering=True, median_filtering=True)  # median filtering is necessary to avoid all zero values in a channel
 emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=down_sampling)
 del emg_filtered_data
 fold = 5  # 5-fold cross validation
@@ -49,7 +52,7 @@ now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 del cross_validation_groups
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset)
+normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize='scaling', limit=1500)
 del sliding_window_dataset
 shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
 del normalized_groups
@@ -76,6 +79,11 @@ window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms'
     'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
     'feature_window_per_repetition': feature_window_per_repetition}
 Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type)
+
+
+## save models
+model_name = list(range(5))
+Model_Storage.saveModels(models, subject, version, model_type, model_name, project='Insole_Emg')
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points
