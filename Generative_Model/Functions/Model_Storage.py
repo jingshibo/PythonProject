@@ -24,3 +24,28 @@ def loadModels(subject, version, model_type, model_name, project='Generative_Mod
         models[name] = model
     return models
 
+
+def saveCheckPointModels(checkpoint_folder_path, epoch_number, models):
+    checkpoint_models_folder = os.path.join(checkpoint_folder_path, f'checkpoint_epoch_{epoch_number + 1}')  # epoch number starts from 0
+    # Create the directory if it doesn't exist
+    if not os.path.exists(checkpoint_models_folder):
+        os.makedirs(checkpoint_models_folder)
+
+    for model_name in models.keys():
+        checkpoint_model_file = f'{model_name}_checkpoint_epoch_{epoch_number + 1}.pt'
+        model_path = os.path.join(checkpoint_models_folder, checkpoint_model_file)
+        torch.save(models[model_name], model_path)
+
+
+def loadCheckPointModels(checkpoint_folder_path, epoch_number, model_name):
+    models = {}
+    # model path
+    checkpoint_models_folder = os.path.join(checkpoint_folder_path, f'checkpoint_epoch_{epoch_number}')  # epoch number starts from 1
+    for name in model_name:
+        checkpoint_model_file = f'{model_name}_checkpoint_epoch_{epoch_number}.pt'
+        model_path = os.path.join(checkpoint_models_folder, checkpoint_model_file)
+        # load model
+        model = torch.load(model_path)
+        models[name] = model
+    return models
+

@@ -55,11 +55,12 @@ class ExpandingBlock(nn.Module):
 class FeatureMapBlock(nn.Module):
     def __init__(self, input_channels, output_channels):
         super(FeatureMapBlock, self).__init__()
-        self.conv = nn.Conv2d(input_channels, output_channels, kernel_size=3, padding=1, padding_mode='replicate')
+        self.conv = nn.Conv2d(input_channels, output_channels, kernel_size=7, padding=3, padding_mode='replicate')
 
     def forward(self, x):
         x = self.conv(x)
         return x
+
 
 class Generator(nn.Module):
     def __init__(self, input_channels, output_channels, hidden_channels=64):
@@ -67,7 +68,7 @@ class Generator(nn.Module):
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels)
         self.contract1 = ContractingBlock(hidden_channels)
         self.contract2 = ContractingBlock(hidden_channels * 2)
-        # res_mult = 4
+        # res_mult = 8
         # self.res0 = ResidualBlock(hidden_channels * res_mult)
         # self.res1 = ResidualBlock(hidden_channels * res_mult)
         self.expand2 = ExpandingBlock(hidden_channels * 4)
@@ -79,20 +80,21 @@ class Generator(nn.Module):
         x = self.upfeature(x)
         x = self.contract1(x)
         x = self.contract2(x)
-        # x3 = self.res0(x2)
-        # x4 = self.res1(x3)
+        # x = self.res0(x)
+        # x = self.res1(x)
         x = self.expand2(x)
         x = self.expand3(x)
-        xn = self.downfeature(x)
-        return self.tanh(xn)
+        x = self.downfeature(x)
+        xn = self.tanh(x)
+        return xn
 
 class Discriminator(nn.Module):
     def __init__(self, input_channels, hidden_channels=64):
         super(Discriminator, self).__init__()
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels)
-        self.contract1 = ContractingBlock(hidden_channels, use_bn=False, kernel_size=4, activation='lrelu')
-        self.contract2 = ContractingBlock(hidden_channels * 2, kernel_size=4, activation='lrelu')
-        self.contract3 = ContractingBlock(hidden_channels * 4, kernel_size=4, activation='lrelu')
+        self.contract1 = ContractingBlock(hidden_channels, use_bn=False, kernel_size=3, activation='lrelu')
+        self.contract2 = ContractingBlock(hidden_channels * 2, kernel_size=3, activation='lrelu')
+        self.contract3 = ContractingBlock(hidden_channels * 4, kernel_size=3, activation='lrelu')
         self.final = nn.Conv2d(hidden_channels * 8, 1, kernel_size=1)
 
     def forward(self, x):
@@ -127,16 +129,16 @@ class LossFunction():
         cycle_loss = self.cycle_criterion(cycle_X, real_X)
         return cycle_loss, cycle_X
 
-    def get_gen_loss(self, real_A, real_B, gen_AB, gen_BA, disc_A, disc_B, lambda_identity=0.1, lambda_cycle=10):
+    def get_gen_loss(self, real_A, real_B, gen_AB, gen_BA, disc_A, disc_B, lambda_identity=0.1, lambda_cycle=15):
         # Adversarial Loss -- get_gen_adversarial_loss(real_X, disc_Y, gen_XY, adv_criterion)
         adv_loss_BA, fake_A = self.get_gen_adversarial_loss(real_B, disc_A, gen_BA)
         adv_loss_AB, fake_B = self.get_gen_adversarial_loss(real_A, disc_B, gen_AB)
         gen_adversarial_loss = adv_loss_BA + adv_loss_AB
 
-        # Identity Loss -- get_identity_loss(real_X, gen_YX, identity_criterion)
-        identity_loss_A, identity_A = self.get_identity_loss(real_A, gen_BA)
-        identity_loss_B, identity_B = self.get_identity_loss(real_B, gen_AB)
-        gen_identity_loss = identity_loss_A + identity_loss_B
+        # # Identity Loss -- get_identity_loss(real_X, gen_YX, identity_criterion)
+        # identity_loss_A, identity_A = self.get_identity_loss(real_A, gen_BA)
+        # identity_loss_B, identity_B = self.get_identity_loss(real_B, gen_AB)
+        # gen_identity_loss = identity_loss_A + identi ty_loss_B
 
         # Cycle-consistency Loss -- get_cycle_consistency_loss(real_X, fake_Y, gen_YX, cycle_criterion)
         cycle_loss_BA, cycle_A = self.get_cycle_consistency_loss(real_A, fake_B, gen_BA)
@@ -144,8 +146,8 @@ class LossFunction():
         gen_cycle_loss = cycle_loss_BA + cycle_loss_AB
 
         # Total loss
-        gen_loss = gen_adversarial_loss + lambda_identity * gen_identity_loss + lambda_cycle * gen_cycle_loss
-        # gen_loss = gen_adversarial_loss + lambda_cycle * gen_cycle_loss
+        # gen_loss = gen_adversarial_loss + lambda_identity * gen_identity_loss + lambda_cycle * gen_cycle_loss
+        gen_loss = gen_adversarial_loss + lambda_cycle * gen_cycle_loss
         return gen_loss
 
     def get_disc_loss(self, real_X, fake_X, disc_X):

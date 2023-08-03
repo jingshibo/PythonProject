@@ -8,7 +8,7 @@ import numpy as np
 import datetime
 
 
-## load pretrained classify model
+## load pretrained classification model
 subject = 'Number4'
 version = 0  # the data from which experiment version to process
 model_type = 'Raw_Cnn2d'  # Note: it requires reordering=True when train this model, in order to match the order of gan-generated data
@@ -16,7 +16,7 @@ model_name = list(range(5))
 classify_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Insole_Emg')
 
 
-## load rael data
+## load real data
 #  define windows
 down_sampling = True
 start_before_toeoff_ms = 450
@@ -32,7 +32,6 @@ predict_window_shift_unit = int(predict_window_increment_ms / feature_window_inc
 predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
 predict_window_per_repetition = int((endtime_after_toeoff_ms + start_before_toeoff_ms - predict_window_ms) / predict_window_increment_ms) + 1
 
-
 ## new data path
 subject = 'Number5'
 version = 0  # the data from which experiment version to process
@@ -43,7 +42,6 @@ up_down_session = [5, 6, 7, 8, 9]
 down_up_session = [4, 5, 6, 8, 9]
 sessions = [up_down_session, down_up_session]
 
-
 ## read and filter new data
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters,
@@ -51,10 +49,11 @@ emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, ve
     notchEMG=False, reordering=True, median_filtering=True)  # median filtering is necessary to avoid all zero values in a channel
 emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=down_sampling)
 del emg_filtered_data
-real_emg_images = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v] for
+new_emg_images = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v] for
     k, v in emg_preprocessed.items()}
 del emg_preprocessed
-
+limit = 1500
+new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_images, limit=limit)
 
 ## generate fake data
 # load gan models
@@ -63,11 +62,10 @@ version = 1  # the data from which experiment version to process
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
 gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Generative_Model')
-fake_old_emg = Data_Processing.generateFakeEmg(gan_models, real_emg_images, start_before_toeoff_ms, endtime_after_toeoff_ms)
+fake_old_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms)
 fold = 5  # 5-fold cross validation
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, fake_old_emg)
 del fake_old_emg
-
 
 ## process generated data
 now = datetime.datetime.now()
@@ -79,7 +77,6 @@ del sliding_window_dataset
 shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
 del normalized_groups
 print(datetime.datetime.now() - now)
-
 
 ## classify generated data
 batch_size = 1024

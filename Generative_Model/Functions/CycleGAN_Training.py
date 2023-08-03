@@ -3,9 +3,12 @@ from torch import nn
 from tqdm.auto import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
+import numpy as np
 import datetime
 import os
 from Generative_Model.Functions import CycleGAN_Model
+from Generative_Model.Functions import Model_Storage
+
 
 ## training process
 class ModelTraining():
@@ -36,7 +39,7 @@ class ModelTraining():
         self.test_loader = None
         self.writer = None
 
-    def trainModel(self, old_data, new_data, select_channels='emg_all'):
+    def trainModel(self, old_data, new_data, checkpoint_folder_path, select_channels='emg_all'):
         models = []
         # initialize the tensorboard writer
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -56,15 +59,16 @@ class ModelTraining():
 
         # training parameters
         lr = 0.001  # initial learning rate
-        lr_decay_rate = 0.3
-        weight_decay = 0.0001
+        lr_decay_rate = 0.9
+        weight_decay = 0.0000
+        beta = (0.5, 0.999)
         decay_steps = self.decay_epochs * len(self.train_loader)
 
         # optimizer
         self.gen_opt = torch.optim.Adam(list(self.gen_AB.parameters()) + list(self.gen_BA.parameters()), lr=lr, weight_decay=weight_decay,
-            betas=(0.9, 0.999))
-        self.disc_A_opt = torch.optim.Adam(self.disc_A.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.9, 0.999))
-        self.disc_B_opt = torch.optim.Adam(self.disc_B.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.9, 0.999))
+            betas=beta)
+        self.disc_A_opt = torch.optim.Adam(self.disc_A.parameters(), lr=lr, weight_decay=weight_decay, betas=beta)
+        self.disc_B_opt = torch.optim.Adam(self.disc_B.parameters(), lr=lr, weight_decay=weight_decay, betas=beta)
 
         # loss function
         adv_criterion = nn.MSELoss()  # an adversarial loss function to keep track of how well the GAN is fooling the discriminator
@@ -72,22 +76,36 @@ class ModelTraining():
         self.loss_fn = CycleGAN_Model.LossFunction(adv_criterion, recon_criterion)
 
         # learning rate scheduler
-        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps, gamma=lr_decay_rate)  # adjusted learning rate
-        self.lr_disc_A_opt = torch.optim.lr_scheduler.StepLR(self.disc_A_opt, step_size=decay_steps, gamma=lr_decay_rate)  # adjusted learning rate
-        self.lr_disc_B_opt = torch.optim.lr_scheduler.StepLR(self.disc_B_opt, step_size=decay_steps, gamma=lr_decay_rate)  # adjusted learning rate
+        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps,
+            gamma=lr_decay_rate)  # adjusted learning rate
+        self.lr_disc_A_opt = torch.optim.lr_scheduler.StepLR(self.disc_A_opt, step_size=decay_steps,
+            gamma=lr_decay_rate)  # adjusted learning rate
+        self.lr_disc_B_opt = torch.optim.lr_scheduler.StepLR(self.disc_B_opt, step_size=decay_steps,
+            gamma=lr_decay_rate)  # adjusted learning rate
 
-        # train and test the model of a group
+        # train the model
         for epoch_number in range(self.num_epochs):  # loop over each epoch
+            # train the model
             self.trainOneEpoch(epoch_number)
-            # classify the test set every 10 epochs
-            if self.current_step % self.display_step == 0:
-                # test_true_labels, test_predict_softmax, test_predict_labels = self.predictTestResults(group_number, epoch_number)
-                pass
+            models = {'gen_AB': self.gen_AB.to("cpu"), 'gen_BA': self.gen_BA.to("cpu"), 'disc_A': self.disc_A.to("cpu"),
+                'disc_B': self.disc_B.to("cpu")}
+            # set the checkpoints to save models
+            if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 200:
+                Model_Storage.saveCheckPointModels(checkpoint_folder_path, epoch_number, models)
+                print(f"Saved checkpoint at {epoch_number + 1}")
 
-        # log the model structure
-        models = {'gen_AB': self.gen_AB.to("cpu"), 'gen_BA': self.gen_BA.to("cpu"), 'disc_A': self.disc_A.to("cpu"),
-            'disc_B': self.disc_B.to("cpu")}
-        return models
+        # test the model (still use the train data here to test)
+        test_results = []
+        self.gen_BA.train(False)
+        with torch.no_grad():  # close autograd
+            # loop over each batch
+            for real_A, real_B in tqdm(self.train_loader):
+                real_B = real_B.to(self.device)
+                results = self.gen_BA(real_B).cpu().numpy()
+                test_results.append(results)
+        generated_data = np.vstack(test_results)
+
+        return models, generated_data
 
     def trainOneEpoch(self, epoch_number, save_model=False):
         self.gen_AB.train(True)
@@ -134,14 +152,16 @@ class ModelTraining():
             # Visualization code ###
             if self.current_step % self.display_step == 0 and self.current_step != 0:
                 print(f"Epoch {epoch_number}: Step {self.current_step}: Generator (U-Net) loss: {self.mean_generator_loss}, Discriminator "
-                      f"loss: "f"{self.mean_discriminator_loss}")
+                      f"loss: "f"{self.mean_discriminator_loss}, learning rate: {self.lr_gen_opt.get_last_lr()}")
                 self.mean_generator_loss = 0
                 self.mean_discriminator_loss = 0
                 # You can change save_model to True if you'd like to save the model
                 if save_model:
-                    torch.save({'gen_AB': self.gen_AB.state_dict(), 'gen_BA': self.gen_BA.state_dict(), 'gen_opt': self.gen_opt.state_dict(),
-                        'disc_A': self.disc_A.state_dict(), 'disc_A_opt': self.disc_A_opt.state_dict(), 'disc_B': self.disc_B.state_dict(),
-                        'disc_B_opt': self.disc_B_opt.state_dict()}, f"cycleGAN_{self.current_step}.pth")
+                    torch.save(
+                        {'gen_AB': self.gen_AB.state_dict(), 'gen_BA': self.gen_BA.state_dict(), 'gen_opt': self.gen_opt.state_dict(),
+                            'disc_A': self.disc_A.state_dict(), 'disc_A_opt': self.disc_A_opt.state_dict(),
+                            'disc_B': self.disc_B.state_dict(), 'disc_B_opt': self.disc_B_opt.state_dict()},
+                        f"cycleGAN_{self.current_step}.pth")
             self.current_step += 1
 
 
@@ -152,9 +172,8 @@ class EmgDataSet(Dataset):
         self.old_data = torch.from_numpy(old_emg)  # size [n_samples, n_channel, length, width]
         self.new_data = torch.from_numpy(new_emg)  # size [n_sampl    es, n_channel, length, width]
 
-    def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
+    def __getitem__(self, index):  # support indexing such that dataset[i] can be used to get i-th sample
         return self.old_data[index, :, :, :], self.new_data[index, :, :, :]
 
     def __len__(self):  # we can call len(dataset) to return the size
         return min(len(self.old_data), len(self.new_data))
-

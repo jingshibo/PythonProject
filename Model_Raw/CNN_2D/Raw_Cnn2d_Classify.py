@@ -9,13 +9,13 @@ import datetime
 
 ##  read sensor data and filtering
 # basic information
-subject = 'Number4'
+subject = 'Number5'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
-# up_down_session = [0]
-# down_up_session = [0]
+# up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+# down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
+up_down_session = [5, 6, 7, 8, 9]
+down_up_session = [4, 5, 6, 8, 9]
 sessions = [up_down_session, down_up_session]
 
 
@@ -72,7 +72,7 @@ print(datetime.datetime.now() - now)
 
 ## save model results
 model_type = 'Raw_Cnn2d'
-result_set = 1
+result_set = 2
 window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
     'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,

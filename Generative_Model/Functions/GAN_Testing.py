@@ -33,14 +33,14 @@ class ModelTesting():
 
 ##  loading dataset
 class EmgDataSet(Dataset):
-    def __init__(self, old_emg):
+    def __init__(self, test_emg):
         # here the first column is the class label, the rest are the features
-        self.old_data = torch.from_numpy(old_emg)  # size [n_samples, n_channel, length, width]
+        self.test_data = torch.from_numpy(test_emg)  # size [n_samples, n_channel, length, width]
 
     def __getitem__(self, index):   # support indexing such that dataset[i] can be used to get i-th sample
-        return self.old_data[index, :, :, :]
+        return self.test_data[index, :, :, :]
 
     def __len__(self):  # we can call len(dataset) to return the size
-        return len(self.old_data)
+        return len(self.test_data)
 
 

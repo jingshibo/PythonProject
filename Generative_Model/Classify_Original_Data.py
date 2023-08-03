@@ -7,7 +7,7 @@ from Generative_Model.Functions import Classify_Testing, Model_Storage
 import datetime
 
 
-## load pretrained model
+## load pretrained classification model
 subject = 'Number4'
 version = 0  # the data from which experiment version to process
 model_type = 'Raw_Cnn2d'

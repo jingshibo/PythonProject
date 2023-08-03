@@ -1,30 +1,31 @@
 import numpy as np
 from Generative_Model.Functions import GAN_Testing
+from sklearn.metrics import confusion_matrix
+import copy
 
+## min-max normalization method
+def normalizeMinMax(array, limit):  # normalize the value to [-1, 1]
+    min_val = -limit
+    max_val = limit
+    normalized_array = 2 * ((array - min_val) / (max_val - min_val)) - 1
+    return normalized_array
 
 ## normalize data using min-max way
 def normalizeEmgData(original_data, limit=2000):
-    def normalizeMinMax(array):  # normalize the value to [-1, 1]
-        min_val = -limit
-        max_val = limit
-        normalized_array = 2 * ((array - min_val) / (max_val - min_val)) - 1
-        return normalized_array
     normalized_data = {}
-    for key, arrays_list in original_data.items():
-        clipped_arrays_list = [np.clip(array, -limit, limit) for array in arrays_list]
-        normalized_data[key] = normalizeMinMax(np.vstack(clipped_arrays_list))
+    for locomotion_type, locomotion_value in original_data.items():
+        clipped_arrays_list = [np.clip(array, -limit, limit) for array in locomotion_value]
+        normalized_data[locomotion_type] = normalizeMinMax(np.vstack(clipped_arrays_list), limit)
     return normalized_data
 
-
 ## generate and reorganize fake data
-def generateFakeEmg(gan_models, real_emg_images, start_before_toeoff_ms, endtime_after_toeoff_ms):
+def generateFakeEmg(gan_model, real_emg_data, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size):
     # generate fake data
-    batch_size = 8192
     fake_old_data = {}
-    generator_model = GAN_Testing.ModelTesting(gan_models['gen_BA'], batch_size)
-    for transition_type, transition_value in real_emg_images.items():
-        real_new_data = np.vstack(transition_value)  # size [n_samples, n_channel, length, width]
-        fake_old_data[transition_type] = generator_model.testModel(real_new_data)
+    generator_model = GAN_Testing.ModelTesting(gan_model, batch_size)
+    for transition_type, transition_value in real_emg_data.items():
+        print(transition_type, ':')
+        fake_old_data[transition_type] = generator_model.testModel(transition_value)
 
     # reorganize generated data
     fake_old_emg = {}
@@ -36,6 +37,19 @@ def generateFakeEmg(gan_models, real_emg_images, start_before_toeoff_ms, endtime
 
     return fake_old_emg
 
+## substitute generated emg using real emg
+def substituteFakeImages(fake_emg, real_emg_preprocessed, limit, emg_NOT_to_substitute='all'):
+    generated_emg = copy.deepcopy(fake_emg)
+    if emg_NOT_to_substitute == 'all':
+        return generated_emg
+    else:
+        for locomotion_type, locomotion_value in generated_emg.items():
+            if locomotion_type not in emg_NOT_to_substitute:   # which transition types to be substituted
+                real_values = real_emg_preprocessed[locomotion_type]
+                normalized_arrays_list = [normalizeMinMax(np.clip(array, -limit, limit), limit) for array in real_values]
+                generated_emg[locomotion_type] = normalized_arrays_list
+                print(locomotion_type)
+        return generated_emg
 
 ## calculate the average results from all classification models
 def getAverageResults(overall_accuracy, overall_cm_recall):
@@ -61,4 +75,37 @@ def getAverageResults(overall_accuracy, overall_cm_recall):
         # Add the average value to the average_dict
         average_cm_recall[key] = average_array
     return average_accuracy, average_cm_recall
+
+
+## calculate average accuracy and cm based on majority vote results
+def slidingMvResults(test_results):
+    accuracy_allgroup = []
+    cm_allgroup = []
+    for each_group in test_results:
+        true_y = each_group['true_value']
+        predict_y = each_group['predict_value']
+        numCorrect = np.count_nonzero(true_y == predict_y, axis=0)
+        accuracy_allgroup.append(numCorrect / true_y.shape[0] * 100)
+        # loop over the results at each delay point
+        delay_cm = []
+        for i in range(0, true_y.shape[1]):
+            delay_cm.append(
+                confusion_matrix(y_true=true_y[:, i], y_pred=predict_y[:, i]))  # each confusion matrix in the list belongs to a delay point
+        cm_allgroup.append(np.array(delay_cm))
+    return accuracy_allgroup, cm_allgroup
+
+
+## add delay information to calculated average accuracy and cm reall values
+def averageAccuracyCm(accuracy_allgroup, cm_allgroup, feature_window_increment_ms, predict_window_shift_unit):
+    average_accuracy = np.mean(np.array(accuracy_allgroup), axis=0)
+    average_accuracy_with_delay = {f'delay_{delay * feature_window_increment_ms * predict_window_shift_unit}_ms': value for delay, value in
+        enumerate(average_accuracy.tolist())}
+
+    sum_cm = np.sum(np.array(cm_allgroup), axis=0)
+    average_cm_recall = {}
+    for delay in range(sum_cm.shape[0]):
+        cm = sum_cm[delay, :, :]
+        cm_recall = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], 3)  # calculate cm recall
+        average_cm_recall[f'delay_{delay * feature_window_increment_ms * predict_window_shift_unit}_ms'] = cm_recall
+    return average_accuracy_with_delay, average_cm_recall
 
