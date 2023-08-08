@@ -2,12 +2,12 @@
 import numpy as np
 
 # Open the file in binary mode
-with open('Test\\SD1_dataFile_022.dat', 'rb') as file:
+with open('Test\\SD1_dataFile_005.dat', 'rb') as file:
     # Read the entire file into a numpy array of type 'float32'
     arr = np.fromfile(file, dtype=np.float32)
 
 ##
-reshaped = np.reshape(arr[:42790], newshape=(-1, 22))
+reshaped = np.reshape(arr[:], newshape=(-1, 22))
 
 ##
 import matplotlib.pyplot as plt

@@ -15,7 +15,7 @@ class ModelTraining():
     def __init__(self, num_epochs, batch_size, decay_epochs, display_step=200):
         #  initialize member variables
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
+        self.result_dir = f'D:\Project\pythonProject\Generative_Model\Results\\runs_{timestamp}'
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -40,7 +40,6 @@ class ModelTraining():
         self.writer = None
 
     def trainModel(self, old_data, new_data, checkpoint_folder_path, select_channels='emg_all'):
-        models = []
         # initialize the tensorboard writer
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
@@ -59,9 +58,9 @@ class ModelTraining():
 
         # training parameters
         lr = 0.001  # initial learning rate
-        lr_decay_rate = 0.9
+        lr_decay_rate = 0.95
         weight_decay = 0.0000
-        beta = (0.5, 0.999)
+        beta = (0.7, 0.999)
         decay_steps = self.decay_epochs * len(self.train_loader)
 
         # optimizer
@@ -84,15 +83,14 @@ class ModelTraining():
             gamma=lr_decay_rate)  # adjusted learning rate
 
         # train the model
+        models = {'gen_AB': self.gen_AB, 'gen_BA': self.gen_BA, 'disc_A': self.disc_A, 'disc_B': self.disc_B}
         for epoch_number in range(self.num_epochs):  # loop over each epoch
             # train the model
             self.trainOneEpoch(epoch_number)
-            models = {'gen_AB': self.gen_AB.to("cpu"), 'gen_BA': self.gen_BA.to("cpu"), 'disc_A': self.disc_A.to("cpu"),
-                'disc_B': self.disc_B.to("cpu")}
             # set the checkpoints to save models
             if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 200:
                 Model_Storage.saveCheckPointModels(checkpoint_folder_path, epoch_number, models)
-                print(f"Saved checkpoint at {epoch_number + 1}")
+                print(f"Saved checkpoint at epoch {epoch_number + 1}")
 
         # test the model (still use the train data here to test)
         test_results = []

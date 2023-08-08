@@ -92,7 +92,7 @@ new_LWLW_data = new_emg_normalized['emg_LWLW']
 sample_number = min(len(old_LWLW_data), len(new_LWLW_data))
 
 # hyperparameters
-num_epochs = 250  # the number of times you iterate through the entire dataset when training
+num_epochs = 400  # the number of times you iterate through the entire dataset when training
 decay_epochs = 10
 batch_size = 1024  # the number of images per forward/backward pass
 
@@ -145,19 +145,18 @@ model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
 batch_size = 8192
 gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Generative_Model')
 
-# load gan models at certain checkpoints
-# checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'
-# epoch_number = 200
-# gan_models = Model_Storage.loadCheckPointModels(checkpoint_folder_path, epoch_number, model_name)
-
+## load gan models at certain checkpoints
+checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'
+epoch_number = 300
+gan_models = Model_Storage.loadCheckPointModels(checkpoint_folder_path, epoch_number, model_name)
 
 # fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_AB'], old_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size)
 fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size)
 
 ## substitute some fake emg by real emg
 # emg_NOT_to_substitute = ['emg_LWLW']  # the transition type to substitute
-# emg_NOT_to_substitute = 'all'  # not to substitute any types
-emg_NOT_to_substitute = []  # substitue all emg types
+emg_NOT_to_substitute = 'all'  # using fake EMG
+# emg_NOT_to_substitute = []  # using original emg
 # generated_emg_data = Data_Processing.substituteFakeImages(fake_emg, old_emg_preprocessed, limit, emg_NOT_to_substitute=emg_NOT_to_substitute)
 generated_emg_data = Data_Processing.substituteFakeImages(fake_emg, new_emg_preprocessed, limit, emg_NOT_to_substitute=emg_NOT_to_substitute)
 

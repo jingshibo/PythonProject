@@ -1,3 +1,4 @@
+##
 import torch
 from torch import nn
 
@@ -20,10 +21,16 @@ class ResidualBlock(nn.Module):
         x = self.instancenorm(x)
         return original_x + x
 
+
 class ContractingBlock(nn.Module):
-    def __init__(self, input_channels, use_bn=True, kernel_size=3, activation='relu'):
+    def __init__(self, input_channels, use_bn=True, kernel_size=3, activation='relu', SN=False):
         super(ContractingBlock, self).__init__()
-        self.conv1 = nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=1, padding=1, padding_mode='replicate')
+        if SN:  # spectral normalization
+            self.conv1 = nn.utils.spectral_norm(
+                nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=1, padding=1, padding_mode='replicate'))
+        else:
+            self.conv1 = nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=1, padding=1,
+                padding_mode='replicate')
         self.activation = nn.ReLU() if activation == 'relu' else nn.LeakyReLU(0.2)
         if use_bn:
             self.instancenorm = nn.InstanceNorm2d(input_channels * 2)
@@ -36,10 +43,14 @@ class ContractingBlock(nn.Module):
         x = self.activation(x)
         return x
 
+
 class ExpandingBlock(nn.Module):
-    def __init__(self, input_channels, use_bn=True):
+    def __init__(self, input_channels, use_bn=True, SN=False):
         super(ExpandingBlock, self).__init__()
-        self.conv1 = nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=3, stride=1, padding=1)
+        if SN:  # spectral normalization
+            self.conv1 = nn.utils.spectral_norm(nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=3, stride=1, padding=1))
+        else:
+            self.conv1 = nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=3, stride=1, padding=1)
         if use_bn:
             self.instancenorm = nn.InstanceNorm2d(input_channels // 2)
         self.use_bn = use_bn
@@ -52,10 +63,15 @@ class ExpandingBlock(nn.Module):
         x = self.activation(x)
         return x
 
+
 class FeatureMapBlock(nn.Module):
-    def __init__(self, input_channels, output_channels):
+    def __init__(self, input_channels, output_channels, SN=False):
         super(FeatureMapBlock, self).__init__()
-        self.conv = nn.Conv2d(input_channels, output_channels, kernel_size=7, padding=3, padding_mode='replicate')
+        if SN:  # # spectral normalization
+            self.conv = nn.utils.spectral_norm(
+                nn.Conv2d(input_channels, output_channels, kernel_size=3, padding=1, padding_mode='replicate'))
+        else:
+            self.conv = nn.Conv2d(input_channels, output_channels, kernel_size=3, padding=1, padding_mode='replicate')
 
     def forward(self, x):
         x = self.conv(x)
@@ -65,15 +81,15 @@ class FeatureMapBlock(nn.Module):
 class Generator(nn.Module):
     def __init__(self, input_channels, output_channels, hidden_channels=64):
         super(Generator, self).__init__()
-        self.upfeature = FeatureMapBlock(input_channels, hidden_channels)
-        self.contract1 = ContractingBlock(hidden_channels)
-        self.contract2 = ContractingBlock(hidden_channels * 2)
+        self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, SN=True)
         # res_mult = 8
         # self.res0 = ResidualBlock(hidden_channels * res_mult)
         # self.res1 = ResidualBlock(hidden_channels * res_mult)
-        self.expand2 = ExpandingBlock(hidden_channels * 4)
-        self.expand3 = ExpandingBlock(hidden_channels * 2)
-        self.downfeature = FeatureMapBlock(hidden_channels, output_channels)
+        self.expand2 = ExpandingBlock(hidden_channels * 4, SN=True)
+        self.expand3 = ExpandingBlock(hidden_channels * 2, SN=True)
+        self.downfeature = FeatureMapBlock(hidden_channels, output_channels, SN=True)
         self.tanh = torch.nn.Tanh()
 
     def forward(self, x):
@@ -88,13 +104,14 @@ class Generator(nn.Module):
         xn = self.tanh(x)
         return xn
 
+
 class Discriminator(nn.Module):
     def __init__(self, input_channels, hidden_channels=64):
         super(Discriminator, self).__init__()
-        self.upfeature = FeatureMapBlock(input_channels, hidden_channels)
-        self.contract1 = ContractingBlock(hidden_channels, use_bn=False, kernel_size=3, activation='lrelu')
-        self.contract2 = ContractingBlock(hidden_channels * 2, kernel_size=3, activation='lrelu')
-        self.contract3 = ContractingBlock(hidden_channels * 4, kernel_size=3, activation='lrelu')
+        self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, use_bn=False, kernel_size=4, activation='lrelu', SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, kernel_size=4, activation='lrelu', SN=True)
+        self.contract3 = ContractingBlock(hidden_channels * 4, kernel_size=4, activation='lrelu', SN=True)
         self.final = nn.Conv2d(hidden_channels * 8, 1, kernel_size=1)
 
     def forward(self, x):
@@ -157,5 +174,4 @@ class LossFunction():
         disc_real_X_loss = self.adv_criterion(disc_real_X_hat, torch.ones_like(disc_real_X_hat))
         disc_loss = (disc_fake_X_loss + disc_real_X_loss) / 2
         return disc_loss
-
 
