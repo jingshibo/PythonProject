@@ -6,8 +6,8 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import datetime
 import os
-from Generative_Model.Functions import CycleGAN_Model
-from Generative_Model.Functions import Model_Storage
+from Cycle_GAN.Functions import CycleGAN_Model
+from Cycle_GAN.Functions import Model_Storage
 
 
 ## training process
@@ -15,7 +15,7 @@ class ModelTraining():
     def __init__(self, num_epochs, batch_size, decay_epochs, display_step=200):
         #  initialize member variables
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.result_dir = f'D:\Project\pythonProject\Generative_Model\Results\\runs_{timestamp}'
+        self.result_dir = f'/Cycle_GAN\Results\\runs_{timestamp}'
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_epochs = num_epochs
         self.batch_size = batch_size

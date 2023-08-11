@@ -3,7 +3,7 @@ from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Generative_Model.Functions import Model_Storage
+from Cycle_GAN.Functions import Model_Storage
 import datetime
 
 
@@ -76,8 +76,8 @@ result_set = 2
 window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms': feature_window_ms, 'sample_rate': sample_rate,
     'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
-    'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
-    'feature_window_per_repetition': feature_window_per_repetition}
+    'start_before_toeoff_ms': start_before_toeoff_ms, 'endtime_after_toeoff_ms': endtime_after_toeoff_ms,
+    'predict_window_per_repetition': predict_window_per_repetition, 'feature_window_per_repetition': feature_window_per_repetition}
 Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type)
 
 

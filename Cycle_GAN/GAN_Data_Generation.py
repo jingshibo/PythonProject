@@ -1,10 +1,9 @@
 ##
-from Generative_Model.Functions import CycleGAN_Training, Visualization, GAN_Testing
 from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Generative_Model.Functions import Classify_Testing, Model_Storage, Data_Processing
+from Cycle_GAN.Functions import Classify_Testing, Model_Storage, Data_Processing, CycleGAN_Training, Visualization, CycleGAN_Testing
 import numpy as np
 import datetime
 
@@ -106,7 +105,7 @@ print(datetime.datetime.now() - now)
 ##  save trained gan models
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
-Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='Generative_Model')
+Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='Cycle_GAN')
 
 
 # ## generate new data
@@ -143,7 +142,7 @@ version = 1  # the data from which experiment version to process
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
 batch_size = 8192
-gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Generative_Model')
+gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Cycle_GAN')
 
 ## load gan models at certain checkpoints
 checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'
@@ -194,7 +193,7 @@ window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms'
     'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
     'feature_window_per_repetition': feature_window_per_repetition}
 for result_set in range(fold):
-    Sliding_Ann_Results.saveModelResults(subject, model_results[result_set], version, result_set, window_parameters, model_type, project='Generative_Model')
+    Sliding_Ann_Results.saveModelResults(subject, model_results[result_set], version, result_set, window_parameters, model_type, project='Cycle_GAN')
 
 
 ## majority vote results without prior information, with sliding windows

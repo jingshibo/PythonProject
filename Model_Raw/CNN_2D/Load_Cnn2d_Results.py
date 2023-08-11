@@ -58,7 +58,7 @@ all_subjects[subject] = subject_results
 ##
 subject = 'Test'
 version = 1
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type, project='Generative_Model')
+subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type, project='Cycle_GAN')
 all_subjects[subject] = subject_results
 
 

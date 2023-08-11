@@ -3,7 +3,7 @@ from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Generative_Model.Functions import Classify_Testing, Model_Storage
+from Cycle_GAN.Functions import Classify_Testing, Model_Storage
 import datetime
 
 
@@ -82,7 +82,7 @@ window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms'
     'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
     'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
     'feature_window_per_repetition': feature_window_per_repetition}
-Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type, project='Generative_Model')
+Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set, window_parameters, model_type, project='Cycle_GAN')
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points

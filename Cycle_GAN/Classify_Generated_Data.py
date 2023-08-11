@@ -3,7 +3,7 @@ from Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
 from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Generative_Model.Functions import Classify_Testing, Model_Storage, Data_Processing
+from Cycle_GAN.Functions import Classify_Testing, Model_Storage, Data_Processing
 import numpy as np
 import datetime
 
@@ -61,7 +61,7 @@ subject = 'Test'
 version = 1  # the data from which experiment version to process
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
-gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Generative_Model')
+gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Cycle_GAN')
 fake_old_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms)
 fold = 5  # 5-fold cross validation
 cross_validation_groups = Data_Preparation.crossValidationSet(fold, fake_old_emg)
@@ -97,7 +97,7 @@ window_parameters = {'predict_window_ms': predict_window_ms, 'feature_window_ms'
     'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'predict_window_per_repetition': predict_window_per_repetition,
     'feature_window_per_repetition': feature_window_per_repetition}
 for result_set in range(fold):
-    Sliding_Ann_Results.saveModelResults(subject, model_results[result_set], version, result_set, window_parameters, model_type, project='Generative_Model')
+    Sliding_Ann_Results.saveModelResults(subject, model_results[result_set], version, result_set, window_parameters, model_type, project='Cycle_GAN')
 
 
 ## majority vote results using prior information, with a sliding windows to get predict results at different delay points

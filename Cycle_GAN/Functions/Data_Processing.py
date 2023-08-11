@@ -1,5 +1,5 @@
 import numpy as np
-from Generative_Model.Functions import GAN_Testing
+from Cycle_GAN.Functions import CycleGAN_Testing
 from sklearn.metrics import confusion_matrix
 import copy
 
@@ -22,7 +22,7 @@ def normalizeEmgData(original_data, limit=2000):
 def generateFakeEmg(gan_model, real_emg_data, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size):
     # generate fake data
     fake_old_data = {}
-    generator_model = GAN_Testing.ModelTesting(gan_model, batch_size)
+    generator_model = CycleGAN_Testing.ModelTesting(gan_model, batch_size)
     for transition_type, transition_value in real_emg_data.items():
         print(transition_type, ':')
         fake_old_data[transition_type] = generator_model.testModel(transition_value)
