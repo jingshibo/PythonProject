@@ -3,7 +3,7 @@ import torch
 import copy
 import json
 
-def saveModels(models, subject, version, model_type, model_name, project='Cycle_GAN'):
+def saveModels(models, subject, version, model_type, model_name, project='CycleGAN_Model'):
     for name in model_name:
         # model path
         data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
@@ -13,7 +13,7 @@ def saveModels(models, subject, version, model_type, model_name, project='Cycle_
         torch.save(models[name].to("cpu"), model_path)
 
 
-def loadModels(subject, version, model_type, model_name, project='Cycle_GAN'):
+def loadModels(subject, version, model_type, model_name, project='CycleGAN_Model'):
     models = {}
     # model path
     for name in model_name:
@@ -56,19 +56,19 @@ def loadCheckPointModels(checkpoint_folder_path, epoch_number, model_name):
 
 
 ## save GAN model results
-def saveGanResults(subject, model_results, version, result_set, model_parameters, model_type, project='cGAN_Model'):
-    data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\model_results'
+def saveCGanResults(subject, model_results, version, result_set, model_parameters, model_type, project='cGAN_Model'):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
-    result = {'model_results': model_results, 'model_parameters': model_parameters}
+    result = {'model_results': {key: value.tolist() for key, value in model_results.items()}, 'model_parameters': model_parameters}
     with open(result_path, 'w') as json_file:
         json.dump(result, json_file, indent=8)
 
 
 ## load GAN model results
-def loadGanResults(subject, version, result_set, model_type, project='cGAN_Model'):
-    data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\model_results'
+def loadCGanResults(subject, version, result_set, model_type, project='cGAN_Model'):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
@@ -77,3 +77,4 @@ def loadGanResults(subject, version, result_set, model_type, project='cGAN_Model
         result_json = json.load(json_file)
 
     return result_json
+

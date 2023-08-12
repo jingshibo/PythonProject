@@ -3,12 +3,14 @@ from Cycle_GAN.Functions import CycleGAN_Testing
 from sklearn.metrics import confusion_matrix
 import copy
 
+
 ## min-max normalization method
 def normalizeMinMax(array, limit):  # normalize the value to [-1, 1]
     min_val = -limit
     max_val = limit
     normalized_array = 2 * ((array - min_val) / (max_val - min_val)) - 1
     return normalized_array
+
 
 ## normalize data using min-max way
 def normalizeEmgData(original_data, limit=2000):
@@ -18,8 +20,9 @@ def normalizeEmgData(original_data, limit=2000):
         normalized_data[locomotion_type] = normalizeMinMax(np.vstack(clipped_arrays_list), limit)
     return normalized_data
 
+
 ## generate and reorganize fake data
-def generateFakeEmg(gan_model, real_emg_data, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size):
+def generateFakeEmg(gan_model, real_emg_data, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size, sample_rate=1):
     # generate fake data
     fake_old_data = {}
     generator_model = CycleGAN_Testing.ModelTesting(gan_model, batch_size)
@@ -32,10 +35,11 @@ def generateFakeEmg(gan_model, real_emg_data, start_before_toeoff_ms, endtime_af
     for transition_type, transition_value in fake_old_data.items():
         transposed_emg = np.transpose(transition_value, (0, 2, 3, 1))
         reshaped_emg = np.reshape(transposed_emg, newshape=(transposed_emg.shape[0], -1), order='F')
-        split_data = np.split(reshaped_emg, transposed_emg.shape[0] // (start_before_toeoff_ms + endtime_after_toeoff_ms))
+        split_data = np.split(reshaped_emg, transposed_emg.shape[0] // ((start_before_toeoff_ms + endtime_after_toeoff_ms)) * sample_rate)
         fake_old_emg[transition_type] = split_data
 
     return fake_old_emg
+
 
 ## substitute generated emg using real emg
 def substituteFakeImages(fake_emg, real_emg_preprocessed, limit, emg_NOT_to_substitute='all'):
@@ -44,12 +48,13 @@ def substituteFakeImages(fake_emg, real_emg_preprocessed, limit, emg_NOT_to_subs
         return generated_emg
     else:
         for locomotion_type, locomotion_value in generated_emg.items():
-            if locomotion_type not in emg_NOT_to_substitute:   # which transition types to be substituted
+            if locomotion_type not in emg_NOT_to_substitute:  # which transition types to be substituted
                 real_values = real_emg_preprocessed[locomotion_type]
                 normalized_arrays_list = [normalizeMinMax(np.clip(array, -limit, limit), limit) for array in real_values]
                 generated_emg[locomotion_type] = normalized_arrays_list
                 print(locomotion_type)
         return generated_emg
+
 
 ## calculate the average results from all classification models
 def getAverageResults(overall_accuracy, overall_cm_recall):
@@ -108,4 +113,3 @@ def averageAccuracyCm(accuracy_allgroup, cm_allgroup, feature_window_increment_m
         cm_recall = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], 3)  # calculate cm recall
         average_cm_recall[f'delay_{delay * feature_window_increment_ms * predict_window_shift_unit}_ms'] = cm_recall
     return average_accuracy_with_delay, average_cm_recall
-

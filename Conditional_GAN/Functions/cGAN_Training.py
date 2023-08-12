@@ -81,7 +81,7 @@ class ModelTraining():
             # train the model
             self.trainOneEpoch(epoch_number)
             # set the checkpoints to save models
-            if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 200:
+            if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 50:
                 Model_Storage.saveCheckPointModels(checkpoint_folder_path, epoch_number, models)
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
 
@@ -90,14 +90,14 @@ class ModelTraining():
         self.gen.train(False)
         with torch.no_grad():  # close autograd
             for time_point in list(train_data['gen_data_1'].keys()):
-                number = int(time_point.split('_')[-1])
-                one_hot_labels = F.one_hot(number, self.n_classes)
+                number = dataset.extract_and_normalize(time_point)
+                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).to(self.device)
                 if self.noise_dim > 0:
                     fake_noise = torch.randn(1, self.noise_dim, device=self.device)  # Get noise corresponding to the current batch_size
                     noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)  # Combine the noise vectors and the one-hot labels for the generator
                 else:
                     noise_and_labels = one_hot_labels.float()
-                blending_factors[time_point] = self.gen(noise_and_labels)
+                blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
 
         return models, blending_factors
 
@@ -109,7 +109,7 @@ class ModelTraining():
 
         for gen_data, disc_data in tqdm(self.train_loader):
             # image_width = image.shape [3]
-            batch_size = len(disc_data)
+            cur_batch_size = len(disc_data)
             condition = gen_data[0].to(self.device)
             gen_data_1 = gen_data[1].to(self.device)
             gen_data_2 = gen_data[2].to(self.device)
@@ -124,7 +124,7 @@ class ModelTraining():
 
             # Generate fake images
             if self.noise_dim > 0:
-                fake_noise = torch.randn(batch_size, self.noise_dim,
+                fake_noise = torch.randn(cur_batch_size, self.noise_dim,
                     device=self.device)  # Get noise corresponding to the current batch_size
                 noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()),
                     1)  # Combine the noise vectors and the one-hot labels for the generator
@@ -222,3 +222,5 @@ class EmgDataSet(Dataset):
         disc_sample = self.disc_data[key][rand_idx_disc]
 
         return (condition, gen_sample_1, gen_sample_2), disc_sample
+
+

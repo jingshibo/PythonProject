@@ -2,7 +2,7 @@
 import numpy as np
 
 # Open the file in binary mode
-with open('D:\Project\pythonProject\Test\SD1_dataFile_014.dat', 'rb') as file:
+with open('D:\Project\pythonProject\Test\\standing.dat', 'rb') as file:
     # Read the entire file into a numpy array of type 'float32'
     arr = np.fromfile(file, dtype=np.float32)
 

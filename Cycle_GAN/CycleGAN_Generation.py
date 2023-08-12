@@ -96,7 +96,7 @@ decay_epochs = 10
 batch_size = 1024  # the number of images per forward/backward pass
 
 now = datetime.datetime.now()
-checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'
+checkpoint_folder_path = f'D:\Data\CycleGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 train_model = CycleGAN_Training.ModelTraining(num_epochs, batch_size, decay_epochs, display_step=int(sample_number/batch_size)+1)
 gan_models, generated_old_data = train_model.trainModel(old_LWLW_data, new_LWLW_data, checkpoint_folder_path)
 print(datetime.datetime.now() - now)
@@ -105,7 +105,7 @@ print(datetime.datetime.now() - now)
 ##  save trained gan models
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
-Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='Cycle_GAN')
+Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='CycleGAN_Model')
 
 
 # ## generate new data
@@ -142,7 +142,7 @@ version = 1  # the data from which experiment version to process
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
 batch_size = 8192
-gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Cycle_GAN')
+gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='CycleGAN_Model')
 
 ## load gan models at certain checkpoints
 checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'
@@ -150,7 +150,8 @@ epoch_number = 300
 gan_models = Model_Storage.loadCheckPointModels(checkpoint_folder_path, epoch_number, model_name)
 
 # fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_AB'], old_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size)
-fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size)
+fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms,
+    batch_size, sample_rate=sample_rate)
 
 ## substitute some fake emg by real emg
 # emg_NOT_to_substitute = ['emg_LWLW']  # the transition type to substitute

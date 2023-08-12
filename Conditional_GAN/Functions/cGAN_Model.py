@@ -94,7 +94,6 @@ class Generator(nn.Module):
         x = self.expand3(x)
         x = self.downfeature(x)
         xn = self.sig(x)
-
         return xn
 
 
