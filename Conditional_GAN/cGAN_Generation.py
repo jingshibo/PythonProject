@@ -89,14 +89,14 @@ old_LWSA_data = old_emg_normalized['emg_LWSA']
 ## seperate dataset by timepoints
 time_interval = 50
 period = start_before_toeoff_ms + endtime_after_toeoff_ms
-separated_old_LWLW = Processing.separateByTimeInterval(old_LWLW_data, timepoint_interval=time_interval, period=period)
-separated_old_SASA = Processing.separateByTimeInterval(old_SASA_data, timepoint_interval=time_interval, period=period)
-separated_old_LWSA = Processing.separateByTimeInterval(old_LWSA_data, timepoint_interval=time_interval, period=period)
+separated_old_LWLW = Processing.separateByTimeInterval(old_LWLW_data, timepoint_interval=time_interval, length=period, output_list=True)
+separated_old_SASA = Processing.separateByTimeInterval(old_SASA_data, timepoint_interval=time_interval, length=period, output_list=True)
+separated_old_LWSA = Processing.separateByTimeInterval(old_LWSA_data, timepoint_interval=time_interval, length=period, output_list=True)
 train_data = {'gen_data_1': separated_old_LWLW, 'gen_data_2': separated_old_SASA, 'disc_data': separated_old_LWSA}
 
 ## train generative models
 # hyperparameters
-num_epochs = 2  # the number of times you iterate through the entire dataset when training
+num_epochs = 400  # the number of times you iterate through the entire dataset when training
 decay_epochs = 10
 batch_size = 1024  # the number of images per forward/backward pass
 sampling_repetition = 4  # the number of batches to repeat the combination sampling for the same time points
@@ -127,8 +127,8 @@ estimated_blending_factors = {key: np.array(value) for key, value in model_resul
 
 ## separate dataset into 1ms interval
 period = start_before_toeoff_ms + endtime_after_toeoff_ms
-reorganized_old_LWLW = Processing.separateByTimeInterval(old_LWLW_data, timepoint_interval=1, period=period)
-reorganized_old_SASA = Processing.separateByTimeInterval(old_SASA_data, timepoint_interval=1, period=period)
+reorganized_old_LWLW = Processing.separateByTimeInterval(old_LWLW_data, timepoint_interval=1, length=period)
+reorganized_old_SASA = Processing.separateByTimeInterval(old_SASA_data, timepoint_interval=1, length=period)
 reorganized_data = {'gen_data_1': reorganized_old_LWLW, 'gen_data_2': reorganized_old_SASA, 'blending_factors': estimated_blending_factors}
 
 ## generate fake data for each timestamp

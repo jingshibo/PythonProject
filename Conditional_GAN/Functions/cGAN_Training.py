@@ -42,9 +42,9 @@ class ModelTraining():
         # input data
         dataset = EmgDataSet(train_data, self.batch_size, self.sampling_repetition)
         self.train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
-        self.img_channel = train_data['gen_data_1']['timepoint_0'].shape[1]
-        self.img_height = train_data['gen_data_1']['timepoint_0'].shape[2]
-        self.img_width = train_data['gen_data_1']['timepoint_0'].shape[3]
+        self.img_channel = train_data['gen_data_1']['timepoint_0'][0].shape[1]
+        self.img_height = train_data['gen_data_1']['timepoint_0'][0].shape[2]
+        self.img_width = train_data['gen_data_1']['timepoint_0'][0].shape[3]
         self.n_classes = len(list(train_data['gen_data_1'].keys()))
         self.display_step = int(len(dataset) / self.batch_size)
 
@@ -94,7 +94,8 @@ class ModelTraining():
                 one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).to(self.device)
                 if self.noise_dim > 0:
                     fake_noise = torch.randn(1, self.noise_dim, device=self.device)  # Get noise corresponding to the current batch_size
-                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)  # Combine the noise vectors and the one-hot labels for the generator
+                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()),
+                        1)  # Combine the noise vectors and the one-hot labels for the generator
                 else:
                     noise_and_labels = one_hot_labels.float()
                 blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
@@ -124,10 +125,10 @@ class ModelTraining():
 
             # Generate fake images
             if self.noise_dim > 0:
-                fake_noise = torch.randn(cur_batch_size, self.noise_dim,
-                    device=self.device)  # Get noise corresponding to the current batch_size
-                noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()),
-                    1)  # Combine the noise vectors and the one-hot labels for the generator
+                # Get noise corresponding to the current batch_size
+                fake_noise = torch.randn(cur_batch_size, self.noise_dim, device=self.device)
+                # Combine the noise vectors and the one-hot labels for the generator
+                noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
             else:
                 noise_and_labels = one_hot_labels.float()
             blending_factors = self.gen(noise_and_labels)  # Estimate blending factors
@@ -166,13 +167,6 @@ class ModelTraining():
 class EmgDataSet(Dataset):
     """
        Custom Dataset class for GAN training.
-       Attributes:
-       - gen_data_1 (dict): First input dataset for the generator.
-       - gen_data_2 (dict): Second input dataset for the generator.
-       - disc_data (dict): Dataset for the discriminator.
-       - keys (list): List of keys present in the datasets.
-       - epoch_keys (list): Repetition of keys for sampling in an epoch.
-       - max_value (int): Maximum value extracted from the keys, used for normalization.
        Notes:
        - Each key in the datasets corresponds to a unique 4D tensor.
        - The class facilitates sampling data from the same key for both generator and discriminator.
@@ -186,16 +180,16 @@ class EmgDataSet(Dataset):
         self.n_class = len(self.keys)
 
         # size [n_samples, n_channel, length, width]
-        self.gen_data_1 = {key: torch.from_numpy(value).float() for key, value in train_data['gen_data_1'].items()}
-        self.gen_data_2 = {key: torch.from_numpy(value).float() for key, value in train_data['gen_data_2'].items()}
-        self.disc_data = {key: torch.from_numpy(value).float() for key, value in train_data['disc_data'].items()}
+        self.gen_data_1 = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['gen_data_1'].items()}
+        self.gen_data_2 = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['gen_data_2'].items()}
+        self.disc_data = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['disc_data'].items()}
 
         # Precompute the sequence of keys for an epoch.
         random.shuffle(self.keys)  # randomize the order of the keys themselves.
         self.epoch_keys = self.keys * self.repetition  # preserve the order of keys in 4 batches of combination sampling
 
     def __len__(self):
-        # Each key contributes 4 * 1024 samples in an epoch
+        # the number of samples obtained in an epoch for each key = self.repetition * self.batch_size
         return self.repetition * self.batch_size * len(self.keys)
 
     def extract_and_normalize(self, key):  # convert keys into numbers
@@ -213,14 +207,36 @@ class EmgDataSet(Dataset):
         condition = self.extract_and_normalize(key)  # extract the time point integer from the key string
 
         # Sample random data points from the chosen key
-        rand_idx_1 = random.randint(0, self.gen_data_1[key].shape[0] - 1)
-        rand_idx_2 = random.randint(0, self.gen_data_2[key].shape[0] - 1)
-        rand_idx_disc = random.randint(0, self.disc_data[key].shape[0] - 1)
-
-        gen_sample_1 = self.gen_data_1[key][rand_idx_1]
-        gen_sample_2 = self.gen_data_2[key][rand_idx_2]
-        disc_sample = self.disc_data[key][rand_idx_disc]
+        gen_sample_1, gen_sample_2, disc_sample = self.paired_sample_from_timepoint(key)
 
         return (condition, gen_sample_1, gen_sample_2), disc_sample
 
+    def paired_sample_from_timepoint(self, timepoint):
+        """
+            Samples data from gen_data_1_dict, gen_data_2_dict, and disc_data_dict using the provided timepoint,
+            ensuring the sample index remains the same within the tensors.
+        """
+        # Extract the data associated with the provided timepoint
+        gen_tensor_1_list = self.gen_data_1[timepoint]
+        gen_tensor_2_list = self.gen_data_2[timepoint]
+        disc_tensor_list = self.disc_data[timepoint]
 
+        # Randomly select a tensor from gen_data_1
+        tensor_idx_1 = random.randint(0, len(gen_tensor_1_list) - 1)
+        tensor_1 = gen_tensor_1_list[tensor_idx_1]
+
+        # Sample a data slice from the selected tensor
+        sample_idx = random.randint(0, tensor_1.shape[0] - 1)  # Randomly pick a sample index
+        gen_sample_1 = tensor_1[sample_idx]
+
+        # For gen_data_2, we can pick any tensor but must use the same sample index
+        tensor_idx_2 = random.randint(0, len(gen_tensor_2_list) - 1)
+        tensor_2 = gen_tensor_2_list[tensor_idx_2]
+        gen_sample_2 = tensor_2[sample_idx]
+
+        # For disc_data, we can pick any tensor but must use the same sample index
+        tensor_idx_3 = random.randint(0, len(disc_tensor_list) - 1)
+        tensor_3 = disc_tensor_list[tensor_idx_3]
+        disc_sample = tensor_3[sample_idx]
+
+        return gen_sample_1, gen_sample_2, disc_sample

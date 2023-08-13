@@ -2,27 +2,34 @@ import numpy as np
 
 
 ## separate the dataset into multiple timepoint bins
-def separateByTimeInterval(data, timepoint_interval=50, period=850):
+def separateByTimeInterval(data, timepoint_interval=50, length=850, output_list=False):
     '''
     :param data: input emg dataset
     :param timepoint_interval: how large is the bin to separate the dataset
-    :param period: # for each iteration in the dataset, how long is the duration
+    :param length: how long is each repetition per gait mode in the experiment
+    :param output_list: data structure of the output, whether a list of a single ndarray for each timepoint
     :return: separated dataset
     '''
 
     separated_result = {}
     # iterate over the data in chunks of size period`
-    for i in range(0, data.shape[0], period):
-        period_data = data[i:i + period]  # the same result as data[i:i+period,:,:,:]
+    for i in range(0, data.shape[0], length):
+        period_data = data[i:i + length]  # the same result as data[i:i+period,:,:,:]
         # for each chunk, create `timepoint` number of keys
-        for j in range(period // timepoint_interval):
+        for j in range(length // timepoint_interval):
             timepoint_data = period_data[j * timepoint_interval:(j + 1) * timepoint_interval]
             key = f"timepoint_{j * timepoint_interval}"
             # If the key exists, concatenate the data, else just assign the data
-            if key in separated_result:
-                separated_result[key] = np.concatenate([separated_result[key], timepoint_data], axis=0)
-            else:
-                separated_result[key] = timepoint_data
+            if output_list:  # put the data of the same time point from multiple experiment sessions into a list.
+                if key in separated_result:
+                    separated_result[key].append(timepoint_data)
+                else:
+                    separated_result[key] = [timepoint_data]
+            else:  # concat the data of the same time point from multiple experiment sessions into a single ndarray
+                if key in separated_result:
+                    separated_result[key] = np.concatenate([separated_result[key], timepoint_data], axis=0)
+                else:
+                    separated_result[key] = timepoint_data
     return separated_result
 
 
@@ -36,16 +43,16 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
     # List to store multiple sets of new data
     new_data_list = []
 
-    # Repeat the process multiple times
-    for _ in range(repetition):
+    # Repeat the generation process multiple times
+    for _ in range(repetition):  # Note: if random_pairing=True, only 1 repetition is valid
         # Dictionary to store the newly generated data
         new_data_dict = {}
         # Define the random pairing relationship for indices once; this relationship will be applied to all timepoints in this repetition.
         num_samples = gen_data_1['timepoint_0'].shape[0]
         if random_pairing:
-            paired_indices = np.random.permutation(num_samples)  # Use permutation to get a shuffled set of indices for gen_data_2
+            paired_indices = np.random.permutation(num_samples)  # shuffle the experiment session order for gen_data_2
         else:
-            paired_indices = range(num_samples)  # use the original order for pairing
+            paired_indices = range(num_samples)  # use the original experiment session order for pairing
 
         # Iterate over each timepoint key
         for key in gen_data_1.keys():
