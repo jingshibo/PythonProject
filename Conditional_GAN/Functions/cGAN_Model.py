@@ -98,8 +98,8 @@ class Generator(nn.Module):
 
 
 ## model summary
-model = Generator(81, 13, 10).to('cpu')  # move the model to GPU
-summary(model, input_size=(1024, 81))
+# model = Generator(81, 13, 10).to('cpu')  # move the model to GPU
+# summary(model, input_size=(1024, 81))
 
 
 class Discriminator(nn.Module):
@@ -122,8 +122,8 @@ class Discriminator(nn.Module):
 
 
 ## model summary
-model = Discriminator(18).to('cpu')  # move the model to GPU
-summary(model, input_size=(1024, 18, 13, 10))
+# model = Discriminator(18).to('cpu')  # move the model to GPU
+# summary(model, input_size=(1024, 18, 13, 10))
 
 
 ## loss function
