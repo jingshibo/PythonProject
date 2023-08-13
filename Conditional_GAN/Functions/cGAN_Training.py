@@ -38,7 +38,7 @@ class ModelTraining():
         self.test_loader = None
         self.writer = None
 
-    def trainModel(self, train_data, checkpoint_folder_path, select_channels='emg_all'):
+    def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, select_channels='emg_all'):
         # input data
         dataset = EmgDataSet(train_data, self.batch_size, self.sampling_repetition)
         self.train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
@@ -82,23 +82,14 @@ class ModelTraining():
             self.trainOneEpoch(epoch_number)
             # set the checkpoints to save models
             if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 50:
-                Model_Storage.saveCheckPointModels(checkpoint_folder_path, epoch_number, models)
+                Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models)
+                # estimate blending factors
+                blending_factors = self.estimateBlendingFactors(dataset, train_data)
+                Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors)
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
 
         # estimate blending factors
-        blending_factors = {}
-        self.gen.train(False)
-        with torch.no_grad():  # close autograd
-            for time_point in list(train_data['gen_data_1'].keys()):
-                number = dataset.extract_and_normalize(time_point)
-                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).to(self.device)
-                if self.noise_dim > 0:
-                    fake_noise = torch.randn(1, self.noise_dim, device=self.device)  # Get noise corresponding to the current batch_size
-                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()),
-                        1)  # Combine the noise vectors and the one-hot labels for the generator
-                else:
-                    noise_and_labels = one_hot_labels.float()
-                blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
+        blending_factors = self.estimateBlendingFactors(dataset, train_data)
 
         return models, blending_factors
 
@@ -118,10 +109,10 @@ class ModelTraining():
 
             # convert condition into one hot vectors
             one_hot_labels = F.one_hot(condition, self.n_classes)
-            image_one_hot_labels = one_hot_labels[:, :, None,
-            None]  # adding two additional dimensions to the one-hot encoded labels (size [batch_size, n_classes, 1, 1])
-            image_one_hot_labels = image_one_hot_labels.repeat(1, 1, self.img_height,
-                self.img_width)  # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
+            # adding two additional dimensions to the one-hot encoded labels (size [batch_size, n_classes, 1, 1])
+            image_one_hot_labels = one_hot_labels[:, :, None, None]
+            # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
+            image_one_hot_labels = image_one_hot_labels.repeat(1, 1, self.img_height, self.img_width)
 
             # Generate fake images
             if self.noise_dim > 0:
@@ -161,6 +152,23 @@ class ModelTraining():
                 disc_mean_loss = 0
 
             self.current_step += 1
+
+    def estimateBlendingFactors(self, dataset, train_data):
+        blending_factors = {}
+        self.gen.train(False)
+        with torch.no_grad():  # close autograd
+            for time_point in list(train_data['gen_data_1'].keys()):
+                number = dataset.extract_and_normalize(time_point)
+                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).to(self.device)
+                if self.noise_dim > 0:
+                    # Get noise corresponding to the current batch_size
+                    fake_noise = torch.randn(1, self.noise_dim, device=self.device)
+                    # Combine the noise vectors and the one-hot labels for the generator
+                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
+                else:
+                    noise_and_labels = one_hot_labels.float()
+                blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
+        return blending_factors
 
 
 ##  loading dataset

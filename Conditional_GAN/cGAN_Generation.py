@@ -8,6 +8,7 @@ from Conditional_GAN.Functions import Processing, cGAN_Training
 import numpy as np
 import datetime
 
+
 '''generate fake data'''
 ##  define windows
 down_sampling = True
@@ -33,7 +34,8 @@ modes = ['up_down', 'down_up']
 # down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
 up_down_session = [0, 1, 2, 3, 4]
 down_up_session = [0, 1, 2, 5, 6]
-
+up_down_session = [0]
+down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 
 ## read and filter data
@@ -52,7 +54,6 @@ modes = ['up_down', 'down_up']
 # down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
 up_down_session = [5, 6, 7, 8, 9]
 down_up_session = [4, 5, 6, 8, 9]
-
 sessions = [up_down_session, down_up_session]
 
 ## read and filter data
@@ -103,9 +104,10 @@ sampling_repetition = 4  # the number of batches to repeat the combination sampl
 noise_dim = 0
 
 now = datetime.datetime.now()
-checkpoint_folder_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
+checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
+checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 train_model = cGAN_Training.ModelTraining(num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim)
-gan_models, blending_factors = train_model.trainModel(train_data, checkpoint_folder_path)
+gan_models, blending_factors = train_model.trainModel(train_data, checkpoint_model_path, checkpoint_result_path)
 print(datetime.datetime.now() - now)
 
 ## save trained gan models
@@ -116,10 +118,10 @@ Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, p
 ## save model results
 model_type = 'cGAN'
 result_set = 0
-model_parameters = {'start_before_toeoff_ms': start_before_toeoff_ms, 'endtime_after_toeoff_ms': endtime_after_toeoff_ms,
+training_parameters = {'start_before_toeoff_ms': start_before_toeoff_ms, 'endtime_after_toeoff_ms': endtime_after_toeoff_ms,
     'noise_dim': noise_dim, 'sampling_repetition': sampling_repetition, 'batch_size': batch_size, 'num_epochs': num_epochs,
     'interval': time_interval}
-Model_Storage.saveCGanResults(subject, blending_factors, version, result_set, model_parameters, model_type, project='cGAN_Model')
+Model_Storage.saveCGanResults(subject, blending_factors, version, result_set, training_parameters, model_type, project='cGAN_Model')
 
 ## load blending factors
 model_results = Model_Storage.loadCGanResults(subject, version, result_set, model_type, project='cGAN_Model')
@@ -132,7 +134,7 @@ reorganized_old_SASA = Processing.separateByTimeInterval(old_SASA_data, timepoin
 reorganized_data = {'gen_data_1': reorganized_old_LWLW, 'gen_data_2': reorganized_old_SASA, 'blending_factors': estimated_blending_factors}
 
 ## generate fake data for each timestamp
-interval = model_results['model_parameters']['interval']
+interval = model_results['training_parameters']['interval']
 fake_data = Processing.generateFakeData(reorganized_data, interval, repetition=1, random_pairing=False)
 reorganized_fake_data = Processing.reorganizeFakeData(fake_data)
 
@@ -143,3 +145,9 @@ reorganized_fake_data = Processing.reorganizeFakeData(fake_data)
 
 
 ## train classification model
+
+
+
+
+## load check point results
+checkpoint_result_path = Model_Storage.loadCheckPointCGanResults(checkpoint_result_path, 1)
