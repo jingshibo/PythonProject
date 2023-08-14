@@ -66,7 +66,7 @@ class ModelTraining():
         self.disc_opt = torch.optim.Adam(self.disc.parameters(), lr=lr, weight_decay=weight_decay, betas=beta)
 
         # loss function
-        criterion = nn.MSELoss()
+        criterion = nn.BCEWithLogitsLoss()
         self.loss_fn = cGAN_Model.LossFunction(criterion)
 
         # learning rate scheduler

@@ -146,8 +146,7 @@ gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, 
 
 ## load gan models at certain checkpoints
 checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'
-epoch_number = 300
-gan_models = Model_Storage.loadCheckPointModels(checkpoint_folder_path, epoch_number, model_name)
+gan_models = Model_Storage.loadCheckPointModels(checkpoint_folder_path, model_name, epoch_number=300)
 
 # fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_AB'], old_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms, batch_size)
 fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normalized, start_before_toeoff_ms, endtime_after_toeoff_ms,

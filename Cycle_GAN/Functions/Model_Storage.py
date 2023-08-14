@@ -43,7 +43,7 @@ def saveCheckPointModels(checkpoint_model_path, epoch_number, models):
 
 
 ## load models from certain check points
-def loadCheckPointModels(checkpoint_model_path, epoch_number, model_name):
+def loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=200):
     models = {}
     # model path
     checkpoint_models_folder = os.path.join(checkpoint_model_path, f'checkpoint_epoch_{epoch_number}')  # epoch number starts from 1
@@ -96,7 +96,7 @@ def saveCheckPointCGanResults(checkpoint_result_path, epoch_number, blending_fac
 
 
 ## load model results from certain check points
-def loadCheckPointCGanResults(checkpoint_result_path, epoch_number):
+def loadCheckPointCGanResults(checkpoint_result_path, epoch_number=200):
     checkpoint_models_folder = os.path.join(checkpoint_result_path, f'checkpoint_epoch_{epoch_number}')  # epoch number starts from 0
     checkpoint_result_file = f'result_checkpoint_epoch_{epoch_number}.pt'
     result_path = os.path.join(checkpoint_models_folder, checkpoint_result_file)

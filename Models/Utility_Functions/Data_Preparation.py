@@ -9,6 +9,7 @@ from Pre_Processing.Utility_Functions import Feature_Storage, Data_Reshaping
 import random
 import numpy as np
 import copy
+import math
 
 
 ## load emg feature data
@@ -84,6 +85,27 @@ def crossValidationSet(fold, emg_feature_data, shuffle=True):
             train_set[gait_event_label] = gait_event_features
         cross_validation_groups[f"group_{i}"] = {"train_set": train_set, "test_set": test_set}  # a pair of training and test set for one group
     return cross_validation_groups
+
+
+## leaving the given percent of data as test set
+def leaveOneSet(leave_percent, emg_feature_data, shuffle=True):
+    leave_one_groups = {}  # 5 groups of cross validation set
+    train_set = {}  # store train set of all gait events for each group
+    test_set = {}  # store test set of all gait events for each group
+    if leave_percent <= 0 or leave_percent >= 1:
+        raise TypeError("The percentage should be within (0,1)")
+    for gait_event_label, gait_event_features in copy.deepcopy(emg_feature_data).items():
+        # shuffle the list (important)
+        if shuffle:
+            random.Random(5).shuffle(gait_event_features)  # 5 is a seed
+        else:
+            pass
+        # separate the training and test set
+        test_set[gait_event_label] = gait_event_features[math.ceil(len(gait_event_features) * (1 - leave_percent)):]
+        del gait_event_features[math.ceil(len(gait_event_features) * (1 - leave_percent)):]  # remove test set from original set
+        train_set[gait_event_label] = gait_event_features
+    leave_one_groups[f"group_0"] = {"train_set": train_set, "test_set": test_set}  # a pair of training and test set for one group
+    return leave_one_groups
 
 
 ## divide into 4 transition groups
