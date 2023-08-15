@@ -72,22 +72,22 @@ del emg_filtered_data
 
 ## clip the values and normalize data
 limit = 1500
-old_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v] for
-    k, v in old_emg_preprocessed.items()}
+old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, limit=limit)
+new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, limit=limit)
+old_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v]
+    for k, v in old_emg_normalized.items()}
 # del old_emg_preprocessed
-new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v] for
-    k, v in new_emg_preprocessed.items()}
+new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v]
+    for k, v in new_emg_normalized.items()}
 # del new_emg_preprocessed
-old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_reshaped, limit=limit)
-new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_reshaped, limit=limit)
 
 
 ##  train generative models
 # model data
 subject = 'Test'
 version = 1  # the data from which experiment version to process
-old_LWLW_data = old_emg_normalized['emg_LWLW']
-new_LWLW_data = new_emg_normalized['emg_LWLW']
+old_LWLW_data = old_emg_reshaped['emg_LWLW']
+new_LWLW_data = new_emg_reshaped['emg_LWLW']
 sample_number = min(len(old_LWLW_data), len(new_LWLW_data))
 
 # hyperparameters

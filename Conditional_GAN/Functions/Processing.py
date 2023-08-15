@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 from Cycle_GAN.Functions import Data_Processing
+import random
 
 
 ## separate the dataset into multiple timepoint bins
@@ -118,15 +119,21 @@ def reorganizeFakeData(fake_data_list):
     return reshaped_fake_data
 
 
-## normalize original dataset and substitute using generated fake data
-def substituteEmgData(fake_data, old_emg_preprocessed, limit):
-    original_data = copy.deepcopy(old_emg_preprocessed)
-    for locomotion_type, locomotion_value in original_data.items():
-        normalized_arrays_list = [Data_Processing.normalizeMinMax(np.clip(array, -limit, limit), limit) for array in locomotion_value]
-        original_data[locomotion_type] = normalized_arrays_list
-
+## substitute using generated fake data
+def substituteEmgData(fake_data, real_emg_normalized):
+    original_data = copy.deepcopy(real_emg_normalized)
     for fake_type, fake_value in fake_data.items():
         original_data[fake_type] = fake_value
-
     return original_data
+
+
+## use real data to substitute the test data set
+def getRealDataSet(modes_to_substitute, real_data_set, leave_one_groups, test_ratio):
+    real_emg_data = copy.deepcopy(leave_one_groups)
+    for mode in modes_to_substitute:
+        real_value = real_data_set[mode]
+        random.Random(5).shuffle(real_value)
+        real_emg_data['group_0']['test_set'][mode] = real_value[0: int(len(real_value) * test_ratio)]
+    return real_emg_data
+
 
