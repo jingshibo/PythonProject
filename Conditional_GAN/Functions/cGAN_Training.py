@@ -11,7 +11,7 @@ import random
 
 ## training process
 class ModelTraining():
-    def __init__(self, num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim):
+    def __init__(self, num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim, blending_factor_dim):
         #  initialize member variables
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.result_dir = f'D:\Project\pythonProject\Conditional_GAN\Results\\runs_{timestamp}'
@@ -20,6 +20,7 @@ class ModelTraining():
         self.batch_size = batch_size
         self.sampling_repetition = sampling_repetition
         self.noise_dim = noise_dim
+        self.blending_factor_dim = blending_factor_dim
         self.decay_epochs = decay_epochs
         self.current_step = 0
         self.display_step = None
@@ -51,7 +52,7 @@ class ModelTraining():
         # training model
         generator_input_dim = self.noise_dim + self.n_classes
         discriminator_input_channel = self.img_channel + self.n_classes
-        self.gen = cGAN_Model.Generator(generator_input_dim, self.img_height, self.img_width, img_chan=self.img_channel).to(self.device)
+        self.gen = cGAN_Model.Generator(generator_input_dim, self.img_height, self.img_width, self.blending_factor_dim).to(self.device)
         self.disc = cGAN_Model.Discriminator(discriminator_input_channel).to(self.device)
 
         # training parameters
@@ -70,10 +71,8 @@ class ModelTraining():
         self.loss_fn = cGAN_Model.LossFunction(criterion)
 
         # learning rate scheduler
-        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps,
-            gamma=lr_decay_rate)  # adjusted learning rate
-        self.lr_disc_opt = torch.optim.lr_scheduler.StepLR(self.disc_opt, step_size=decay_steps,
-            gamma=lr_decay_rate)  # adjusted learning rate
+        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps, gamma=lr_decay_rate)
+        self.lr_disc_opt = torch.optim.lr_scheduler.StepLR(self.disc_opt, step_size=decay_steps, gamma=lr_decay_rate)
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
@@ -114,7 +113,7 @@ class ModelTraining():
             # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
             image_one_hot_labels = image_one_hot_labels.repeat(1, 1, self.img_height, self.img_width)
 
-            # Generate fake images
+            # estimate blending factors
             if self.noise_dim > 0:
                 # Get noise corresponding to the current batch_size
                 fake_noise = torch.randn(cur_batch_size, self.noise_dim, device=self.device)
@@ -123,8 +122,15 @@ class ModelTraining():
             else:
                 noise_and_labels = one_hot_labels.float()
             blending_factors = self.gen(noise_and_labels)  # Estimate blending factors
-            # to be corrected as well as the generator model output
-            fake = blending_factors * gen_data_1 + (1 - blending_factors) * gen_data_2  # Generate the conditioned fake images
+
+            # Generate fake images, according to the size of blending factors
+            if self.blending_factor_dim == 1:
+                fake = blending_factors * gen_data_1 + (1 - blending_factors) * gen_data_2  # Generate the conditioned fake images
+            elif self.blending_factor_dim == 2:
+                fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(1) * gen_data_2
+            elif self.blending_factor_dim == 3:
+                fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
+                    1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
 
             # Update the discriminator
             self.disc_opt.zero_grad()  # Zero out the discriminator gradients
@@ -159,7 +165,7 @@ class ModelTraining():
         with torch.no_grad():  # close autograd
             for time_point in list(train_data['gen_data_1'].keys()):
                 number = dataset.extract_and_normalize(time_point)
-                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).to(self.device)
+                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).unsqueeze(0).to(self.device)
                 if self.noise_dim > 0:
                     # Get noise corresponding to the current batch_size
                     fake_noise = torch.randn(1, self.noise_dim, device=self.device)
@@ -232,7 +238,6 @@ class EmgDataSet(Dataset):
         # Randomly select a tensor from gen_data_1
         tensor_idx_1 = random.randint(0, len(gen_tensor_1_list) - 1)
         tensor_1 = gen_tensor_1_list[tensor_idx_1]
-
         # Sample a data slice from the selected tensor
         sample_idx = random.randint(0, tensor_1.shape[0] - 1)  # Randomly pick a sample index
         gen_sample_1 = tensor_1[sample_idx]

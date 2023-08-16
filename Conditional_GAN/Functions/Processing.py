@@ -69,8 +69,13 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
             samples_2 = gen_data_2[key][paired_indices]
 
             # Apply the blending formula to produce the new data
-            new_data = samples_1 * factor + samples_2 * (1 - factor)
-
+            if factor.shape[1] == 1:  # one alpha parameter
+                new_data = samples_1 * factor + samples_2 * (1 - factor)
+            elif factor.shape[1] == 2:  # two alpha parameters
+                new_data = samples_1 * factor[:, 0, :, :][:, np.newaxis, :, :] + samples_2 * factor[:, 1, :, :][:, np.newaxis, :, :]
+            elif factor.shape[1] == 3:  # three alpha parameters
+                new_data = samples_1 * factor[:, 0, :, :][:, np.newaxis, :, :] + samples_2 * factor[:, 1, :, :][:, np.newaxis, :,
+                :] + factor[:, 2, :, :][:, np.newaxis, :, :]
             new_data_dict[key] = new_data
         # Append the generated data to the data_list
         new_data_list.append(new_data_dict)

@@ -62,30 +62,30 @@ class FeatureMapBlock(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, input_vector_dim, img_height, img_width, img_chan=1, hidden_channels=64):
+    def __init__(self, input_vector_dim, img_height, img_width, output_chan, hidden_channels=64):
         super(Generator, self).__init__()
         # data size
         self.input_dim = input_vector_dim
-        self.img_chan = img_chan
+        self.output_chan = output_chan
         self.img_height = img_height
         self.img_width = img_width
 
         # dense layer to a suitable dim for reshaping
-        self.fc = nn.Linear(input_vector_dim, img_chan * img_height * img_width)
+        self.fc = nn.Linear(input_vector_dim, output_chan * img_height * img_width)
         # encoder
-        self.upfeature = FeatureMapBlock(img_chan, hidden_channels, SN=False)
+        self.upfeature = FeatureMapBlock(output_chan, hidden_channels, SN=False)
         self.contract1 = ContractingBlock(hidden_channels, SN=False)
         self.contract2 = ContractingBlock(hidden_channels * 2, SN=False)
         # decoder
         self.expand2 = ExpandingBlock(hidden_channels * 4, SN=False)
         self.expand3 = ExpandingBlock(hidden_channels * 2, SN=False)
-        self.downfeature = FeatureMapBlock(hidden_channels, img_chan, SN=False)
+        self.downfeature = FeatureMapBlock(hidden_channels, output_chan, SN=False)
         self.sig = torch.nn.Sigmoid()
 
     def forward(self, noise_and_class):
         # convert the noise and class tensor of size (n_samples, input_dim) to a 4d ten sor of size (n_samples, input_dim, 1, 1)
         x = self.fc(noise_and_class)
-        x = x.view(-1, self.img_chan, self.img_height, self.img_width)  # Reshaping to (batch_size, 2, 13, 10)
+        x = x.view(-1, self.output_chan, self.img_height, self.img_width)  # Reshaping to (batch_size, 2, 13, 10)
 
         x = self.upfeature(x)
         x = self.contract1(x)
@@ -93,8 +93,8 @@ class Generator(nn.Module):
         x = self.expand2(x)
         x = self.expand3(x)
         x = self.downfeature(x)
-        xn = self.sig(x)
-        return xn
+        x = self.sig(x)
+        return x
 
 
 ## model summary
@@ -117,8 +117,8 @@ class Discriminator(nn.Module):
         x = self.contract1(x)
         x = self.contract2(x)
         x = self.contract3(x)
-        xn = self.final(x)
-        return xn
+        x = self.final(x)
+        return x
 
 
 ## model summary

@@ -37,6 +37,8 @@ modes = ['up_down', 'down_up']
 # down_up_session = [0, 1, 2, 5, 6, 7, 8, 9, 10]
 up_down_session = [0, 1, 2, 3, 4]
 down_up_session = [0, 1, 2, 5, 6]
+# up_down_session = [0]
+# down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 
 
@@ -57,6 +59,8 @@ modes = ['up_down', 'down_up']
 # down_up_session = [0, 1, 2, 3, 4, 5, 6, 8, 9]
 up_down_session = [5, 6, 7, 8, 9]
 down_up_session = [4, 5, 6, 8, 9]
+# up_down_session = [0]
+# down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 
 
@@ -88,7 +92,7 @@ new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), o
 
 ## model data
 subject = 'Test'
-version = 2  # the data from which experiment version to process
+version = 0  # the data from which experiment version to process
 old_LWLW_data = np.vstack(old_emg_reshaped['emg_LWLW'])
 old_SASA_data = np.vstack(old_emg_reshaped['emg_SASA'])
 old_LWSA_data = np.vstack(old_emg_reshaped['emg_LWSA'])
@@ -120,14 +124,15 @@ result_set = 0
 
 
 ## hyperparameters
-num_epochs = 400  # the number of times you iterate through the entire dataset when training
+num_epochs = 1  # the number of times you iterate through the entire dataset when training
 decay_epochs = 10
 batch_size = 1024  # the number of images per forward/backward pass
-sampling_repetition = 4  # the number of batches to repeat the combination sampling for the same time points
-noise_dim = 0
+sampling_repetition = 6  # the number of batches to repeat the combination sampling for the same time points
+noise_dim = 5
+blending_factor_dim = 2
 
 now = datetime.datetime.now()
-train_model = cGAN_Training.ModelTraining(num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim)
+train_model = cGAN_Training.ModelTraining(num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim, blending_factor_dim)
 gan_models, blending_factors = train_model.trainModel(train_data, checkpoint_model_path, checkpoint_result_path)
 print(datetime.datetime.now() - now)
 
