@@ -1,3 +1,7 @@
+'''
+    Using trained cGAN model to estimate blending factors
+'''
+
 ##  import
 import torch
 import torch.nn.functional as F

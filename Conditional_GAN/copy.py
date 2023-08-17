@@ -2,8 +2,8 @@
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Cycle_GAN.Functions import Model_Storage, Classify_Testing
-from Conditional_GAN.Models import cGAN_Training, cGAN_Testing
-from Conditional_GAN.Data_Procesing import cGAN_Processing, Data_Loading
+from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, cGAN_Evaluation
+from Conditional_GAN.Data_Procesing import cGAN_Processing, Original_Data
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 import numpy as np
 import datetime
@@ -41,43 +41,41 @@ window_parameters = {
     'predict_using_window_number': predict_using_window_number,
     'predict_window_per_repetition': predict_window_per_repetition
 }
-filter_lower_limit = 20
-filter_higher_limit = 400
 
 
 ## read and filter old data
 subject = 'Number4'
 version = 0  # the data from which experiment version to process
-modes = ['up_down', 'down_up']
+modes_generation = ['up_down', 'down_up']
 up_down_session = [0, 1, 2, 3, 4]
 down_up_session = [0, 1, 2, 5, 6]
 # up_down_session = [0]
 # down_up_session = [0]
 sessions = [up_down_session, down_up_session]
-data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
-old_emg_data = Data_Loading.readFilterEmgData(data_source, window_parameters, lower_limit=filter_lower_limit, higher_limit=filter_higher_limit)
+data_source = {'subject': subject, 'version': version, 'modes': modes_generation, 'sessions': sessions}
+old_emg_data = Original_Data.readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400)
 
 
 ## read and filter new data
 subject = 'Number5'
 version = 0  # the data from which experiment version to process
-modes = ['up_down', 'down_up']
+modes_generation = ['up_down', 'down_up']
 up_down_session = [5, 6, 7, 8, 9]
 down_up_session = [4, 5, 6, 8, 9]
 # up_down_session = [0]
 # down_up_session = [0]
 sessions = [up_down_session, down_up_session]
-data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
-new_emg_data = Data_Loading.readFilterEmgData(data_source, window_parameters, lower_limit=filter_lower_limit, higher_limit=filter_higher_limit)
+data_source = {'subject': subject, 'version': version, 'modes': modes_generation, 'sessions': sessions}
+new_emg_data = Original_Data.readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400)
 
 
 ## normalize and extract emg data for gan model training
 range_limit = 1500
-old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Data_Loading.normalizeReshapeEmgData(old_emg_data, new_emg_data, range_limit)
-modes = ['emg_LWLW', 'emg_SASA', 'emg_LWSA']
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Original_Data.normalizeReshapeEmgData(old_emg_data, new_emg_data, range_limit)
+modes_generation = ['emg_LWLW', 'emg_SASA', 'emg_LWSA']
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 time_interval = 50
-real_emg, train_gan_data = Data_Loading.extractSeparateEmgData(modes, old_emg_reshaped, new_emg_reshaped, time_interval, length, output_list=True)
+extracted_emg, train_gan_data = Original_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval, length, output_list=True)
 
 
 ## GAN data storage information
@@ -115,261 +113,73 @@ Model_Storage.saveCGanResults(subject, blending_factors, version, result_set, tr
 
 
 '''
-    train classifier (on subject 4)
+    train classifier (on subject 4), for testing gan generation performance
 '''
 ## load blending factors
-gen_results = Model_Storage.loadCGanResults(subject, version, result_set, model_type, project='cGAN_Model')
-estimated_blending_factors = {key: np.array(value) for key, value in gen_results['model_results'].items()}
+gen_result = Model_Storage.loadCGanResults(subject, version, result_set, model_type, project='cGAN_Model')
+gen_results = {'LWSA': gen_result}  # there could be more than one transition to generate
 
+## generate fake data
+old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}  # The order in the list is critical
+synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)
 
-## separate dataset into 1ms interval
-period = start_before_toeoff_ms + endtime_after_toeoff_ms
-reorganized_old_LWLW = cGAN_Processing.separateByTimeInterval(real_emg['old']['emg_LWLW'], timepoint_interval=1, length=period)
-reorganized_old_SASA = cGAN_Processing.separateByTimeInterval(real_emg['old']['emg_SASA'], timepoint_interval=1, length=period)
-reorganized_data = {'gen_data_1': reorganized_old_LWLW, 'gen_data_2': reorganized_old_SASA, 'blending_factors': estimated_blending_factors}
+## train classifier
+train_set, shuffled_train_set = old_evaluation.classifierTrainSet(synthetic_data, training_percent=0.8)
+models, model_results = old_evaluation.trainClassifier(shuffled_train_set)
+# accuracy, cm_recall = old_evaluation.evaluateClassifyResults(model_results)
 
-
-## generate fake data at each timestamp
-interval = gen_results['training_parameters']['interval']
-fake_data = cGAN_Processing.generateFakeData(reorganized_data, interval, repetition=1, random_pairing=False)
-reorganized_fake_data = cGAN_Processing.reorganizeFakeData(fake_data)
-# build training data
-fake_emg_data = {'emg_LWSA': reorganized_fake_data}
-generated_data = cGAN_Processing.substituteEmgData(fake_emg_data, old_emg_normalized)
-
-
-## build training set
-leave_percentage = 0.2
-leave_one_groups = Data_Preparation.leaveOneSet(leave_percentage, generated_data, shuffle=True)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(leave_one_groups, feature_window_size,
-    increment=feature_window_increment_ms * sample_rate)
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups
-
-
-##  train the classifier using fake data
-num_epochs = 50
-batch_size = 1024
-decay_epochs = 20
-now = datetime.datetime.now()
-# train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size)
-train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)  # only output one model instead of five models
-print(datetime.datetime.now() - now)
-
-
-## test fake data performance
-reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
-accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
-# calculate the accuracy and cm. Note: the first dimension refers to each delay
-average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
-    cm_bygroup)
-accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
-    predict_window_shift_unit)
-
-
-## build real data test set
-test_ratio = 0.5
-real_test_data = cGAN_Processing.getRealDataSet(list(fake_emg_data.keys()), old_emg_normalized, leave_one_groups, test_ratio)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(real_test_data, feature_window_size,
-    increment=feature_window_increment_ms * sample_rate)
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups
-
-
-## classify real data
-batch_size = 1024
-now = datetime.datetime.now()
-test_model = Classify_Testing.ModelTesting(models[0], batch_size)  # select one pretrained model for classifying data
-test_result = test_model.testModel(shuffled_groups)
-print(datetime.datetime.now() - now)
-
-
-## test real data performance
-reorganized_results = MV_Results_ByGroup.groupedModelResults(test_result)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
-accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
-# calculate the accuracy and cm. Note: the first dimension refers to each delay
-average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
-    cm_bygroup)
-accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
-    predict_window_shift_unit)
+## test classifier
+shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, old_emg_normalized, train_set, test_ratio=0.5)
+test_results = old_evaluation.testClassifier(models[0], shuffled_test_set)
+accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
 
 
 '''
-    train classifier (on subject 5)
+    train classifier (on subject 5), for evaluating the proposed method performance
 '''
 ## separate dataset into 1ms interval
-period = start_before_toeoff_ms + endtime_after_toeoff_ms
-reorganized_new_LWLW = cGAN_Processing.separateByTimeInterval(real_emg['new']['emg_LWLW'], timepoint_interval=1, length=period)
-reorganized_new_SASA = cGAN_Processing.separateByTimeInterval(real_emg['new']['emg_SASA'], timepoint_interval=1, length=period)
-reorganized_data = {'gen_data_1': reorganized_new_LWLW, 'gen_data_2': reorganized_new_SASA, 'blending_factors': estimated_blending_factors}
+new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}  # The order in the list is critical
+synthetic_data = new_evaluation.generateFakeData(extracted_emg, 'new', modes_generation, new_emg_normalized, repetition=1, random_pairing=False)
 
+## train classifier
+train_set, shuffled_train_set = new_evaluation.classifierTrainSet(synthetic_data, training_percent=0.8)
+models, model_results = new_evaluation.trainClassifier(shuffled_train_set)
+# accuracy, cm_recall = new_evaluation.evaluateClassifyResults(model_results)
 
-## generate fake data at each timestamp
-interval = gen_results['training_parameters']['interval']
-fake_data = cGAN_Processing.generateFakeData(reorganized_data, interval, repetition=1, random_pairing=False)
-reorganized_fake_data = cGAN_Processing.reorganizeFakeData(fake_data)
-# build training data
-fake_emg_data = {'emg_LWSA': reorganized_fake_data}
-generated_data = cGAN_Processing.substituteEmgData(fake_emg_data, new_emg_normalized)
-
-
-## build training set
-leave_percentage = 0.2
-leave_one_groups = Data_Preparation.leaveOneSet(leave_percentage, generated_data, shuffle=True)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(leave_one_groups, feature_window_size,
-    increment=feature_window_increment_ms * sample_rate)
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups
-
-
-##  train the classify using fake data
-num_epochs = 50
-batch_size = 1024
-decay_epochs = 20
-now = datetime.datetime.now()
-# train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size)
-train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)  # only output one model instead of five models
-print(datetime.datetime.now() - now)
-
-
-## test fake data performance
-reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
-accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
-# calculate the accuracy and cm. Note: the first dimension refers to each delay
-average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
-    cm_bygroup)
-accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
-    predict_window_shift_unit)
-
-
-## build real data test set
-test_ratio = 0.5
-real_test_data = cGAN_Processing.getRealDataSet(list(fake_emg_data.keys()), new_emg_normalized, leave_one_groups, test_ratio)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(real_test_data, feature_window_size,
-    increment=feature_window_increment_ms * sample_rate)
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups
-
-
-## classify real data
-batch_size = 1024
-now = datetime.datetime.now()
-test_model = Classify_Testing.ModelTesting(models[0], batch_size)  # select one pretrained model for classifying data
-test_result = test_model.testModel(shuffled_groups)
-print(datetime.datetime.now() - now)
-
-
-## test real data performance
-reorganized_results = MV_Results_ByGroup.groupedModelResults(test_result)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
-accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
-# calculate the accuracy and cm. Note: the first dimension refers to each delay
-average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
-    cm_bygroup)
-accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
-    predict_window_shift_unit)
-
-
+## test classifier
+shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
+test_results = new_evaluation.testClassifier(models[0], shuffled_test_set)
+accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
 
 
 
 '''
-    Comparison
+    train classifier (on subject 5), for comparison purpose
 '''
 ##
 # build training data
 old_emg_data = {'emg_LWSA': old_emg_normalized['emg_LWSA']}
-generated_data = cGAN_Processing.substituteEmgData(old_emg_data, new_emg_normalized)
+synthetic_data = cGAN_Processing.replaceUsingFakeEmg(old_emg_data, new_emg_normalized)
 
-## build training set
-leave_percentage = 0.2
-leave_one_groups = Data_Preparation.leaveOneSet(leave_percentage, generated_data, shuffle=True)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(leave_one_groups, feature_window_size,
-    increment=feature_window_increment_ms * sample_rate)
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups
+## train classifier
+train_set, shuffled_train_set = new_evaluation.classifierTrainSet(synthetic_data, training_percent=0.8)
+models, model_results = new_evaluation.trainClassifier(shuffled_train_set)
+# accuracy, cm_recall = new_evaluation.evaluateClassifyResults(model_results)
 
-
-##  train the classify using fake data
-num_epochs = 50
-batch_size = 1024
-decay_epochs = 20
-now = datetime.datetime.now()
-# train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size)
-train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)  # only output one model instead of five models
-print(datetime.datetime.now() - now)
-
-
-## test fake data performance
-reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
-accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
-# calculate the accuracy and cm. Note: the first dimension refers to each delay
-average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
-    cm_bygroup)
-accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
-    predict_window_shift_unit)
-
-
-## build real data test set
-test_ratio = 0.5
-fake_emg_data = {'emg_LWSA': 1}
-real_test_data = cGAN_Processing.getRealDataSet(list(fake_emg_data.keys()), new_emg_normalized, leave_one_groups, test_ratio)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(real_test_data, feature_window_size,
-    increment=feature_window_increment_ms * sample_rate)
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-del sliding_window_dataset
-shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-del normalized_groups
-
-
-## classify real data
-batch_size = 1024
-now = datetime.datetime.now()
-test_model = Classify_Testing.ModelTesting(models[0], batch_size)  # select one pretrained model for classifying data
-test_result = test_model.testModel(shuffled_groups)
-print(datetime.datetime.now() - now)
-
-
-## test real data performance
-reorganized_results = MV_Results_ByGroup.groupedModelResults(test_result)
-sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results, feature_window_per_repetition,
-    predict_window_shift_unit, predict_using_window_number, initial_start=0)
-accuracy_bygroup, cm_bygroup = Sliding_Ann_Results.getAccuracyPerGroup(sliding_majority_vote_by_group)
-# calculate the accuracy and cm. Note: the first dimension refers to each delay
-average_accuracy_with_delay, overall_accuracy_with_delay, sum_cm_with_delay = MV_Results_ByGroup.averageAccuracyByGroup(accuracy_bygroup,
-    cm_bygroup)
-accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay, feature_window_increment_ms,
-    predict_window_shift_unit)
+## test classifier
+shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
+test_results = new_evaluation.testClassifier(models[0], shuffled_test_set)
+accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(test_results)
 
 
 
 
 
 ## load check point results
-checkpoint_result = Model_Storage.loadCheckPointCGanResults(checkpoint_result_path, 400)
+checkpoint_result = Model_Storage.loadCheckPointCGanResults(checkpoint_result_path, epoch_number=400)
 
 
 ## load check point models

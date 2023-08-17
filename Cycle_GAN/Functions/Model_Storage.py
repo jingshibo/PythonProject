@@ -76,6 +76,7 @@ def loadCGanResults(subject, version, result_set, model_type, project='cGAN_Mode
     # read json file
     with open(result_path) as json_file:
         result_dict = json.load(json_file)
+    result_dict['model_results'] = {key: np.array(value) for key, value in result_dict['model_results'].items()}
 
     return result_dict
 

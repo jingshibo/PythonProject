@@ -132,7 +132,7 @@ class ModelTraining():
                 fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
                     1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
 
-            # Update the discriminator
+            # Update th  e discriminator
             self.disc_opt.zero_grad()  # Zero out the discriminator gradients
             disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)
             disc_loss.backward()  # Update gradients

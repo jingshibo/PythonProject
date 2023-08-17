@@ -92,7 +92,7 @@ new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), o
 
 ## model data
 subject = 'Test'
-version = 0  # the data from which experiment version to process
+version = 1  # the data from which experiment version to process
 old_LWLW_data = np.vstack(old_emg_reshaped['emg_LWLW'])
 old_SASA_data = np.vstack(old_emg_reshaped['emg_SASA'])
 old_LWSA_data = np.vstack(old_emg_reshaped['emg_LWSA'])
@@ -124,11 +124,11 @@ result_set = 0
 
 
 ## hyperparameters
-num_epochs = 1  # the number of times you iterate through the entire dataset when training
+num_epochs = 400  # the number of times you iterate through the entire dataset when training
 decay_epochs = 10
 batch_size = 1024  # the number of images per forward/backward pass
 sampling_repetition = 6  # the number of batches to repeat the combination sampling for the same time points
-noise_dim = 5
+noise_dim = 0
 blending_factor_dim = 2
 
 now = datetime.datetime.now()
@@ -170,12 +170,12 @@ fake_data = cGAN_Processing.generateFakeData(reorganized_data, interval, repetit
 reorganized_fake_data = cGAN_Processing.reorganizeFakeData(fake_data)
 # build training data
 fake_emg_data = {'emg_LWSA': reorganized_fake_data}
-generated_data = cGAN_Processing.substituteEmgData(fake_emg_data, old_emg_normalized)
+generated_data = cGAN_Processing.replaceUsingFakeEmg(fake_emg_data, old_emg_normalized)
 
 
 ## build training set
 leave_percentage = 0.2
-leave_one_groups = Data_Preparation.leaveOneSet(leave_percentage, generated_data, shuffle=True)
+leave_one_groups = Data_Preparation.leaveOutDataSet(leave_percentage, generated_data, shuffle=True)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(leave_one_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
@@ -209,7 +209,7 @@ accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_de
 
 ## build real data test set
 test_ratio = 0.5
-real_test_data = cGAN_Processing.getRealDataSet(list(fake_emg_data.keys()), old_emg_normalized, leave_one_groups, test_ratio)
+real_test_data = cGAN_Processing.replaceUsingRealEmg(list(fake_emg_data.keys()), old_emg_normalized, leave_one_groups, test_ratio)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(real_test_data, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
@@ -255,12 +255,12 @@ fake_data = cGAN_Processing.generateFakeData(reorganized_data, interval, repetit
 reorganized_fake_data = cGAN_Processing.reorganizeFakeData(fake_data)
 # build training data
 fake_emg_data = {'emg_LWSA': reorganized_fake_data}
-generated_data = cGAN_Processing.substituteEmgData(fake_emg_data, new_emg_normalized)
+generated_data = cGAN_Processing.replaceUsingFakeEmg(fake_emg_data, new_emg_normalized)
 
 
 ## build training set
 leave_percentage = 0.2
-leave_one_groups = Data_Preparation.leaveOneSet(leave_percentage, generated_data, shuffle=True)
+leave_one_groups = Data_Preparation.leaveOutDataSet(leave_percentage, generated_data, shuffle=True)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(leave_one_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
@@ -294,7 +294,7 @@ accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_de
 
 ## build real data test set
 test_ratio = 0.5
-real_test_data = cGAN_Processing.getRealDataSet(list(fake_emg_data.keys()), new_emg_normalized, leave_one_groups, test_ratio)
+real_test_data = cGAN_Processing.replaceUsingRealEmg(list(fake_emg_data.keys()), new_emg_normalized, leave_one_groups, test_ratio)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(real_test_data, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
@@ -332,11 +332,11 @@ accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_de
 ##
 # build training data
 old_emg_data = {'emg_LWSA': old_emg_normalized['emg_LWSA']}
-generated_data = cGAN_Processing.substituteEmgData(old_emg_data, new_emg_normalized)
+generated_data = cGAN_Processing.replaceUsingFakeEmg(old_emg_data, new_emg_normalized)
 
 ## build training set
-leave_percentage = 0.2
-leave_one_groups = Data_Preparation.leaveOneSet(leave_percentage, generated_data, shuffle=True)
+leave_percentage = 0.8
+leave_one_groups = Data_Preparation.leaveOutDataSet(leave_percentage, generated_data, shuffle=True)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(leave_one_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
@@ -370,8 +370,7 @@ accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_de
 
 ## build real data test set
 test_ratio = 0.5
-fake_emg_data = {'emg_LWSA': 1}
-real_test_data = cGAN_Processing.getRealDataSet(list(fake_emg_data.keys()), new_emg_normalized, leave_one_groups, test_ratio)
+real_test_data = cGAN_Processing.replaceUsingRealEmg('emg_LWSA', new_emg_normalized, leave_one_groups, test_ratio)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(real_test_data, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)

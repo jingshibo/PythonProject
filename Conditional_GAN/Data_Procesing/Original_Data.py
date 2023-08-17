@@ -1,3 +1,7 @@
+'''
+    load original data for cGAN model training
+'''
+
 ##
 from Transition_Prediction.Pre_Processing import Preprocessing
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
@@ -38,7 +42,6 @@ def extractSeparateEmgData(modes, old_emg_reshaped, new_emg_reshaped, time_inter
     for idx, mode in enumerate(modes):
         real_emg['old'][mode] = np.vstack(old_emg_reshaped[mode])
         real_emg['new'][mode] = np.vstack(new_emg_reshaped[mode])
-
         train_gan_data[data_keys[idx]] = cGAN_Processing.separateByTimeInterval(real_emg['old'][mode], timepoint_interval=time_interval,
             length=length, output_list=output_list)
 
