@@ -1,9 +1,9 @@
 ##
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
-from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Cycle_GAN.Functions import Classify_Testing, Model_Storage, Data_Processing, CycleGAN_Training, Visualization, CycleGAN_Testing
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
+from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Cycle_GAN.Functions import Classify_Testing, Model_Storage, Data_Processing, CycleGAN_Training
 import numpy as np
 import datetime
 
@@ -72,8 +72,8 @@ del emg_filtered_data
 
 ## clip the values and normalize data
 limit = 1500
-old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, limit=limit)
-new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, limit=limit)
+old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit)
+new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, range_limit=limit)
 old_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v]
     for k, v in old_emg_normalized.items()}
 # del old_emg_preprocessed

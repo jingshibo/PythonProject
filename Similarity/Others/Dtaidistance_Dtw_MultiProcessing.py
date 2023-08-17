@@ -1,12 +1,11 @@
 ## import modules
-import pandas as pd
 import numpy as np
 import datetime
 import concurrent.futures
 
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing import Preprocessing
 from dtaidistance import dtw
-from dtaidistance import dtw_visualisation as dtwvis
+
 
 ## input emg labelled series data
 def readEmgData(subject, version, modes, sessions):

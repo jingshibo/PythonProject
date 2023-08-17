@@ -2,11 +2,9 @@
 import pandas as pd
 import numpy as np
 import datetime
-import matplotlib.pyplot as plt
 
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing import Preprocessing
 from dtaidistance import dtw  # this method seems to work worse than Accelerated DTW package
-from dtaidistance import dtw_visualisation as dtwvis
 
 ## input emg labelled series data
 subject = 'Shibo'

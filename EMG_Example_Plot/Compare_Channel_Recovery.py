@@ -4,10 +4,9 @@
 
 
 ## import
-from Pre_Processing import Preprocessing
-from Models.Utility_Functions import Data_Preparation
+from Transition_Prediction.Pre_Processing import Preprocessing
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Channel_Number.Functions import Channel_Manipulation
-from EMG_Example_Plot.Utility_Functions import Save_Results
 import numpy as np
 import matplotlib.pyplot as plt
 

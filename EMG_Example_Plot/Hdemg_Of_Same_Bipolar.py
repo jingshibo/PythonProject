@@ -4,14 +4,9 @@
 '''
 
 ##
-from Pre_Processing import Preprocessing
-from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
-from Models.Utility_Functions import Data_Preparation
 from EMG_Example_Plot.Utility_Functions import Save_Results
 import matplotlib.pyplot as plt
 import numpy as np
-import copy
-
 
 ##  read sensor data and filtering
 # basic information

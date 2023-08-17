@@ -13,10 +13,10 @@ def normalizeMinMax(array, limit):  # normalize the value to [-1, 1]
 
 
 ## normalize data using min-max way
-def normalizeEmgData(original_data, limit=2000):
+def normalizeEmgData(original_data, range_limit=2000):
     normalized_data = {}
     for locomotion_type, locomotion_value in original_data.items():
-        normalized_data[locomotion_type] = [normalizeMinMax(np.clip(array, -limit, limit), limit) for array in locomotion_value]
+        normalized_data[locomotion_type] = [normalizeMinMax(np.clip(array, -range_limit, range_limit), range_limit) for array in locomotion_value]
     return normalized_data
 
 

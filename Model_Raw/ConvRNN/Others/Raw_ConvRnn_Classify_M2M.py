@@ -1,8 +1,8 @@
 ## import modules
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
-from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
+from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Dataset, Raw_ConvRnn_Results
 from Model_Raw.ConvRNN.Others import Raw_ConvRnn_M2M_Model
 import datetime
@@ -38,7 +38,7 @@ predict_window_per_repetition = int(endtime_after_toeoff_ms / predict_window_inc
 
 ## read and filter data
 split_parameters = Preprocessing.readSplitParameters(subject, version)
-emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-start_before_toeoff_ms*2,
+emg_filtered_data = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-start_before_toeoff_ms * 2,
     end_position=endtime_after_toeoff_ms*2, notchEMG=False, reordering=True)
 emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=down_sampling)
 del emg_filtered_data

@@ -3,8 +3,8 @@ get oll subject's accuracy and confusion matrix at each delay point. display and
 '''
 
 ## import
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Models.Utility_Functions import Confusion_Matrix
+from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 import matplotlib.pyplot as plt
 
 

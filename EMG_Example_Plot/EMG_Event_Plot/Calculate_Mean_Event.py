@@ -1,6 +1,6 @@
 ## modules
-from Pre_Processing import Preprocessing
-from Models.Utility_Functions import Data_Preparation
+from Transition_Prediction.Pre_Processing import Preprocessing
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from EMG_Example_Plot.EMG_Event_Plot.Functions import Raw_Emg_Manipulation
 
 ## input emg labelled series data

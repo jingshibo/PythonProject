@@ -1,10 +1,8 @@
 ##
 import copy
 import numpy as np
-import os
-import json
-from Models.Utility_Functions import MV_Results_ByGroup
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Transition_Prediction.Models.Utility_Functions import MV_Results_ByGroup
+from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 
 
 ## get the predict results at each delay time point

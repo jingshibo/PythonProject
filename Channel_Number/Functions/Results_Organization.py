@@ -1,7 +1,7 @@
 ## import
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Results
-from Model_Sliding.GRU.Functions import Sliding_Gru_Model
+from Transition_Prediction.Model_Sliding.GRU.Functions import Sliding_Gru_Model
 import copy
 
 

@@ -1,11 +1,8 @@
 ## import modules
 import datetime
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from sklearn.metrics import confusion_matrix
-from Models.Utility_Functions import Confusion_Matrix
-import torch
+
 
 ## a single CNN model
 def classifyUsingCnn2dModel(shuffled_groups):

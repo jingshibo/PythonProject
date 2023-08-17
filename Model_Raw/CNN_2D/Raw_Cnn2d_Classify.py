@@ -1,8 +1,8 @@
 ##
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
-from Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
-from Model_Sliding.ANN.Functions import Sliding_Ann_Results
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
+from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Cycle_GAN.Functions import Model_Storage
 import datetime
 

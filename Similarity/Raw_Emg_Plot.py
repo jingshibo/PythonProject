@@ -4,14 +4,13 @@ plot the filtered emg data from each channel at each gait event
 
 
 ## modules
-from Pre_Processing.Utility_Functions import Feature_Storage, Data_Reshaping
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing.Utility_Functions import Data_Reshaping, Feature_Storage
+from Transition_Prediction.Pre_Processing import Preprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-from Models.Utility_Functions import Data_Preparation
-
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 
 ## input emg labelled series data
 subject = 'Number3'

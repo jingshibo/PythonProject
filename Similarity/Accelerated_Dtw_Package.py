@@ -4,15 +4,13 @@ using accelerated dtw package for DTW distance calculation
 
 
 ## import modules
-import pandas as pd
 import numpy as np
 import datetime
 import concurrent.futures
-import matplotlib.pyplot as plt
-import copy
-from Pre_Processing import Preprocessing
+from Transition_Prediction.Pre_Processing import Preprocessing
 from dtw import accelerated_dtw
 from Similarity.Utility_Functions import Dtw_Storage
+
 
 ## input emg labelled series data
 def readEmgData(subject, version, modes, sessions):

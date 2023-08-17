@@ -7,7 +7,7 @@ get oll subject's accuracy and confusion matrix at each delay point. display and
 import pandas as pd
 
 from Model_Raw.ConvRNN.Functions import Raw_ConvRnn_Results
-from Models.Utility_Functions import Confusion_Matrix
+from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 import matplotlib.pyplot as plt
 
 all_subjects = {}  # save all subject results
