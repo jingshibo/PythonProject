@@ -7,7 +7,7 @@ import numpy as np
 import datetime
 import os
 from Cycle_GAN.Functions import CycleGAN_Model
-from Cycle_GAN.Functions import Model_Storage
+from Conditional_GAN.Models import Model_Storage
 
 
 ## training process

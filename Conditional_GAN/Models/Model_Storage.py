@@ -4,7 +4,7 @@ import copy
 import json
 import numpy as np
 
-def saveModels(models, subject, version, model_type, model_name, project='CycleGAN_Model'):
+def saveModels(models, subject, version, model_type, model_name, project='cGAN_Model'):
     for name in model_name:
         # model path
         data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
@@ -14,7 +14,7 @@ def saveModels(models, subject, version, model_type, model_name, project='CycleG
         torch.save(models[name].to("cpu"), model_path)
 
 
-def loadModels(subject, version, model_type, model_name, project='CycleGAN_Model'):
+def loadModels(subject, version, model_type, model_name, project='cGAN_Model'):
     models = {}
     # model path
     for name in model_name:
@@ -108,4 +108,55 @@ def loadCheckPointCGanResults(checkpoint_result_path, epoch_number=200):
 
     checkpoint_result = {key: np.array(value) for key, value in result_dict.items()}
     return checkpoint_result
+
+
+## save classification accuracy and cm recall values
+def saveClassifyAccuracy(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model'):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
+    result_path = os.path.join(data_dir, result_file)
+
+    # Convert numpy arrays in the cm_recall dictionary to lists
+    cm_recall_to_list = {key: value.tolist() for key, value in cm_recall.items()}
+    # Combine the two dictionaries into one
+    combined_data = {'accuracy': accuracy, 'cm_recall': cm_recall_to_list}
+
+    # Save to JSON file
+    with open(result_path, 'w') as f:
+        json.dump(combined_data, f, indent=8)
+
+
+## read classification accuracy and cm recall values
+def loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model'):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
+    result_path = os.path.join(data_dir, result_file)
+
+    with open(result_path, 'r') as f:
+        loaded_data = json.load(f)
+
+    accuracy = loaded_data['accuracy']
+    cm_recall = {key: np.array(value) for key, value in loaded_data['cm_recall'].items()}
+
+    return accuracy, cm_recall
+
+
+##
+def saveClassifyModel(model, subject, version, model_type, project='cGAN_Model'):
+    # model path
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
+    model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}.json'
+    model_path = os.path.join(data_dir, model_file)
+    # save model
+    torch.save(model.to("cpu"), model_path)
+
+
+##
+def loadClassifyModel(subject, version, model_type, project='cGAN_Model'):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
+    model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}.json'
+    model_path = os.path.join(data_dir, model_file)
+    # load model
+    model = torch.load(model_path)
+    return model
 

@@ -4,8 +4,7 @@ import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import Dataset, DataLoader
 import datetime
-from Cycle_GAN.Functions import Model_Storage
-from Conditional_GAN.Models import cGAN_Model
+from Conditional_GAN.Models import cGAN_Model, Model_Storage
 import random
 
 
@@ -14,7 +13,7 @@ class ModelTraining():
     def __init__(self, num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim, blending_factor_dim):
         #  initialize member variables
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.result_dir = f'D:\Project\pythonProject\Conditional_GAN\Results\\runs_{timestamp}'
+        self.result_dir = f'/Conditional_GAN/Others\\runs_{timestamp}'
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -67,7 +66,8 @@ class ModelTraining():
         self.disc_opt = torch.optim.Adam(self.disc.parameters(), lr=lr, weight_decay=weight_decay, betas=beta)
 
         # loss function
-        criterion = nn.BCEWithLogitsLoss()
+        # criterion = nn.BCEWithLogitsLoss()
+        criterion = nn.MSELoss()
         self.loss_fn = cGAN_Model.LossFunction(criterion)
 
         # learning rate scheduler

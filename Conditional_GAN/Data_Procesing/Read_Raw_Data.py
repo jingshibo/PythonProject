@@ -6,11 +6,11 @@
 from Transition_Prediction.Pre_Processing import Preprocessing
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Cycle_GAN.Functions import Data_Processing
-from Conditional_GAN.Data_Procesing import cGAN_Processing
+from Conditional_GAN.Data_Procesing import Process_Fake_Data
 import numpy as np
 
 
-##
+## load raw data and filter them
 def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400):
     split_parameters = Preprocessing.readSplitParameters(data_source['subject'], data_source['version'])
     emg_filtered_data = Preprocessing.labelFilteredData(data_source['subject'], data_source['modes'],
@@ -22,7 +22,7 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
 
     return old_emg_preprocessed
 
-
+## normalize filtered data and reshape them to be images
 def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit):
     old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit)
     new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, range_limit=limit)
@@ -33,7 +33,7 @@ def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit):
 
     return old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped
 
-
+## extract the relevent modes for data generation and separate them by timepoint_interval
 def extractSeparateEmgData(modes, old_emg_reshaped, new_emg_reshaped, time_interval, length, output_list=False):
     real_emg = {'old': {}, 'new': {}}
     train_gan_data = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
@@ -42,8 +42,34 @@ def extractSeparateEmgData(modes, old_emg_reshaped, new_emg_reshaped, time_inter
     for idx, mode in enumerate(modes):
         real_emg['old'][mode] = np.vstack(old_emg_reshaped[mode])
         real_emg['new'][mode] = np.vstack(new_emg_reshaped[mode])
-        train_gan_data[data_keys[idx]] = cGAN_Processing.separateByTimeInterval(real_emg['old'][mode], timepoint_interval=time_interval,
+        train_gan_data[data_keys[idx]] = Process_Fake_Data.separateByTimeInterval(real_emg['old'][mode], timepoint_interval=time_interval,
             length=length, output_list=output_list)
 
     return real_emg, train_gan_data
+
+# get window parameters for gan and classify model training
+def returnWindowParameters():
+    down_sampling = True
+    start_before_toeoff_ms = 450
+    endtime_after_toeoff_ms = 400
+    feature_window_ms = 350
+    predict_window_ms = start_before_toeoff_ms
+    sample_rate = 1 if down_sampling is True else 2
+    predict_window_size = predict_window_ms * sample_rate
+    feature_window_size = feature_window_ms * sample_rate
+    predict_window_increment_ms = 20
+    feature_window_increment_ms = 20
+    predict_window_shift_unit = int(predict_window_increment_ms / feature_window_increment_ms)
+    predict_using_window_number = int((predict_window_size - feature_window_size) / (feature_window_increment_ms * sample_rate)) + 1
+    predict_window_per_repetition = int(
+        (endtime_after_toeoff_ms + start_before_toeoff_ms - predict_window_ms) / predict_window_increment_ms) + 1
+
+    window_parameters = {'down_sampling': down_sampling, 'start_before_toeoff_ms': start_before_toeoff_ms,
+        'endtime_after_toeoff_ms': endtime_after_toeoff_ms, 'feature_window_ms': feature_window_ms, 'predict_window_ms': predict_window_ms,
+        'sample_rate': sample_rate, 'predict_window_size': predict_window_size, 'feature_window_size': feature_window_size,
+        'predict_window_increment_ms': predict_window_increment_ms, 'feature_window_increment_ms': feature_window_increment_ms,
+        'predict_window_shift_unit': predict_window_shift_unit, 'predict_using_window_number': predict_using_window_number,
+        'predict_window_per_repetition': predict_window_per_repetition}
+
+    return window_parameters
 
