@@ -158,7 +158,7 @@ fake_emg = Data_Processing.generateFakeEmg(gan_models['gen_BA'], new_emg_normali
 emg_NOT_to_substitute = 'all'  # using fake EMG
 # emg_NOT_to_substitute = []  # using original emg
 # generated_emg_data = Data_Processing.substituteFakeImages(fake_emg, old_emg_preprocessed, limit, emg_NOT_to_substitute=emg_NOT_to_substitute)
-generated_emg_data = Data_Processing.substituteFakeImages(fake_emg, new_emg_preprocessed, limit, emg_NOT_to_substitute=emg_NOT_to_substitute)
+generated_emg_data = Data_Processing.substituteFakeImages(fake_emg, new_emg_normalized, emg_NOT_to_substitute=emg_NOT_to_substitute)
 
 
 ## process generated data

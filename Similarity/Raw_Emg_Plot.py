@@ -5,29 +5,49 @@ plot the filtered emg data from each channel at each gait event
 
 ## modules
 from Transition_Prediction.Pre_Processing.Utility_Functions import Data_Reshaping, Feature_Storage
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Pre_Processing import Preprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 
 ## input emg labelled series data
-subject = 'Number3'
+subject = 'Number4'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+up_down_session = [0, 1, 2, 3, 4]
+down_up_session = [0, 1, 2, 5, 6]
 sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1000,
-    end_position=800, notchEMG=False, reordering=True, envelope=False)
+    end_position=800, lower_limit=20, higher_limit=400, envelope_cutoff=10, notchEMG=False, median_filtering=True, reordering=True,
+    envelope=False)
 emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
 ## organize all summed emg data
+emg_1_mean_channels = {}
+emg_2_mean_channels = {}
+emg_1_mean_events = {}  # emg device 1: tibialis
+emg_2_mean_events = {}  # emg device 2: rectus
+# sum the emg data of all channels and samples up for the same gait event
+for gait_event_label, gait_event_emg in emg_preprocessed.items():
+    emg_1_mean_channels[f"{gait_event_label}_data"] = [np.sum(emg_per_repetition[:, 0:65], axis=1) / 65 for emg_per_repetition in
+        gait_event_emg]  # average the emg values of all channels
+    emg_1_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_1_mean_channels[f"{gait_event_label}_data"]) / len\
+            (emg_1_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
+    emg_1_mean_channels[f"{gait_event_label}_data"].insert(0, emg_1_mean_events[f"{gait_event_label}_data"])  # insert the mean event value in front of the dataset
+    emg_2_mean_channels[f"{gait_event_label}_data"] = [np.sum(emg_per_repetition[:, 65:130], axis=1) / 65 for emg_per_repetition in
+        gait_event_emg]  # average the emg values of all channels
+    emg_2_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_2_mean_channels[f"{gait_event_label}_data"]) / len\
+            (emg_2_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
+    emg_2_mean_channels[f"{gait_event_label}_data"].insert(0, emg_2_mean_events[f"{gait_event_label}_data"])
+
+
+## organize all summed absolute emg value
 emg_1_mean_channels = {}
 emg_2_mean_channels = {}
 emg_1_mean_events = {}  # emg device 1: tibialis
@@ -63,6 +83,19 @@ pd.DataFrame(emg_2_value).plot(subplots=True, layout=(4, 4), title="EMG 2")
 emd_data = emg_2_value
 x = list(range(left_number-1000, right_number-1000))
 plt.figure()
+plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_SASA_data"], x, emd_data["emg_SALW_data"])
+plt.legend(['emg_LWLW_data', 'emg_LWSA_data', 'emg_SASA_data', 'emg_SALW_data'])
+plt.title("LWSA")
+plt.figure()
+plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_SDSD_data"], x, emd_data["emg_SDLW_data"])
+plt.legend(['emg_LWLW_data', 'emg_LWSD_data', 'emg_SDSD_data', 'emg_SDLW_data'])
+plt.title("LWSD")
+
+
+##  plot summed series emg data by group
+emd_data = emg_2_value
+x = list(range(left_number-1000, right_number-1000))
+plt.figure()
 plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_LWSS_data"])
 plt.legend(['emg_LWLW_data', 'emg_LWSA_data', 'emg_LWSD_data', 'emg_LWSS_data'])
 plt.title("LW")
@@ -78,6 +111,8 @@ plt.figure()
 plt.plot(x, emd_data["emg_SSLW_data"], x, emd_data["emg_SSSA_data"], x, emd_data["emg_SSSD_data"])
 plt.legend(['emg_SSLW_data', 'emg_SSSA_data', 'emg_SSSD_data'])
 plt.title("SS")
+
+
 
 
 

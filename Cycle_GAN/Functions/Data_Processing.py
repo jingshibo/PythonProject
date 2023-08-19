@@ -4,19 +4,32 @@ from sklearn.metrics import confusion_matrix
 import copy
 
 
-## min-max normalization method
-def normalizeMinMax(array, limit):  # normalize the value to [-1, 1]
+## ormalize the value to [-1, 1]
+def normalizeNegativePositiveOne(array, limit):
     min_val = -limit
     max_val = limit
     normalized_array = 2 * ((array - min_val) / (max_val - min_val)) - 1
     return normalized_array
 
 
+## normalize the value to [0, 1]
+def normalizeZeroToOne(array, limit):
+    min_val = 0
+    max_val = limit
+    normalized_array = (array - min_val) / (max_val - min_val)
+    return normalized_array
+
+
 ## normalize data using min-max way
-def normalizeEmgData(original_data, range_limit=2000):
+def normalizeEmgData(original_data, range_limit=2000, normalize='(-1,1)'):
     normalized_data = {}
     for locomotion_type, locomotion_value in original_data.items():
-        normalized_data[locomotion_type] = [normalizeMinMax(np.clip(array, -range_limit, range_limit), range_limit) for array in locomotion_value]
+        if normalize == '(-1,1)':  # min-max to (-1,1) for those original value with both positive and negative values
+            normalized_data[locomotion_type] = [normalizeNegativePositiveOne(np.clip(array, -range_limit, range_limit), range_limit) for
+                array in locomotion_value]
+        elif normalize == '(0,1)':  # min-max to (0,1) for those original value with only positive values
+            normalized_data[locomotion_type] = [normalizeZeroToOne(np.clip(array, 0, range_limit), range_limit) for array in
+                locomotion_value]
     return normalized_data
 
 
@@ -41,16 +54,14 @@ def generateFakeEmg(gan_model, real_emg_data, start_before_toeoff_ms, endtime_af
 
 
 ## substitute generated emg using real emg
-def substituteFakeImages(fake_emg, real_emg_preprocessed, limit, emg_NOT_to_substitute='all'):
+def substituteFakeImages(fake_emg, real_emg_preprocessed, emg_NOT_to_substitute='all'):
     generated_emg = copy.deepcopy(fake_emg)
     if emg_NOT_to_substitute == 'all':
         return generated_emg
     else:
         for locomotion_type, locomotion_value in generated_emg.items():
             if locomotion_type not in emg_NOT_to_substitute:  # which transition types to be substituted
-                real_values = real_emg_preprocessed[locomotion_type]
-                normalized_arrays_list = [normalizeMinMax(np.clip(array, -limit, limit), limit) for array in real_values]
-                generated_emg[locomotion_type] = normalized_arrays_list
+                generated_emg[locomotion_type] = real_emg_preprocessed[locomotion_type]
                 print(locomotion_type)
         return generated_emg
 

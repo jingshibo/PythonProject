@@ -2,22 +2,27 @@
 import pandas as pd
 import numpy as np
 import datetime
-
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Pre_Processing import Preprocessing
 from dtaidistance import dtw  # this method seems to work worse than Accelerated DTW package
+
 
 ## input emg labelled series data
 subject = 'Shibo'
 version = 1  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+# up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+# down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+up_down_session = [10]
+down_up_session = [10]
 sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
 split_data = Preprocessing.readSplitParameters(subject, version)
 # obtain the envelope of emg data
 combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_data, envelope=True)
+emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
+
 
 
 ## Calcualte the mean value of each gait event
@@ -40,6 +45,7 @@ for gait_event_label, gait_event_emg in combined_emg_labelled.items():
 # plot summed series emg data
 pd.DataFrame(emg_1_mean_events).plot(subplots=True, layout=(4, 4))
 pd.DataFrame(emg_2_mean_events).plot(subplots=True, layout=(4, 4))
+
 
 ## Calculate the DTW distance between emg sequences
 def calcuDtwDistance(input_data):

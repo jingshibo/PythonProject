@@ -43,10 +43,16 @@ def combineNormalizedDataset(sliding_window_dataset, normalize='z-score', limit=
         sliding_window_dataset[group_number] = []  # delete data to release the memory
 
         # normalization
-        def normalizeMinMax(array):  # normalize the value to [-1, 1]
+        def normalizeNegativePositiveOne(array):  # normalize the value to [-1, 1]
             min_val = -limit
             max_val = limit
             normalized_array = 2 * ((array - min_val) / (max_val - min_val)) - 1
+            return normalized_array
+
+        def normalizeZeroToOne(array):  # normalize the value to [0, 1]
+            min_val = 0
+            max_val = limit
+            normalized_array = (array - min_val) / (max_val - min_val)
             return normalized_array
 
         if normalize == 'z-score':  # mean-std method
@@ -54,11 +60,16 @@ def combineNormalizedDataset(sliding_window_dataset, normalize='z-score', limit=
             std_x = np.std(np.concatenate(train_feature_x, axis=-1), axis=-1)[:, :, np.newaxis]
             train_feature_x = (np.concatenate(train_feature_x, axis=-1) - mean_x) / std_x
             test_feature_x = (np.concatenate(test_feature_x, axis=-1) - mean_x) / std_x
-        elif normalize == 'scaling':  # min-max method
+        elif normalize == '(-1,1)':  # min-max to (-1,1) for those original value with both positive and negative values
             train_feature_x = [np.clip(array, -limit, limit) for array in train_feature_x]
             test_feature_x = [np.clip(array, -limit, limit) for array in test_feature_x]
-            train_feature_x = np.concatenate([normalizeMinMax(array) for array in train_feature_x], axis=-1)
-            test_feature_x = np.concatenate([normalizeMinMax(array) for array in test_feature_x], axis=-1)
+            train_feature_x = np.concatenate([normalizeNegativePositiveOne(array) for array in train_feature_x], axis=-1)
+            test_feature_x = np.concatenate([normalizeNegativePositiveOne(array) for array in test_feature_x], axis=-1)
+        elif normalize == '(0,1)':  # min-max to (0,1) for those original value with only positive values
+            train_feature_x = [np.clip(array, 0, limit) for array in train_feature_x]
+            test_feature_x = [np.clip(array, 0, limit) for array in test_feature_x]
+            train_feature_x = np.concatenate([normalizeZeroToOne(array) for array in train_feature_x], axis=-1)
+            test_feature_x = np.concatenate([normalizeZeroToOne(array) for array in test_feature_x], axis=-1)
         elif normalize is None:  # no normalization
             train_feature_x = np.concatenate(train_feature_x, axis=-1)
             test_feature_x = np.concatenate(test_feature_x, axis=-1)

@@ -29,7 +29,7 @@ dtw_sample_emg_2 = sampleDtwData(dtw_data_emg_2)
 
 
 ## reorganize the data into separate groups for ttest comparison within the group
-def reGroupDtwData(dtw_data):
+def regroupDtwData(dtw_data):
     reference_name = ['reference_emg_LWLW_data', 'reference_emg_LWSA_data', 'reference_emg_LWSD_data', 'reference_emg_LWSS_data',
         'reference_emg_SASA_data', 'reference_emg_SALW_data', 'reference_emg_SASS_data', 'reference_emg_SDSD_data',
         'reference_emg_SDLW_data', 'reference_emg_SDSS_data', 'reference_emg_SSLW_data', 'reference_emg_SSSA_data',
@@ -38,8 +38,8 @@ def reGroupDtwData(dtw_data):
     for reference_label in reference_name:
         group_data[f'{reference_label}'] = dtw_data.filter(regex=reference_label)  # each new group is put into a new dict
     return group_data
-group_emg_1 = reGroupDtwData(dtw_sample_emg_1)
-group_emg_2 = reGroupDtwData(dtw_sample_emg_2)
+group_emg_1 = regroupDtwData(dtw_sample_emg_1)
+group_emg_2 = regroupDtwData(dtw_sample_emg_2)
 
 
 ## t test
@@ -66,10 +66,10 @@ data = [dtw_data_emg_1['reference_emg_SDSS_data_emg_SDSS_SDSS'][0:50],
 dtw_data_emg_1['reference_emg_SDSS_data_emg_SDLW_data'][0:50]]
 X = len(dtw_data_emg_1['reference_emg_SDSS_data_emg_SDSD_data'][0:50])
 fig = plt.figure()
-ax = fig.add_axes([0,0,1,1])
-ax.bar(X + 0.00, data[0], color = 'b', width = 0.25)
-ax.bar(X + 0.25, data[1], color = 'g', width = 0.25)
-ax.bar(X + 0.50, data[2], color = 'r', width = 0.25)
+ax = fig.add_axes([0, 0, 1, 1])
+ax.bar(X + 0.00, data[0], color='b', width=0.25)
+ax.bar(X + 0.25, data[1], color='g', width=0.25)
+ax.bar(X + 0.50, data[2], color='r', width=0.25)
 
 
 ##
