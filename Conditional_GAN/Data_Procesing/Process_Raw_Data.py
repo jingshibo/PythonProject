@@ -22,6 +22,7 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
 
     return old_emg_preprocessed
 
+
 ## normalize filtered data and reshape them to be images
 def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit):
     old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit)
@@ -33,21 +34,30 @@ def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit):
 
     return old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped
 
+
 ## extract the relevent modes for data generation and separate them by timepoint_interval
-def extractSeparateEmgData(modes, old_emg_reshaped, new_emg_reshaped, time_interval, length, output_list=False):
-    real_emg = {'old': {}, 'new': {}}
-    train_gan_data = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
-    data_keys = list(train_gan_data.keys())
+def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval, length, output_list=False):
+    extracted_emg = {}
+    train_gan_data = {}
+    data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is important, corresponding to the locomotion modes
 
-    for idx, mode in enumerate(modes):
-        real_emg['old'][mode] = np.vstack(old_emg_reshaped[mode])
-        real_emg['new'][mode] = np.vstack(new_emg_reshaped[mode])
-        train_gan_data[data_keys[idx]] = Process_Fake_Data.separateByTimeInterval(real_emg['old'][mode], timepoint_interval=time_interval,
-            length=length, output_list=output_list)
+    for transition_type, modes in modes_generation.items():
+        # Initialize transition_type key in real_emg and train_gan_data dictionaries
+        extracted_emg[transition_type] = {'old': {}, 'new': {}}
+        train_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
 
-    return real_emg, train_gan_data
+        for idx, mode in enumerate(modes):
+            # Assign values using the new structure
+            extracted_emg[transition_type]['old'][mode] = np.vstack(old_emg_reshaped[mode])
+            extracted_emg[transition_type]['new'][mode] = np.vstack(new_emg_reshaped[mode])
 
-# get window parameters for gan and classify model training
+            train_gan_data[transition_type][data_keys[idx]] = Process_Fake_Data.separateByTimeInterval(
+                extracted_emg[transition_type]['old'][mode], timepoint_interval=time_interval, length=length, output_list=output_list)
+
+    return extracted_emg, train_gan_data
+
+
+## get window parameters for gan and classify model training
 def returnWindowParameters():
     down_sampling = True
     start_before_toeoff_ms = 450

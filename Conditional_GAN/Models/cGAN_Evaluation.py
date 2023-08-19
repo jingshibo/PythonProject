@@ -7,13 +7,11 @@
 
 ##
 import copy
-
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Cycle_GAN.Functions import Classify_Testing
-from Conditional_GAN.Data_Procesing import cGAN_Processing
+from Conditional_GAN.Data_Procesing import Process_Fake_Data
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
-import numpy as np
 
 
 ##
@@ -41,20 +39,20 @@ class cGAN_Evaluation:
         synthetic_data = copy.deepcopy(real_emg_normalized)
         data_for_generation = {'gen_data_1': None, 'gen_data_2': None, 'blending_factors': None}
 
-        for item, modes in modes_generation.items():
+        for transition_type, modes in modes_generation.items():
             # construct data_for_generation dict
-            data_for_generation['gen_data_1'] = cGAN_Processing.separateByTimeInterval(extracted_emg[data_source][modes[0]],
+            data_for_generation['gen_data_1'] = Process_Fake_Data.separateByTimeInterval(extracted_emg[transition_type][data_source][modes[0]],
                 timepoint_interval=1, length=length)
-            data_for_generation['gen_data_2'] = cGAN_Processing.separateByTimeInterval(extracted_emg[data_source][modes[1]],
+            data_for_generation['gen_data_2'] = Process_Fake_Data.separateByTimeInterval(extracted_emg[transition_type][data_source][modes[1]],
                 timepoint_interval=1, length=length)
-            data_for_generation['blending_factors'] = self.gen_results[item]['model_results']
+            data_for_generation['blending_factors'] = self.gen_results[transition_type]['model_results']
             # generate fake data
-            fake_data = cGAN_Processing.generateFakeData(data_for_generation, self.gen_results[item]['training_parameters']['interval'],
-                repetition=repetition, random_pairing=random_pairing)
-            reorganized_fake_data = cGAN_Processing.reorganizeFakeData(fake_data)
+            fake_data = Process_Fake_Data.generateFakeData(data_for_generation,
+                self.gen_results[transition_type]['training_parameters']['interval'], repetition=repetition, random_pairing=random_pairing)
+            reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
             # create synthetic training data
             fake_emg_data = {modes[2]: reorganized_fake_data}
-            synthetic_data = cGAN_Processing.replaceUsingFakeEmg(fake_emg_data, synthetic_data)
+            synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_data, synthetic_data)
 
         return synthetic_data
 
@@ -72,8 +70,8 @@ class cGAN_Evaluation:
     # divide classifier test set
     def classifierTestSet(self, modes_generation, real_emg_normalized, train_dataset, test_ratio=0.5):
         test_dataset = copy.deepcopy(train_dataset)
-        for item, modes in modes_generation.items():
-            test_dataset = cGAN_Processing.replaceUsingRealEmg(modes[2], real_emg_normalized, test_dataset, test_ratio)
+        for transition_type, modes in modes_generation.items():
+            test_dataset = Process_Fake_Data.replaceUsingRealEmg(modes[2], real_emg_normalized, test_dataset, test_ratio)
         sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(test_dataset,
             self.feature_window_size, increment=self.feature_window_increment_ms * self.sample_rate)
         normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)

@@ -28,7 +28,7 @@ class ModelTesting():
         with torch.no_grad():  # close autograd
             for time_point in self.keys:
                 number = self.extract_and_normalize(time_point)
-                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).to(self.device)
+                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).unsqueeze(0).to(self.device)
                 if self.noise_dim > 0:
                     # Get noise corresponding to the current batch_size
                     fake_noise = torch.randn(1, self.noise_dim, device=self.device)

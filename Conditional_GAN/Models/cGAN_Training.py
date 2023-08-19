@@ -38,7 +38,7 @@ class ModelTraining():
         self.test_loader = None
         self.writer = None
 
-    def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, select_channels='emg_all'):
+    def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, transition_type, select_channels='emg_all'):
         # input data
         dataset = EmgDataSet(train_data, self.batch_size, self.sampling_repetition)
         self.train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
@@ -56,7 +56,7 @@ class ModelTraining():
 
         # training parameters
         lr = 0.001  # initial learning rate
-        lr_decay_rate = 0.95
+        lr_decay_rate = 0.90
         weight_decay = 0.0000
         beta = (0.7, 0.999)
         decay_steps = self.decay_epochs * len(self.train_loader)
@@ -81,10 +81,10 @@ class ModelTraining():
             self.trainOneEpoch(epoch_number)
             # set the checkpoints to save models
             if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 50:
-                Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models)
+                Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models, transition_type)
                 # estimate blending factors
                 blending_factors = self.estimateBlendingFactors(dataset, train_data)
-                Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors)
+                Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors, transition_type)
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
 
         # estimate blending factors
@@ -132,7 +132,7 @@ class ModelTraining():
                 fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
                     1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
 
-            # Update th  e discriminator
+            # Update the discriminator
             self.disc_opt.zero_grad()  # Zero out the discriminator gradients
             disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)
             disc_loss.backward()  # Update gradients
@@ -253,3 +253,37 @@ class EmgDataSet(Dataset):
         disc_sample = tensor_3[sample_idx]
 
         return gen_sample_1, gen_sample_2, disc_sample
+
+
+## In order to train multiple transition types, we wrap up a single type of training process into a function
+def trainCGan(train_gan_data, transition_type, training_parameters, storage_parameters):
+    # Extract values from the input dictionaries
+    num_epochs = training_parameters['num_epochs']
+    batch_size = training_parameters['batch_size']
+    sampling_repetition = training_parameters['sampling_repetition']
+    decay_epochs = training_parameters['decay_epochs']
+    noise_dim = training_parameters['noise_dim']
+    blending_factor_dim = training_parameters['blending_factor_dim']
+
+    checkpoint_model_path = storage_parameters['checkpoint_model_path']
+    checkpoint_result_path = storage_parameters['checkpoint_result_path']
+    subject = storage_parameters['subject']
+    version = storage_parameters['version']
+    model_type = storage_parameters['model_type']
+    model_name = storage_parameters['model_name']
+    result_set = storage_parameters['result_set']
+
+    # train gan model
+    now = datetime.datetime.now()
+    train_model = ModelTraining(num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim, blending_factor_dim)
+    gan_models, blending_factors = train_model.trainModel(train_gan_data, checkpoint_model_path, checkpoint_result_path, transition_type)
+    print(datetime.datetime.now() - now)
+
+    # save trained gan models and results
+    Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, transition_type=transition_type, project='cGAN_Model')
+    # save model results
+    Model_Storage.saveCGanResults(subject, blending_factors, version, result_set, training_parameters, model_type,
+        transition_type=transition_type, project='cGAN_Model')
+
+    return gan_models, blending_factors
+
