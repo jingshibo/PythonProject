@@ -93,7 +93,7 @@ class Generator(nn.Module):
         x = self.expand2(x)
         x = self.expand3(x)
         x = self.downfeature(x)
-        x = self.sig(x)
+        # x = self.sig(x)
         return x
 
 

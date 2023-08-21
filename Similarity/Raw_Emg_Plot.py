@@ -24,7 +24,7 @@ sessions = [up_down_session, down_up_session]
 split_parameters = Preprocessing.readSplitParameters(subject, version)
 combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1000,
     end_position=800, lower_limit=20, higher_limit=400, envelope_cutoff=10, notchEMG=False, median_filtering=True, reordering=True,
-    envelope=False)
+    envelope=True)
 emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
@@ -99,51 +99,72 @@ plt.figure()
 plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_LWSS_data"])
 plt.legend(['emg_LWLW_data', 'emg_LWSA_data', 'emg_LWSD_data', 'emg_LWSS_data'])
 plt.title("LW")
-plt.figure()
-plt.plot(x, emd_data["emg_SASA_data"], x, emd_data["emg_SALW_data"], x, emd_data["emg_SASS_data"])
-plt.legend(['emg_SASA_data', 'emg_SALW_data', 'emg_SASS_data'])
-plt.title("SA")
-plt.figure()
-plt.plot(x, emd_data["emg_SDSD_data"], x, emd_data["emg_SDLW_data"], x, emd_data["emg_SDSS_data"])
-plt.legend(['emg_SDSD_data', 'emg_SDLW_data', 'emg_SDSS_data'])
-plt.title("SD")
-plt.figure()
-plt.plot(x, emd_data["emg_SSLW_data"], x, emd_data["emg_SSSA_data"], x, emd_data["emg_SSSD_data"])
-plt.legend(['emg_SSLW_data', 'emg_SSSA_data', 'emg_SSSD_data'])
-plt.title("SS")
+# plt.figure()
+# plt.plot(x, emd_data["emg_SASA_data"], x, emd_data["emg_SALW_data"], x, emd_data["emg_SASS_data"])
+# plt.legend(['emg_SASA_data', 'emg_SALW_data', 'emg_SASS_data'])
+# plt.title("SA")
+# plt.figure()
+# plt.plot(x, emd_data["emg_SDSD_data"], x, emd_data["emg_SDLW_data"], x, emd_data["emg_SDSS_data"])
+# plt.legend(['emg_SDSD_data', 'emg_SDLW_data', 'emg_SDSS_data'])
+# plt.title("SD")
+# plt.figure()
+# plt.plot(x, emd_data["emg_SSLW_data"], x, emd_data["emg_SSSA_data"], x, emd_data["emg_SSSD_data"])
+# plt.legend(['emg_SSLW_data', 'emg_SSSA_data', 'emg_SSSD_data'])
+# plt.title("SS")
 
 
 
 
 
 ## organize channel summed emg data
-emd_data = emg_1_mean_channels
+emd_data = emg_2_mean_channels
 start_index = 0  # note: the first image is the mean value for the entire dataset of the gait event (emg_1_mean_events)
-end_index = 49
-horizontal = 7
-vertical = 7
+end_index = 30
+horizontal = 6
+vertical = 5
 
-## transit from LW
 (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
 (pd.DataFrame(emd_data["emg_LWSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSA")
-(pd.DataFrame(emd_data["emg_LWSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSD")
-(pd.DataFrame(emd_data["emg_LWSS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSS")
-## transit from SA
 (pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
-(pd.DataFrame(emd_data["emg_SALW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SALW")
-(pd.DataFrame(emd_data["emg_SASS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASS")
-## transit from SD
-(pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
-(pd.DataFrame(emd_data["emg_SDLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDLW")
-(pd.DataFrame(emd_data["emg_SDSS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSS")
-## transit from SS
-(pd.DataFrame(emd_data["emg_SSLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSLW")
-(pd.DataFrame(emd_data["emg_SSSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSSA")
-(pd.DataFrame(emd_data["emg_SSSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSSD")
-## no transition
 (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
-(pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
+(pd.DataFrame(emd_data["emg_LWSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSD")
 (pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
+
+
+# ## transit from LW
+# (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
+# (pd.DataFrame(emd_data["emg_LWSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSA")
+# (pd.DataFrame(emd_data["emg_LWSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSD")
+# (pd.DataFrame(emd_data["emg_LWSS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSS")
+# ## transit from SA
+# (pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
+# (pd.DataFrame(emd_data["emg_SALW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SALW")
+# (pd.DataFrame(emd_data["emg_SASS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASS")
+# ## transit from SD
+# (pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
+# (pd.DataFrame(emd_data["emg_SDLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDLW")
+# (pd.DataFrame(emd_data["emg_SDSS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSS")
+# ## transit from SS
+# (pd.DataFrame(emd_data["emg_SSLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSLW")
+# (pd.DataFrame(emd_data["emg_SSSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSSA")
+# (pd.DataFrame(emd_data["emg_SSSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSSD")
+# ## no transition
+# (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
+# (pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
+# (pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
+
+
+
+##
+
+
+
+
+
+
+
+
+
 
 
 ## input emg feature data

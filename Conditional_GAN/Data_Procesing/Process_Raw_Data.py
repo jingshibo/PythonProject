@@ -11,13 +11,13 @@ import numpy as np
 
 
 ## load raw data and filter them
-def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400):
+def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400, envelope_cutoff=10, envelope=False):
     split_parameters = Preprocessing.readSplitParameters(data_source['subject'], data_source['version'])
     emg_filtered_data = Preprocessing.labelFilteredData(data_source['subject'], data_source['modes'],
         data_source['sessions'], data_source['version'], split_parameters,
         start_position=-int(window_parameters['start_before_toeoff_ms'] * (2 / window_parameters['sample_rate'])),
         end_position=int(window_parameters['endtime_after_toeoff_ms'] * (2 / window_parameters['sample_rate'])), lower_limit=lower_limit,
-        higher_limit=higher_limit, notchEMG=False, reordering=True, median_filtering=True)
+        higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, envelope=envelope, notchEMG=False, median_filtering=True, reordering=True)
     old_emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=window_parameters['down_sampling'])
 
     return old_emg_preprocessed
@@ -60,7 +60,7 @@ def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped,
 ## get window parameters for gan and classify model training
 def returnWindowParameters():
     down_sampling = True
-    start_before_toeoff_ms = 450
+    start_before_toeoff_ms = 500
     endtime_after_toeoff_ms = 400
     feature_window_ms = 350
     predict_window_ms = start_before_toeoff_ms

@@ -79,7 +79,7 @@ class ModelTraining():
             # train the model
             self.trainOneEpoch(epoch_number)
             # set the checkpoints to save models
-            if (epoch_number + 1) % 50 == 0 and (epoch_number + 1) >= 50:
+            if (epoch_number + 1) % 10 == 0 and (epoch_number + 1) >= 10:
                 Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models, transition_type)
                 # estimate blending factors
                 blending_factors = self.estimateBlendingFactors(dataset, train_data)
@@ -150,7 +150,7 @@ class ModelTraining():
             # Keep track of the average generator loss
             gen_mean_loss += gen_loss.item() / self.display_step
 
-            if self.current_step % self.display_step == 0 and self.current_step > 0:
+            if self.current_step % self.display_step == 0:
                 print(f"Epoch {epoch_number}: Step {self.current_step}: Generator loss: {gen_mean_loss}, Discriminator loss: "
                       f"{disc_mean_loss}, learning rate: {self.lr_gen_opt.get_last_lr()}")
                 gen_mean_loss = 0

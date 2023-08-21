@@ -2,12 +2,16 @@
 from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, cGAN_Evaluation, Model_Storage
 from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data
 import datetime
-import numpy as np
 
 
 '''train generative model'''
 ##  define windows
 window_parameters = Process_Raw_Data.returnWindowParameters()
+lower_limit = 20
+higher_limit = 400
+envelope_cutoff = 10
+envelope = True  # the output will always be rectified if set True
+
 
 ## read and filter old data
 subject = 'Number4'
@@ -19,9 +23,10 @@ down_up_session = [0, 1, 2, 5, 6]
 # down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
-old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400)
-for key in old_emg_data: # rectification
-    old_emg_data[key] = [np.abs(array) for array in old_emg_data[key]]
+old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
+    envelope_cutoff=envelope_cutoff, envelope=envelope)
+old_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
+    envelope_cutoff=400, envelope=envelope)
 
 
 ## read and filter new data
@@ -34,27 +39,40 @@ down_up_session = [4, 5, 6, 8, 9]
 # down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
-new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400)
+new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
+    envelope_cutoff=envelope_cutoff, envelope=envelope)
+new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
+    envelope_cutoff=400, envelope=envelope)
+
+
+## test
+import numpy as np
+keys = {'emg_LWLW': 200, 'emg_LWSA': 400, 'emg_SASA': 600, 'emg_LWSD': 150, 'emg_SDSD': 100}
+for key, value in keys.items():
+    for i, array in enumerate(old_emg_data[key]):
+        noise = 10 * np.random.randn(*array.shape)
+        old_emg_data[key][i] = np.full_like(array, value) + noise
 
 
 ## normalize and extract emg data for gan model training
-range_limit = 1500
+range_limit = 2000
 old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data,
     new_emg_data, range_limit, normalize='(0,1)')
-modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'],
-    'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}  # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
-length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
+# The order in each list is important, corresponding to gen_data_1 and gen_data_2.
+modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
+# modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
 time_interval = 50
+length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
     length, output_list=True)
 
 
 ## hyperparameters
-num_epochs = 30  # the number of times you iterate through the entire dataset when training
+num_epochs = 10
 decay_epochs = 10
-batch_size = 1024  # the number of images per forward/backward pass
-sampling_repetition = 4  # the number of batches to repeat the combination sampling for the same time points
-noise_dim = 5
+batch_size = 1600  # this is also the number of samples to extract for each time_interval
+sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
+noise_dim = 10
 blending_factor_dim = 2
 
 
@@ -84,29 +102,36 @@ print(datetime.datetime.now() - now)
 
 
 
-
 '''
     train classifier (on subject 4), for testing gan generation performance
 '''
-## load bledning factors for each transition type to generate
+## laod training data
+# load blending factors for each transition type to generate
 gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=None)
+# normalize and extract emg data for classification model training
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
+    new_emg_data_classify, range_limit, normalize='(0,1)')
+extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
+    length, output_list=True)
+
 ## generate fake data
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)
 # train classifier
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(synthetic_data, training_percent=0.8)
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
+acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
 # test classifier
 shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, old_emg_normalized, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
 ## save results
-model_type = 'classify_old'
-Model_Storage.saveClassifyAccuracy(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
-acc_old, cm_old = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models_old[0], subject, version, model_type, project='cGAN_Model')
-model_old = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+# model_type = 'classify_old'
+# Model_Storage.saveClassifyAccuracy(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
+# acc_old, cm_old = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
+# Model_Storage.saveClassifyModel(models_old[0], subject, version, model_type, project='cGAN_Model')
+# model_old = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -119,17 +144,18 @@ synthetic_data = new_evaluation.generateFakeData(extracted_emg, 'new', modes_gen
 # train classifier
 train_set, shuffled_train_set = new_evaluation.classifierTrainSet(synthetic_data, training_percent=0.8)
 models_new, model_results_new = new_evaluation.trainClassifier(shuffled_train_set)
+acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
 # test classifier
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_new[0], shuffled_test_set)
 accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
 
 ## save results
-model_type = 'classify_new'
-Model_Storage.saveClassifyAccuracy(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
-acc_new, cm_new = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models_new[0], subject, version, model_type, project='cGAN_Model')
-model_new = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+# model_type = 'classify_new'
+# Model_Storage.saveClassifyAccuracy(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
+# acc_new, cm_new = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
+# Model_Storage.saveClassifyModel(models_new[0], subject, version, model_type, project='cGAN_Model')
+# model_new = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -142,17 +168,18 @@ synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(old_emg_for_replacement, 
 # train classifier
 train_set, shuffled_train_set = new_evaluation.classifierTrainSet(synthetic_data, training_percent=0.8)
 models_compare, model_results_compare = new_evaluation.trainClassifier(shuffled_train_set)
+acc_compare, cm_compare = new_evaluation.evaluateClassifyResults(model_results_compare)
 # test classifier
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_compare[0], shuffled_test_set)
 accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(test_results)
 
 ## save results
-model_type = 'classify_compare'
-Model_Storage.saveClassifyAccuracy(subject, accuracy_compare, cm_recall_compare, version, result_set, model_type, project='cGAN_Model')
-acc_compare, cm_compare = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models_compare[0], subject, version, model_type, project='cGAN_Model')
-model_compare = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+# model_type = 'classify_compare'
+# Model_Storage.saveClassifyAccuracy(subject, accuracy_compare, cm_recall_compare, version, result_set, model_type, project='cGAN_Model')
+# acc_compare, cm_compare = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
+# Model_Storage.saveClassifyModel(models_compare[0], subject, version, model_type, project='cGAN_Model')
+# model_compare = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 
