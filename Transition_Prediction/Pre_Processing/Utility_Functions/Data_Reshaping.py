@@ -4,10 +4,12 @@ import numpy as np
 ## insert a electrode at 0 position
 def insertElectrode(emg_data):
     # insert 0 channel
-    emg_data.insert(0, "blank_clomun", "")
+    emg_data.insert(0, "blank_column", "")
     emg_data.columns = list(range(0, 65))  # column name
-    emg_data.loc[:, 0] = emg_data.loc[:, [1, 24, 25]].mean(axis=1)
+    # emg_data.loc[:, 0] = emg_data.loc[:, [1, 24, 25]].mean(axis=1)
+    emg_data[0] = emg_data[[1, 24, 25]].mean(axis=1)
     return emg_data
+
 
 ## adjust electrode order to match the physical EMG grid
 def reorderElectrodes(emg_data):

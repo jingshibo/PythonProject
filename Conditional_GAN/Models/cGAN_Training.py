@@ -1,8 +1,7 @@
 import torch
-from torch import nn
 import torch.nn.functional as F
 from tqdm.auto import tqdm
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import datetime
 from Conditional_GAN.Models import cGAN_Model, Model_Storage, Data_Set
 
@@ -50,14 +49,15 @@ class ModelTraining():
         # training model
         generator_input_dim = self.noise_dim + self.n_classes
         discriminator_input_channel = self.img_channel + self.n_classes
-        self.gen = cGAN_Model.Generator(generator_input_dim, self.img_height, self.img_width, self.blending_factor_dim).to(self.device)
-        self.disc = cGAN_Model.Discriminator(discriminator_input_channel).to(self.device)
+        self.gen = cGAN_Model.Generator_UNet(generator_input_dim, self.img_height, self.img_width, self.blending_factor_dim).to(self.device)
+        self.disc = cGAN_Model.Discriminator_Shrinking(discriminator_input_channel).to(self.device)
 
         # training parameters
-        lr = 0.001  # initial learning rate
+        lr = 0.0005  # initial learning rate
         lr_decay_rate = 0.90
         weight_decay = 0.0000
         beta = (0.7, 0.999)
+        c_lambda = 5
         decay_steps = self.decay_epochs * len(self.train_loader)
 
         # optimizer
@@ -66,8 +66,9 @@ class ModelTraining():
 
         # loss function
         # criterion = nn.BCEWithLogitsLoss()
-        criterion = nn.MSELoss()
-        self.loss_fn = cGAN_Model.LossFunction(criterion)
+        # criterion = nn.MSELoss()
+        # self.loss_fn = cGAN_Model.LossFunction(criterion)
+        self.loss_fn = cGAN_Model.WGANloss(c_lambda)
 
         # learning rate scheduler
         self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps, gamma=lr_decay_rate)
@@ -131,6 +132,7 @@ class ModelTraining():
                 fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
                     1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
 
+            # fake = torch.sigmoid(fake)
             # Update the discriminator
             self.disc_opt.zero_grad()  # Zero out the discriminator gradients
             disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)

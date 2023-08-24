@@ -25,8 +25,8 @@ sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
     envelope_cutoff=envelope_cutoff, envelope=envelope)
-old_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-    envelope_cutoff=400, envelope=envelope)
+# old_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
+#     envelope_cutoff=400, envelope=envelope)
 
 
 ## read and filter new data
@@ -41,8 +41,8 @@ sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
     envelope_cutoff=envelope_cutoff, envelope=envelope)
-new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-    envelope_cutoff=400, envelope=envelope)
+# new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
+#     envelope_cutoff=400, envelope=envelope)
 
 
 ## test
@@ -50,7 +50,7 @@ import numpy as np
 keys = {'emg_LWLW': 200, 'emg_LWSA': 400, 'emg_SASA': 600, 'emg_LWSD': 150, 'emg_SDSD': 100}
 for key, value in keys.items():
     for i, array in enumerate(old_emg_data[key]):
-        noise = 10 * np.random.randn(*array.shape)
+        noise = 5 * np.random.randn(*array.shape)
         old_emg_data[key][i] = np.full_like(array, value) + noise
 
 
@@ -59,26 +59,27 @@ range_limit = 2000
 old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data,
     new_emg_data, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
-modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
+# modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 # modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
-time_interval = 50
+modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
+time_interval = 25
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
     length, output_list=True)
 
 
 ## hyperparameters
-num_epochs = 10
+num_epochs = 50
 decay_epochs = 10
 batch_size = 1600  # this is also the number of samples to extract for each time_interval
 sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
-noise_dim = 10
+noise_dim = 1
 blending_factor_dim = 2
 
 
 ## GAN data storage information
 subject = 'Test'
-version = 0  # the data from which experiment version to process
+version = 2  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -100,6 +101,13 @@ for transition_type in modes_generation.keys():
 print(datetime.datetime.now() - now)
 
 
+## test generated data results
+epoch_number = None
+gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
+old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)
+
+
 
 
 '''
@@ -107,12 +115,14 @@ print(datetime.datetime.now() - now)
 '''
 ## laod training data
 # load blending factors for each transition type to generate
-gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=None)
+epoch_number = None
+gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
 # normalize and extract emg data for classification model training
 old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
     new_emg_data_classify, range_limit, normalize='(0,1)')
-extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
+extracted_emg, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
     length, output_list=True)
+
 
 ## generate fake data
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
@@ -126,12 +136,14 @@ shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, old_emg_n
 test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
+
 ## save results
 # model_type = 'classify_old'
 # Model_Storage.saveClassifyAccuracy(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
 # acc_old, cm_old = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
 # Model_Storage.saveClassifyModel(models_old[0], subject, version, model_type, project='cGAN_Model')
 # model_old = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+
 
 
 
@@ -150,12 +162,14 @@ shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_n
 test_results = new_evaluation.testClassifier(models_new[0], shuffled_test_set)
 accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
 
+
 ## save results
 # model_type = 'classify_new'
 # Model_Storage.saveClassifyAccuracy(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
 # acc_new, cm_new = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
 # Model_Storage.saveClassifyModel(models_new[0], subject, version, model_type, project='cGAN_Model')
 # model_new = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+
 
 
 
@@ -173,6 +187,7 @@ acc_compare, cm_compare = new_evaluation.evaluateClassifyResults(model_results_c
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_compare[0], shuffled_test_set)
 accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(test_results)
+
 
 ## save results
 # model_type = 'classify_compare'
