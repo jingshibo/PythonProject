@@ -8,7 +8,7 @@ from Conditional_GAN.Models import cGAN_Model, Model_Storage, Data_Set
 
 ## training process
 class ModelTraining():
-    def __init__(self, num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim, blending_factor_dim):
+    def __init__(self, num_epochs, batch_size, sampling_repetition, gen_update_interval, disc_update_interval, decay_epochs, noise_dim, blending_factor_dim):
         #  initialize member variables
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.result_dir = f'/Conditional_GAN/Others\\runs_{timestamp}'
@@ -16,10 +16,14 @@ class ModelTraining():
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.sampling_repetition = sampling_repetition
+        self.gen_update_interval = gen_update_interval
+        self.disc_update_interval = disc_update_interval
         self.noise_dim = noise_dim
         self.blending_factor_dim = blending_factor_dim
         self.decay_epochs = decay_epochs
         self.current_step = 0
+        self.gen_losses = []
+        self.disc_losses = []
         self.display_step = None
         self.img_channel = None
         self.img_height = None
@@ -38,7 +42,7 @@ class ModelTraining():
 
     def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, transition_type, select_channels='emg_all'):
         # input data
-        dataset = Data_Set.FixedMixEmgDataSet(train_data, self.batch_size, self.sampling_repetition)
+        dataset = Data_Set.RandomMixEmgDataSet(train_data, self.batch_size, self.sampling_repetition)
         self.train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
         self.img_channel = train_data['gen_data_1']['timepoint_0'][0].shape[1]
         self.img_height = train_data['gen_data_1']['timepoint_0'][0].shape[2]
@@ -50,19 +54,29 @@ class ModelTraining():
         generator_input_dim = self.noise_dim + self.n_classes
         discriminator_input_channel = self.img_channel + self.n_classes
         self.gen = cGAN_Model.Generator_UNet(generator_input_dim, self.img_height, self.img_width, self.blending_factor_dim).to(self.device)
-        self.disc = cGAN_Model.Discriminator_Shrinking(discriminator_input_channel).to(self.device)
+        self.disc = cGAN_Model.Discriminator_Same(discriminator_input_channel).to(self.device)
 
         # training parameters
-        lr = 0.0005  # initial learning rate
-        lr_decay_rate = 0.90
+        gen_lr = 0.0001  # initial learning rate
+        disc_lr = 0.0002
+        gen_lr_decay_rate = 0.8
+        disc_lr_decay_rate = 0.8
         weight_decay = 0.0000
         beta = (0.7, 0.999)
-        c_lambda = 5
-        decay_steps = self.decay_epochs * len(self.train_loader)
+        c_lambda = 10
+        # decay_steps = self.decay_epochs * len(self.train_loader)  # take the repetition of gen into account
 
         # optimizer
-        self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=lr, weight_decay=weight_decay, betas=beta)
-        self.disc_opt = torch.optim.Adam(self.disc.parameters(), lr=lr, weight_decay=weight_decay, betas=beta)
+        self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=weight_decay, betas=beta)
+        self.disc_opt = torch.optim.Adam(self.disc.parameters(), lr=disc_lr, weight_decay=weight_decay, betas=beta)
+
+        # learning rate scheduler
+        # self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps // self.gen_update_interval,
+        #     gamma=gen_lr_decay_rate)
+        # self.lr_disc_opt = torch.optim.lr_scheduler.StepLR(self.disc_opt, step_size=decay_steps // self.disc_update_interval,
+        #     gamma=disc_lr_decay_rate)
+        self.lr_gen_opt = torch.optim.lr_scheduler.MultiStepLR(optimizer=self.gen_opt, milestones=self.decay_epochs, gamma=gen_lr_decay_rate)
+        self.lr_disc_opt = torch.optim.lr_scheduler.MultiStepLR(optimizer=self.disc_opt, milestones=self.decay_epochs, gamma=disc_lr_decay_rate)
 
         # loss function
         # criterion = nn.BCEWithLogitsLoss()
@@ -70,15 +84,14 @@ class ModelTraining():
         # self.loss_fn = cGAN_Model.LossFunction(criterion)
         self.loss_fn = cGAN_Model.WGANloss(c_lambda)
 
-        # learning rate scheduler
-        self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps, gamma=lr_decay_rate)
-        self.lr_disc_opt = torch.optim.lr_scheduler.StepLR(self.disc_opt, step_size=decay_steps, gamma=lr_decay_rate)
-
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
         for epoch_number in range(self.num_epochs):  # loop over each epoch
             # train the model
             self.trainOneEpoch(epoch_number)
+            self.lr_disc_opt.step()  # update the learning rate
+            self.lr_gen_opt.step()  # update the learning rate
+
             # set the checkpoints to save models
             if (epoch_number + 1) % 10 == 0 and (epoch_number + 1) >= 10:
                 Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models, transition_type)
@@ -95,11 +108,12 @@ class ModelTraining():
     def trainOneEpoch(self, epoch_number):
         self.gen.train(True)
         self.disc.train(True)
-        gen_mean_loss = 0
-        disc_mean_loss = 0
+
+        batch_count = 0  # Counter to keep track of the number of batches
 
         for gen_data, disc_data in tqdm(self.train_loader):
             # image_width = image.shape [3]
+            batch_count += 1  # Increment the batch count
             cur_batch_size = len(disc_data)
             condition = gen_data[0].to(self.device)
             gen_data_1 = gen_data[1].to(self.device)
@@ -113,52 +127,55 @@ class ModelTraining():
             # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
             image_one_hot_labels = image_one_hot_labels.repeat(1, 1, self.img_height, self.img_width)
 
-            # estimate blending factors
-            if self.noise_dim > 0:
-                # Get noise corresponding to the current batch_size
-                fake_noise = torch.randn(cur_batch_size, self.noise_dim, device=self.device)
-                # Combine the noise vectors and the one-hot labels for the generator
-                noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
-            else:
-                noise_and_labels = one_hot_labels.float()
-            blending_factors = self.gen(noise_and_labels)  # Estimate blending factors
+            # # Update the discriminator every m batches
+            if batch_count % self.disc_update_interval == 0:
+                self.disc_opt.zero_grad()  # Zero out the discriminator gradients
+                fake = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
+                disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)
+                disc_loss.backward()  # Update gradients
+                self.disc_opt.step()  # Update optimizer
+                self.disc_losses += [disc_loss.item()]
 
-            # Generate fake images, according to the size of blending factors
-            if self.blending_factor_dim == 1:
-                fake = blending_factors * gen_data_1 + (1 - blending_factors) * gen_data_2  # Generate the conditioned fake images
-            elif self.blending_factor_dim == 2:
-                fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(1) * gen_data_2
-            elif self.blending_factor_dim == 3:
-                fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
-                    1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
-
-            # fake = torch.sigmoid(fake)
-            # Update the discriminator
-            self.disc_opt.zero_grad()  # Zero out the discriminator gradients
-            disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)
-            disc_loss.backward()  # Update gradients
-            self.disc_opt.step()  # Update optimizer
-            self.lr_disc_opt.step()  # update the learning rate
-
-            # Update the generator
-            self.gen_opt.zero_grad()
-            gen_loss = self.loss_fn.get_gen_loss(fake, image_one_hot_labels, self.disc)
-            gen_loss.backward()
-            self.gen_opt.step()
-            self.lr_gen_opt.step()  # update the learning rate
-
-            # Keep track of the average discriminator loss
-            disc_mean_loss += disc_loss.item() / self.display_step
-            # Keep track of the average generator loss
-            gen_mean_loss += gen_loss.item() / self.display_step
+            # Update the generator every n batches
+            if batch_count % self.gen_update_interval == 0:
+                self.gen_opt.zero_grad()
+                fake = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
+                gen_loss = self.loss_fn.get_gen_loss(fake, image_one_hot_labels, self.disc)
+                gen_loss.backward()
+                self.gen_opt.step()
+                self.gen_losses += [gen_loss.item()]
 
             if self.current_step % self.display_step == 0:
+                disc_mean_loss = sum(self.disc_losses[-(self.display_step // self.disc_update_interval):]) / (
+                        self.display_step // self.disc_update_interval)
+                gen_mean_loss = sum(self.gen_losses[-(self.display_step // self.gen_update_interval):]) / (
+                        self.display_step // self.gen_update_interval)
                 print(f"Epoch {epoch_number}: Step {self.current_step}: Generator loss: {gen_mean_loss}, Discriminator loss: "
-                      f"{disc_mean_loss}, learning rate: {self.lr_gen_opt.get_last_lr()}")
-                gen_mean_loss = 0
-                disc_mean_loss = 0
-
+                      f"{disc_mean_loss}, gen_lr: {self.lr_gen_opt.get_last_lr()}, disc_lr: {self.lr_disc_opt.get_last_lr()}")
+                # print(f"Epoch {epoch_number}: Step {self.current_step}: Generator loss: {gen_mean_loss}, Discriminator loss: "
+                #       f"{disc_mean_loss}, learning_rate: 0.0002")
             self.current_step += 1
+
+    def generateFakeData(self, cur_batch_size, one_hot_labels, gen_data_1, gen_data_2):
+        # estimate blending factors
+        if self.noise_dim > 0:
+            # Get noise corresponding to the current batch_size
+            fake_noise = torch.randn(cur_batch_size, self.noise_dim, device=self.device)
+            # Combine the noise vectors and the one-hot labels for the generator
+            noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
+        else:
+            noise_and_labels = one_hot_labels.float()
+        blending_factors = self.gen(noise_and_labels)  # Estimate blending factors
+
+        # Generate fake images, according to the size of blending factors
+        if self.blending_factor_dim == 1:
+            fake = blending_factors * gen_data_1 + (1 - blending_factors) * gen_data_2  # Generate the conditioned fake images
+        elif self.blending_factor_dim == 2:
+            fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(1) * gen_data_2
+        elif self.blending_factor_dim == 3:
+            fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
+                1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
+        return fake
 
     def estimateBlendingFactors(self, dataset, train_data):
         blending_factors = {}
@@ -184,6 +201,8 @@ def trainCGan(train_gan_data, transition_type, training_parameters, storage_para
     num_epochs = training_parameters['num_epochs']
     batch_size = training_parameters['batch_size']
     sampling_repetition = training_parameters['sampling_repetition']
+    gen_update_interval = training_parameters['gen_update_interval']
+    disc_update_interval = training_parameters['disc_update_interval']
     decay_epochs = training_parameters['decay_epochs']
     noise_dim = training_parameters['noise_dim']
     blending_factor_dim = training_parameters['blending_factor_dim']
@@ -198,7 +217,8 @@ def trainCGan(train_gan_data, transition_type, training_parameters, storage_para
 
     # train gan model
     now = datetime.datetime.now()
-    train_model = ModelTraining(num_epochs, batch_size, sampling_repetition, decay_epochs, noise_dim, blending_factor_dim)
+    train_model = ModelTraining(num_epochs, batch_size, sampling_repetition, gen_update_interval, disc_update_interval, decay_epochs,
+        noise_dim, blending_factor_dim)
     gan_models, blending_factors = train_model.trainModel(train_gan_data, checkpoint_model_path, checkpoint_result_path, transition_type)
     print(datetime.datetime.now() - now)
 

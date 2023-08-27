@@ -5,6 +5,7 @@ from torchinfo import summary
 
 
 ## model structure
+# Re-defining the previous blocks for completeness
 class ContractingBlock(nn.Module):
     def __init__(self, input_channels, use_bn=True, stride=1, padding=1, activation='relu', SN=False):
         super(ContractingBlock, self).__init__()
@@ -30,22 +31,26 @@ class ContractingBlock(nn.Module):
 class ExpandingBlock(nn.Module):
     def __init__(self, input_channels, use_bn=True, stride=1, padding=1, SN=False):
         super(ExpandingBlock, self).__init__()
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True) # scale the data in all three ZZZZZZZZdimensions
         if SN:  # spectral normalization
             self.conv1 = nn.utils.spectral_norm(
-                nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=3, stride=stride, padding=padding))
+                nn.Conv2d(input_channels, input_channels // 2, kernel_size=3, stride=stride, padding=padding, padding_mode='replicate'))
         else:
-            self.conv1 = nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=3, stride=stride, padding=padding)
+            self.conv1 = nn.Conv2d(input_channels, input_channels // 2, kernel_size=3, stride=stride, padding=padding, padding_mode='replicate')
         if use_bn:
             self.norm = nn.InstanceNorm2d(input_channels // 2)
         self.use_bn = use_bn
+        self.pooling = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
         self.activation = nn.ReLU()
 
     def forward(self, x, skip_con):
         x = torch.cat([x, skip_con], 1)
+        x = self.upsample(x)
         x = self.conv1(x)
         if self.use_bn:
             x = self.norm(x)
         x = self.activation(x)
+        x = self.pooling(x)
         return x
 
 
@@ -64,98 +69,138 @@ class FeatureMapBlock(nn.Module):
 
 
 # UNet Generator
-class Generator_UNet(nn.Module):
-    def __init__(self, input_vector_dim, img_height, img_width, output_chan, hidden_channels=32):
-        super(Generator_UNet, self).__init__()
+class UNetGenerator(nn.Module):
+    def __init__(self, input_vector_dim, img_height, img_width, output_chan, hidden_channels=64):
+        super(UNetGenerator, self).__init__()
         # data size
         self.input_dim = input_vector_dim
         self.output_chan = output_chan
-        self.img_chan = 2
         self.img_height = img_height
         self.img_width = img_width
 
         # dense layer to a suitable dim for reshaping
-        self.fc = nn.Linear(input_vector_dim, self.img_chan * img_height * img_width)
+        self.fc = nn.Linear(input_vector_dim, output_chan * img_height * img_width)
 
         # encoder
-        self.upfeature = FeatureMapBlock(self.img_chan, hidden_channels, stride=1, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, stride=1, SN=True)
-        self.contract2 = ContractingBlock(hidden_channels * 2, stride=1, SN=True)
-        self.contract3 = ContractingBlock(hidden_channels * 4, stride=1, SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, stride=1, SN=True)
+        self.upfeature = FeatureMapBlock(output_chan, hidden_channels, stride=1, SN=False)
+        self.contract1 = ContractingBlock(hidden_channels, stride=1, SN=False)
+        self.contract2 = ContractingBlock(hidden_channels * 2, stride=1, SN=False)
 
         # decoder
-        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, stride=1, SN=True)  # Adjusted for skip connection
-        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, stride=1, SN=True)  # Adjusted for skip connection
-        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, stride=1, SN=True)  # Adjusted for skip connection
-        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, stride=1, SN=True)  # Adjusted for skip connection
-        self.downfeature = FeatureMapBlock(int(hidden_channels * 3), output_chan, stride=1, SN=True)
+        self.expand2 = ExpandingBlock(hidden_channels * 4 + hidden_channels * 2, stride=1, SN=False)  # Adjusted for skip connection
+        self.expand3 = ExpandingBlock(hidden_channels * 3 + hidden_channels, stride=1, SN=False)  # Adjusted for skip connection
+        self.downfeature = FeatureMapBlock(hidden_channels * 2, output_chan, stride=1, SN=False)
 
         self.sig = torch.nn.Sigmoid()
 
     def forward(self, noise_and_class):
         # convert the noise and class tensor of size (n_samples, input_dim) to a 4d tensor of size (n_samples, input_dim, 1, 1)
         x = self.fc(noise_and_class)
-        x = x.view(-1, self.img_chan, self.img_height, self.img_width)  # Reshaping to (batch_size, 2, 13, 10)
+        x = x.view(-1, self.output_chan, self.img_height, self.img_width)  # Reshaping to (batch_size, 2, 13, 10)
 
         x0 = self.upfeature(x)
         x1 = self.contract1(x0)
         x2 = self.contract2(x1)
-        x3 = self.contract3(x2)
-        x4 = self.contract4(x3)
-        y4 = self.expand4(x4, x3)  # Skip connection from contract1 to expand2
-        y3 = self.expand3(y4, x2)  # Skip connection from contract1 to expand2
-        y2 = self.expand2(y3, x1)  # Skip connection from upfeature to expand3
-        y1 = self.expand1(y2, x0)  # Skip connection from upfeature to expand3
-        y0 = self.downfeature(y1)
-        yn = self.sig(y0)
-        return yn
+
+        x3 = self.expand2(x2, x1)  # Skip connection from contract1 to expand2
+        x4 = self.expand3(x3, x0)  # Skip connection from upfeature to expand3
+
+        x5 = self.downfeature(x4)
+        x6 = self.sig(x5)
+        return x6
+
+
+# class Generator_Normal(nn.Module):
+#     def __init__(self, input_vector_dim, img_height, img_width, output_chan, hidden_channels=64):
+#         super(Generator_Normal, self).__init__()
+#         # data size
+#         self.input_dim = input_vector_dim
+#         self.input_chan = 256
+#         self.output_chan = output_chan
+#         self.img_height = img_height
+#         self.img_width = img_width
+#
+#         # dense layer to a suitable dim for reshaping
+#         self.fc = nn.Linear(input_vector_dim, self.input_chan * img_height * img_width)
+#         # encoder
+#         self.gen = nn.Sequential(
+#             self.make_gen_block(input_dim, hidden_dim * 4),
+#             self.make_gen_block(hidden_dim * 4, hidden_dim * 2, kernel_size=4, stride=1),
+#             self.make_gen_block(hidden_dim * 2, hidden_dim),
+#             self.make_gen_block(hidden_dim, im_chan, kernel_size=4, final_layer=True),
+#         )
+#
+#
+#         self.sig = torch.nn.Sigmoid()
+#
+#     def make_gen_block(self, input_channels, output_channels, kernel_size=3, stride=2, final_layer=False):
+#         if not final_layer:
+#             return nn.Sequential(
+#                 nn.ConvTranspose2d(input_channels, output_channels, kernel_size, stride),
+#                 nn.BatchNorm2d(output_channels),
+#                 nn.ReLU(inplace=True),
+#             )
+#         else:
+#             return nn.Sequential(
+#                 nn.ConvTranspose2d(input_channels, output_channels, kernel_size, stride),
+#                 nn.Tanh(),
+#             )
+#
+#     def forward(self, noise_and_class):
+#         # convert the noise and class tensor of size (n_samples, input_dim) to a 4d ten sor of size (n_samples, input_dim, 1, 1)
+#         x = self.fc(noise_and_class)
+#         x = x.view(-1, self.input_chan, self.img_height, self.img_width)  # Reshaping to (batch_size, 2, 13, 10)
+#
+#         x = self.upfeature(x)
+#         x = self.contract1(x)
+#         x = self.contract2(x)
+#
+#         x = self.downfeature(x)
+#         # x = self.sig(x)
+#         return x
+
 
 
 ## model summary
-# model = Generator_UNet(81, 13, 10, 2).to('cpu')  # move the model to GPU
-# summary(model, input_size=(1024, 81))
+model = UNetGenerator(20, 13, 10, 2).to('cpu')  # move the model to GPU
+summary(model, input_size=(32, 20))
 
 
 ##
 class Discriminator_Same(nn.Module):
-    def __init__(self, input_channels, hidden_channels=32):
+    def __init__(self, input_channels, hidden_channels=64):
         super(Discriminator_Same, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
         self.contract1 = ContractingBlock(hidden_channels, use_bn=False, activation='lrelu', SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, activation='lrelu', SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, activation='lrelu', SN=True)
-        self.final = nn.Conv2d(hidden_channels * 16, 1, kernel_size=1)
+        self.final = nn.Conv2d(hidden_channels * 8, 1, kernel_size=1)
 
     def forward(self, image_and_class):
         x = self.upfeature(image_and_class)
         x = self.contract1(x)
         x = self.contract2(x)
         x = self.contract3(x)
-        x = self.contract4(x)
         x = self.final(x)
         return x
 
 ##
 class Discriminator_Shrinking(nn.Module):
-    def __init__(self, input_channels, padding='valid', hidden_channels=32):
+    def __init__(self, input_channels, padding='valid', hidden_channels=64):
         super(Discriminator_Shrinking, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, padding=padding, SN=True)
         self.contract1 = ContractingBlock(hidden_channels, padding=padding, use_bn=False, activation='lrelu', SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, padding=padding, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, padding=padding, activation='lrelu', SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, activation='lrelu', SN=True)
-        self.final = nn.Conv2d(hidden_channels * 16, 1, kernel_size=1)
+        self.final = nn.Conv2d(hidden_channels * 8, 1, kernel_size=1)
 
     def forward(self, image_and_class):
         x = self.upfeature(image_and_class)
         x = self.contract1(x)
         x = self.contract2(x)
         x = self.contract3(x)
-        x = self.contract4(x)
         x = self.final(x)
         return x
 
@@ -278,6 +323,10 @@ class ModifiedGenerator(nn.Module):
         return self.gen(x)
 
 
-# model = ModifiedGenerator(20).to('cpu')  # move the model to GPU
-# summary(model, input_size=(128, 20))
+model = ModifiedGenerator(20).to('cpu')  # move the model to GPU
+summary(model, input_size=(128, 20))
 
+
+##
+import torch
+print(torch.cuda.is_available())

@@ -69,17 +69,19 @@ extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_ge
 
 
 ## hyperparameters
-num_epochs = 50
-decay_epochs = 10
-batch_size = 1600  # this is also the number of samples to extract for each time_interval
+num_epochs = 100
+decay_epochs = [50, 70, 90]
+batch_size = 1024  # this is also the number of samples to extract for each time_interval
 sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
+gen_update_interval = 2  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
+disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
 noise_dim = 1
 blending_factor_dim = 2
 
 
 ## GAN data storage information
 subject = 'Test'
-version = 2  # the data from which experiment version to process
+version = 3  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -89,8 +91,8 @@ result_set = 0
 
 ## train and save gan models for multiple transitions
 training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_dim, 'sampling_repetition': sampling_repetition,
-    'batch_size': batch_size, 'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval,
-    'blending_factor_dim': blending_factor_dim}
+    'gen_update_interval': gen_update_interval, 'disc_update_interval': disc_update_interval, 'batch_size': batch_size,
+    'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'result_set': result_set,
     'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
 now = datetime.datetime.now()

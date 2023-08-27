@@ -104,7 +104,7 @@ class FixedPureEmgDataSet(Dataset):
         random.shuffle(self.keys)
         self.epoch_keys = self.keys * self.repetition
 
-        # Precompute the samples for each key value
+        # Precompute and store all samples for each key value
         self.precomputed_samples = []
         for time_point in self.epoch_keys:
             condition = self.extract_and_normalize(time_point)
@@ -174,7 +174,7 @@ class FixedMixEmgDataSet(Dataset):
         self.gen_data_2 = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['gen_data_2'].items()}
         self.disc_data = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['disc_data'].items()}
 
-        # Precompute the samples for all key values
+        # Precompute and store all samples
         self.precomputed_samples = []
         total_samples = self.batch_size * len(self.keys) * self.repetition
         for idx in range(total_samples):
