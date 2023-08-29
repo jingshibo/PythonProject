@@ -57,12 +57,12 @@ class ModelTraining():
         self.disc = cGAN_Model.Discriminator_Same(discriminator_input_channel).to(self.device)
 
         # training parameters
-        gen_lr = 0.0001  # initial learning rate
+        gen_lr = 0.0003  # initial learning rate
         disc_lr = 0.0002
         gen_lr_decay_rate = 0.8
         disc_lr_decay_rate = 0.8
         weight_decay = 0.0000
-        beta = (0.7, 0.999)
+        beta = (0.9, 0.999)
         c_lambda = 10
         # decay_steps = self.decay_epochs * len(self.train_loader)  # take the repetition of gen into account
 
@@ -110,10 +110,8 @@ class ModelTraining():
         self.disc.train(True)
 
         batch_count = 0  # Counter to keep track of the number of batches
-
         for gen_data, disc_data in tqdm(self.train_loader):
             # image_width = image.shape [3]
-            batch_count += 1  # Increment the batch count
             cur_batch_size = len(disc_data)
             condition = gen_data[0].to(self.device)
             gen_data_1 = gen_data[1].to(self.device)
@@ -155,6 +153,7 @@ class ModelTraining():
                 # print(f"Epoch {epoch_number}: Step {self.current_step}: Generator loss: {gen_mean_loss}, Discriminator loss: "
                 #       f"{disc_mean_loss}, learning_rate: 0.0002")
             self.current_step += 1
+            batch_count += 1  # Increment the batch count
 
     def generateFakeData(self, cur_batch_size, one_hot_labels, gen_data_1, gen_data_2):
         # estimate blending factors

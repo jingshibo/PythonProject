@@ -70,18 +70,18 @@ extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_ge
 
 ## hyperparameters
 num_epochs = 100
-decay_epochs = [50, 70, 90]
+decay_epochs = [35, 50]
 batch_size = 1024  # this is also the number of samples to extract for each time_interval
 sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
-gen_update_interval = 2  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
+gen_update_interval = 5  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
-noise_dim = 1
+noise_dim = 0
 blending_factor_dim = 2
 
 
 ## GAN data storage information
 subject = 'Test'
-version = 3  # the data from which experiment version to process
+version = 1  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -104,7 +104,7 @@ print(datetime.datetime.now() - now)
 
 
 ## test generated data results
-epoch_number = None
+epoch_number = 80
 gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)
@@ -203,11 +203,11 @@ accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(tes
 
 
 ## load check point models
-# output = {}
-# for transition_type in modes_generation.keys():
-#     test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=50, transition_type=transition_type)
-#     gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
-#     result = gen_model.testModel(train_gan_data[transition_type], noise_dim=5)
-#     output[transition_type] = result
+output = {}
+for transition_type in modes_generation.keys():
+    test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=50, transition_type=transition_type)
+    gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
+    result = gen_model.testModel(train_gan_data[transition_type], noise_dim=0)
+    output[transition_type] = result
 
 
