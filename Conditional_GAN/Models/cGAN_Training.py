@@ -59,18 +59,21 @@ class ModelTraining():
         # training parameters
         gen_lr = 0.0003  # initial learning rate
         disc_lr = 0.0002
-        gen_lr_decay_rate = 0.8
-        disc_lr_decay_rate = 0.8
+        gen_lr_decay_rate = 0.5
+        disc_lr_decay_rate = 0.5
         weight_decay = 0.0000
-        beta = (0.9, 0.999)
-        c_lambda = 10
-        # decay_steps = self.decay_epochs * len(self.train_loader)  # take the repetition of gen into account
+        beta = (0.7, 0.999)
+        c_lambda = 10  # the weight of the gradient penalty
+        var_weight = 0.02  # the weight of blending factor variance
+        construction_weight = 0.1  # the weight of constructed critic value
+        # 调整 两个 regularization 项的 权重 （0.1，0.1）
 
         # optimizer
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=weight_decay, betas=beta)
         self.disc_opt = torch.optim.Adam(self.disc.parameters(), lr=disc_lr, weight_decay=weight_decay, betas=beta)
 
         # learning rate scheduler
+        # decay_steps = self.decay_epochs * len(self.train_loader)  # take the repetition of gen into account
         # self.lr_gen_opt = torch.optim.lr_scheduler.StepLR(self.gen_opt, step_size=decay_steps // self.gen_update_interval,
         #     gamma=gen_lr_decay_rate)
         # self.lr_disc_opt = torch.optim.lr_scheduler.StepLR(self.disc_opt, step_size=decay_steps // self.disc_update_interval,
@@ -82,7 +85,7 @@ class ModelTraining():
         # criterion = nn.BCEWithLogitsLoss()
         # criterion = nn.MSELoss()
         # self.loss_fn = cGAN_Model.LossFunction(criterion)
-        self.loss_fn = cGAN_Model.WGANloss(c_lambda)
+        self.loss_fn = cGAN_Model.WGANloss(c_lambda, var_weight, construction_weight)
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
@@ -98,6 +101,8 @@ class ModelTraining():
                 # estimate blending factors
                 blending_factors = self.estimateBlendingFactors(dataset, train_data)
                 Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors, transition_type)
+                # output discriminator results
+
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
 
         # estimate blending factors
@@ -112,6 +117,7 @@ class ModelTraining():
         batch_count = 0  # Counter to keep track of the number of batches
         for gen_data, disc_data in tqdm(self.train_loader):
             # image_width = image.shape [3]
+            batch_count += 1  # first train discriminator multiple times, then start to train generator
             cur_batch_size = len(disc_data)
             condition = gen_data[0].to(self.device)
             gen_data_1 = gen_data[1].to(self.device)
@@ -128,7 +134,7 @@ class ModelTraining():
             # # Update the discriminator every m batches
             if batch_count % self.disc_update_interval == 0:
                 self.disc_opt.zero_grad()  # Zero out the discriminator gradients
-                fake = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
+                fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
                 disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)
                 disc_loss.backward()  # Update gradients
                 self.disc_opt.step()  # Update optimizer
@@ -137,23 +143,22 @@ class ModelTraining():
             # Update the generator every n batches
             if batch_count % self.gen_update_interval == 0:
                 self.gen_opt.zero_grad()
-                fake = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
-                gen_loss = self.loss_fn.get_gen_loss(fake, image_one_hot_labels, self.disc)
+                fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
+                gen_loss = self.loss_fn.get_gen_loss(fake, real, blending_factors, image_one_hot_labels, self.disc)
                 gen_loss.backward()
                 self.gen_opt.step()
                 self.gen_losses += [gen_loss.item()]
 
-            if self.current_step % self.display_step == 0:
+            if (self.current_step + 1) % self.display_step == 0:
                 disc_mean_loss = sum(self.disc_losses[-(self.display_step // self.disc_update_interval):]) / (
                         self.display_step // self.disc_update_interval)
                 gen_mean_loss = sum(self.gen_losses[-(self.display_step // self.gen_update_interval):]) / (
                         self.display_step // self.gen_update_interval)
-                print(f"Epoch {epoch_number}: Step {self.current_step}: Generator loss: {gen_mean_loss}, Discriminator loss: "
+                print(f"Epoch {epoch_number + 1}: Step {self.current_step + 1}: Generator loss: {gen_mean_loss}, Discriminator loss: "
                       f"{disc_mean_loss}, gen_lr: {self.lr_gen_opt.get_last_lr()}, disc_lr: {self.lr_disc_opt.get_last_lr()}")
                 # print(f"Epoch {epoch_number}: Step {self.current_step}: Generator loss: {gen_mean_loss}, Discriminator loss: "
                 #       f"{disc_mean_loss}, learning_rate: 0.0002")
             self.current_step += 1
-            batch_count += 1  # Increment the batch count
 
     def generateFakeData(self, cur_batch_size, one_hot_labels, gen_data_1, gen_data_2):
         # estimate blending factors
@@ -174,7 +179,7 @@ class ModelTraining():
         elif self.blending_factor_dim == 3:
             fake = blending_factors[:, 0, :, :].unsqueeze(1) * gen_data_1 + blending_factors[:, 1, :, :].unsqueeze(
                 1) * gen_data_2 + blending_factors[:, 2, :, :].unsqueeze(1)
-        return fake
+        return fake, blending_factors
 
     def estimateBlendingFactors(self, dataset, train_data):
         blending_factors = {}
@@ -192,7 +197,6 @@ class ModelTraining():
                     noise_and_labels = one_hot_labels.float()
                 blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
         return blending_factors
-
 
 ## In order to train multiple transition types, we wrap up a single type of training process into a function
 def trainCGan(train_gan_data, transition_type, training_parameters, storage_parameters):

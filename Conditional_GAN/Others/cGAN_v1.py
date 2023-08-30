@@ -409,7 +409,7 @@ checkpoint_result = Model_Storage.loadCheckPointCGanResults(checkpoint_result_pa
 ## load check point models
 test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=50)
 gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
-results = gen_model.testModel(train_data, noise_dim=0)
+results = gen_model.estimateBlendingFactors(train_data, noise_dim=0)
 
 
 

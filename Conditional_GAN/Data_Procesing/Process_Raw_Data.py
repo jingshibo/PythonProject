@@ -18,9 +18,11 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
         start_position=-int(window_parameters['start_before_toeoff_ms'] * (2 / window_parameters['sample_rate'])),
         end_position=int(window_parameters['endtime_after_toeoff_ms'] * (2 / window_parameters['sample_rate'])), lower_limit=lower_limit,
         higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, envelope=envelope, notchEMG=False, median_filtering=True, reordering=True)
-    old_emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=window_parameters['down_sampling'])
+    emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=window_parameters['down_sampling'])
+    for key in emg_preprocessed.keys():    # Convert all float64 arrays to float32
+        emg_preprocessed[key] = [arr.astype('float32') for arr in emg_preprocessed[key]]
 
-    return old_emg_preprocessed
+    return emg_preprocessed
 
 
 ## normalize filtered data and reshape them to be images

@@ -104,12 +104,10 @@ print(datetime.datetime.now() - now)
 
 
 ## test generated data results
-epoch_number = 80
+epoch_number = 50
 gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)
-
-
 
 
 '''
@@ -207,7 +205,7 @@ output = {}
 for transition_type in modes_generation.keys():
     test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=50, transition_type=transition_type)
     gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
-    result = gen_model.testModel(train_gan_data[transition_type], noise_dim=0)
+    result = gen_model.estimateBlendingFactors(train_gan_data[transition_type], noise_dim=0)
     output[transition_type] = result
 
 

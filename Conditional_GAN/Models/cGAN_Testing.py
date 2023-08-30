@@ -18,7 +18,7 @@ class ModelTesting():
         self.noise_dim = None
 
     #  estimate blending factors
-    def testModel(self, test_data, noise_dim=0):
+    def estimateBlendingFactors(self, test_data, noise_dim=0):
         self.keys = list(test_data['gen_data_1'].keys())
         self.n_classes = len(self.keys)
         self.noise_dim = noise_dim

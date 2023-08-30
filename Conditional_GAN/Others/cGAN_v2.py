@@ -173,7 +173,7 @@ model = Model_Storage.loadClassifyModel(subject, version, model_type, project='c
 ## load check point models
 test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=50)
 gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
-results = gen_model.testModel(train_gan_data, noise_dim=noise_dim)
+results = gen_model.estimateBlendingFactors(train_gan_data, noise_dim=noise_dim)
 
 
 
