@@ -190,10 +190,10 @@ class LossFunction():
 
 ## GRADED FUNCTION: get_gradient
 class WGANloss():
-    def __init__(self, c_lambda, var_weight, construction_weight):
+    def __init__(self, c_lambda, var_weight, construct_weight):
         self.c_lambda = c_lambda  # the weight of the gradient penalty
         self.var_weight = var_weight  # the weight of blending factor variance
-        self.construction_weight = construction_weight  # the weight of blending factor variance
+        self.construct_weight = construct_weight  # the weight of blending factor variance
 
     # Return the gradient of the discic's scores with respect to mixes of real and fake images.
     def get_gradient(self, disc, real, fake, epsilon):
@@ -220,7 +220,8 @@ class WGANloss():
         penalty = torch.mean((gradient_norm - 1) ** 2)
         return penalty
 
-    def constructDifference(self, image_one_hot_labels, disc_fake_pred, disc_real_pred):
+    # computes the average absolute difference between the disc's prediction values for fake and real images (for each class separately)
+    def getConstructDifference(self, image_one_hot_labels, disc_fake_pred, disc_real_pred):
         # Initialize variables to store the summed class-specific mean differences and the count of non-empty classes
         class_specific_mean_diff_sum = 0.0
         non_empty_class_count = 0
@@ -228,9 +229,12 @@ class WGANloss():
 
         # Loop through each class to calculate class-specific mean differences
         for i in range(n_classes):
-            class_mask = image_one_hot_labels[:, i, 0, 0]  # Extract the mask for the current class
-            class_fake_pred = disc_fake_pred[class_mask]
-            class_real_pred = disc_real_pred[class_mask]
+            #  # Create a boolean mask for samples belonging to the i-th class
+            class_mask = image_one_hot_labels[:, i, 0, 0].bool()  # get a vector of boolean mask (set True for samples belonging to the ith class.)
+
+            # Use the mask to get critic values for fake and real images of the ith class
+            class_fake_pred = disc_fake_pred[class_mask]  # uses the boolean mask to extract the fake image critic values of the ith class.
+            class_real_pred = disc_real_pred[class_mask]  # uses the boolean mask to extract the real image critic values of the ith class.
 
             if class_fake_pred.numel() > 0 and class_real_pred.numel() > 0:  # Check if there are samples for this class in the batch
                 class_specific_mean_diff = torch.abs(torch.mean(class_fake_pred) - torch.mean(class_real_pred))
@@ -242,58 +246,36 @@ class WGANloss():
             average_class_specific_diff = class_specific_mean_diff_sum / non_empty_class_count
         else:
             average_class_specific_diff = 0.0
-
         return average_class_specific_diff
 
-    # Return the loss of a generator given the discriminator's scores of the generator's fake images.
-    # def get_gen_loss(self, fake, image_one_hot_labels, disc):
-    #     fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
-    #     disc_fake_pred = disc(fake_image_and_labels)  # error if you didn't concatenate your labels to your image correctly
-    #     gen_loss = -1. * torch.mean(disc_fake_pred)
-    #     return gen_loss
-
-    def get_gen_loss(self, fake, real, blending_factor, image_one_hot_labels, disc):
-        fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
-        disc_fake_pred = disc(fake_image_and_labels)
-        real_image_and_labels = torch.cat((real.float(), image_one_hot_labels.float()), 1)
-        disc_real_pred = disc(real_image_and_labels)
-
-        # get the number of channels
-        num_channels = blending_factor.shape[1]
+    # Compute the variance value of blending_factor along the height and width dimensions for each sample, treat each channel separately
+    def getVarianceValue(self, blending_factor):
+        num_channels = blending_factor.shape[1]  # get the number of channels
         # Initialize a tensor to store variance terms for each channel
         combined_variance_term = torch.zeros(blending_factor.shape[0]).to(blending_factor.device)
 
-        # Compute the variance over patches of each channel (along the height and width dimensions) for each sample separately
-        for ch in range(num_channels):
-            variance_term = torch.var(blending_factor[:, ch, :, :], dim=[1, 2])
+        # Compute the variance along the height and width dimensions of each channel separately for each sample
+        for channel in range(num_channels):
+            variance_term = torch.var(blending_factor[:, channel, :, :], dim=[1, 2])
             combined_variance_term += variance_term  # combine the variance of each sample
+        mean_variance_value = torch.mean(combined_variance_term)
+        return mean_variance_value
 
-        # Add the variance term to the loss
-        gen_loss = -1. * torch.mean(disc_fake_pred) + self.var_weight * torch.mean(
-            combined_variance_term) + self.construction_weight * torch.abs((torch.mean(disc_fake_pred) - torch.mean(disc_real_pred)))
+    def get_gen_loss(self, fake, real, blending_factor, image_one_hot_labels, disc):
+        fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
+        real_image_and_labels = torch.cat((real.float(), image_one_hot_labels.float()), 1)
+        disc_fake_pred = disc(fake_image_and_labels)
+        disc_real_pred = disc(real_image_and_labels)
 
+        # Compute the variance value of blending_factor along the height and width dimensions for each sample, treat each channel separately
+        variance_value = self.getVarianceValue(blending_factor)
+        # Compute the construct error between the generated data and real data in order to minimize the difference per class
+        construct_error = self.getConstructDifference(image_one_hot_labels, disc_fake_pred, disc_real_pred)
+        # construct_error = torch.abs((torch.mean(disc_fake_pred) - torch.mean(disc_real_pred)))
+
+        # Add the variance term and construct error to the loss
+        gen_loss = -1. * torch.mean(disc_fake_pred) + self.var_weight * variance_value + self.construct_weight * construct_error
         return gen_loss
-
-
-
-
-    # def get_gen_loss(self, fake, blending_factor, image_one_hot_labels, disc):
-    #     fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
-    #     disc_fake_pred = disc(fake_image_and_labels)
-    #
-    #     # get the number of channels
-    #     num_channels = blending_factor.shape[1]
-    #     # Initialize a tensor to store variance terms for each channel
-    #     combined_variance_term = torch.zeros(blending_factor.shape[0]).to(blending_factor.device)
-    #
-    #     # Compute the variance over patches of each channel (along the height and width dimensions) for each sample separately
-    #     for ch in range(num_channels):
-    #         variance_term = torch.var(blending_factor[:, ch, :, :], dim=[1, 2])
-    #         combined_variance_term += variance_term  # combine the variance of each sample
-    #
-    #     # Add the variance term to the loss
-    #     gen_loss = -1. * torch.mean(disc_fake_pred) + self.var_weight * torch.mean(combined_variance_term)
-    #     return gen_loss
 
     # Return the loss of a disc given the disc's scores for fake and real images, the gradient penalty, and gradient penalty weight.
     def get_disc_loss(self, fake, real, image_one_hot_labels, disc):
@@ -307,10 +289,7 @@ class WGANloss():
         g_p = self.gradient_penalty(gradient)
 
         disc_loss = torch.mean(disc_fake_pred) - torch.mean(disc_real_pred) + self.c_lambda * g_p  # torch.mean() averages all value in a tensor
-        # disc_loss = torch.mean((disc_fake_pred-disc_real_pred)**2) + self.c_lambda * g_p
-
         return disc_loss
-
 
 
 ##

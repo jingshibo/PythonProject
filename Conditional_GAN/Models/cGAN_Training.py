@@ -59,14 +59,13 @@ class ModelTraining():
         # training parameters
         gen_lr = 0.0003  # initial learning rate
         disc_lr = 0.0002
-        gen_lr_decay_rate = 0.5
-        disc_lr_decay_rate = 0.5
+        gen_lr_decay_rate = 0.7
+        disc_lr_decay_rate = 0.7
         weight_decay = 0.0000
         beta = (0.7, 0.999)
         c_lambda = 10  # the weight of the gradient penalty
-        var_weight = 0.02  # the weight of blending factor variance
-        construction_weight = 0.1  # the weight of constructed critic value
-        # 调整 两个 regularization 项的 权重 （0.1，0.1）
+        var_weight = 0.05  # the weight of blending factor variance
+        construct_weight = 0.10  # the weight of constructed critic value
 
         # optimizer
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=weight_decay, betas=beta)
@@ -85,7 +84,7 @@ class ModelTraining():
         # criterion = nn.BCEWithLogitsLoss()
         # criterion = nn.MSELoss()
         # self.loss_fn = cGAN_Model.LossFunction(criterion)
-        self.loss_fn = cGAN_Model.WGANloss(c_lambda, var_weight, construction_weight)
+        self.loss_fn = cGAN_Model.WGANloss(c_lambda, var_weight, construct_weight)
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
@@ -131,7 +130,7 @@ class ModelTraining():
             # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
             image_one_hot_labels = image_one_hot_labels.repeat(1, 1, self.img_height, self.img_width)
 
-            # # Update the discriminator every m batches
+            # Update the discriminator every m batches
             if batch_count % self.disc_update_interval == 0:
                 self.disc_opt.zero_grad()  # Zero out the discriminator gradients
                 fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
