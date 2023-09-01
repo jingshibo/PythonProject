@@ -45,13 +45,53 @@ new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters
 #     envelope_cutoff=400, envelope=envelope)
 
 
-## test
+## test stable values
+# import numpy as np
+# keys = {'emg_LWLW': 200, 'emg_LWSA': 400, 'emg_SASA': 600, 'emg_LWSD': 150, 'emg_SDSD': 100}
+# for key, value in keys.items():
+#     for i, array in enumerate(old_emg_data[key]):
+#         noise = 10 * np.random.randn(*array.shape)
+#         old_emg_data[key][i] = np.full_like(array, value) + noise
+
+
+## test changing values
 import numpy as np
-keys = {'emg_LWLW': 200, 'emg_LWSA': 400, 'emg_SASA': 600, 'emg_LWSD': 150, 'emg_SDSD': 100}
+
+# increasing_values = np.linspace(100, 1000, 900)
+# reshaped_values = increasing_values[:, np.newaxis]
+# emg_LWLW = np.tile(reshaped_values, (1, 130))
+# decreasing_values = np.linspace(1000, 100, 900)
+# reshaped_values = decreasing_values[:, np.newaxis]
+# emg_SASA = np.tile(reshaped_values, (1, 130))
+#
+# increasing_values = np.linspace(100, 1000, 450)
+# decreasing_values = np.linspace(1000, 100, 450)
+# combined_values = np.concatenate((increasing_values, decreasing_values))
+# reshaped_values = combined_values[:, np.newaxis]
+# emg_LWSA = np.tile(reshaped_values, (1, 130))
+
+
+array_first_half = np.full((450, 130), 100)
+array_second_half = np.full((450, 130), 900)
+emg_LWLW = np.vstack([array_first_half, array_second_half])
+
+array_first_half = np.full((450, 130), 900)
+array_second_half = np.full((450, 130), 100)
+emg_SASA = np.vstack([array_first_half, array_second_half])
+
+emg_LWSA = np.full((900, 130), 200)
+
+# Define the keys dictionary
+keys = {'emg_LWLW': emg_LWLW, 'emg_SASA': emg_SASA, 'emg_LWSA': emg_LWSA}
+
+# Loop through each key-value pair in the keys dictionary
 for key, value in keys.items():
     for i, array in enumerate(old_emg_data[key]):
+        # Generate noise
         noise = 5 * np.random.randn(*array.shape)
-        old_emg_data[key][i] = np.full_like(array, value) + noise
+        # Add noise to the new array
+        old_emg_data[key][i] = value + noise
+
 
 
 ## normalize and extract emg data for gan model training
@@ -60,8 +100,8 @@ old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Pro
     new_emg_data, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
 # modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
-# modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
-modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
+modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
+# modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 time_interval = 25
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
@@ -75,7 +115,7 @@ batch_size = 1024  # this is also the number of samples to extract for each time
 sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
-noise_dim = 0
+noise_dim = 32
 blending_factor_dim = 2
 
 
@@ -104,7 +144,7 @@ print(datetime.datetime.now() - now)
 
 
 ## test generated data results
-epoch_number = 20
+epoch_number = 30
 gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)

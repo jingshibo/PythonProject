@@ -48,22 +48,22 @@ for gait_event_label, gait_event_emg in emg_preprocessed.items():
 
 
 ## organize all summed absolute emg value
-emg_1_mean_channels = {}
-emg_2_mean_channels = {}
-emg_1_mean_events = {}  # emg device 1: tibialis
-emg_2_mean_events = {}  # emg device 2: rectus
-# sum the emg data of all channels and samples up for the same gait event
-for gait_event_label, gait_event_emg in emg_preprocessed.items():
-    emg_1_mean_channels[f"{gait_event_label}_data"] = [np.sum(np.abs(emg_per_repetition[:, 0:65]), axis=1) / 65 for emg_per_repetition in
-        gait_event_emg]  # average the emg values of all channels
-    emg_1_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_1_mean_channels[f"{gait_event_label}_data"]) / len\
-            (emg_1_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
-    emg_1_mean_channels[f"{gait_event_label}_data"].insert(0, emg_1_mean_events[f"{gait_event_label}_data"])  # insert the mean event value in front of the dataset
-    emg_2_mean_channels[f"{gait_event_label}_data"] = [np.sum(np.abs(emg_per_repetition[:, 65:130]), axis=1) / 65 for emg_per_repetition in
-        gait_event_emg]  # average the emg values of all channels
-    emg_2_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_2_mean_channels[f"{gait_event_label}_data"]) / len\
-            (emg_2_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
-    emg_2_mean_channels[f"{gait_event_label}_data"].insert(0, emg_2_mean_events[f"{gait_event_label}_data"])
+# emg_1_mean_channels = {}
+# emg_2_mean_channels = {}
+# emg_1_mean_events = {}  # emg device 1: tibialis
+# emg_2_mean_events = {}  # emg device 2: rectus
+# # sum the emg data of all channels and samples up for the same gait event
+# for gait_event_label, gait_event_emg in emg_preprocessed.items():
+#     emg_1_mean_channels[f"{gait_event_label}_data"] = [np.sum(np.abs(emg_per_repetition[:, 0:65]), axis=1) / 65 for emg_per_repetition in
+#         gait_event_emg]  # average the emg values of all channels
+#     emg_1_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_1_mean_channels[f"{gait_event_label}_data"]) / len\
+#             (emg_1_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
+#     emg_1_mean_channels[f"{gait_event_label}_data"].insert(0, emg_1_mean_events[f"{gait_event_label}_data"])  # insert the mean event value in front of the dataset
+#     emg_2_mean_channels[f"{gait_event_label}_data"] = [np.sum(np.abs(emg_per_repetition[:, 65:130]), axis=1) / 65 for emg_per_repetition in
+#         gait_event_emg]  # average the emg values of all channels
+#     emg_2_mean_events[f"{gait_event_label}_data"] = np.add.reduce(emg_2_mean_channels[f"{gait_event_label}_data"]) / len\
+#             (emg_2_mean_channels[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
+#     emg_2_mean_channels[f"{gait_event_label}_data"].insert(0, emg_2_mean_events[f"{gait_event_label}_data"])
 
 
 ##  plot summed series emg data

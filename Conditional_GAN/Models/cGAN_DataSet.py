@@ -157,6 +157,7 @@ class FixedPureEmgDataSet(Dataset):
         return gen_sample_1, gen_sample_2, disc_sample
 
 
+
 class FixedMixEmgDataSet(Dataset):
     '''
         Custom Dataset class for GAN training. Each poach share the same samples because all samples are precomputed during

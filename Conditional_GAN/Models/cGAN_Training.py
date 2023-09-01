@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 import datetime
-from Conditional_GAN.Models import cGAN_Model, Model_Storage, Data_Set
+from Conditional_GAN.Models import cGAN_Model, cGAN_Loss, Model_Storage, cGAN_DataSet
 
 
 ## training process
@@ -42,7 +42,7 @@ class ModelTraining():
 
     def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, transition_type, select_channels='emg_all'):
         # input data
-        dataset = Data_Set.RandomMixEmgDataSet(train_data, self.batch_size, self.sampling_repetition)
+        dataset = cGAN_DataSet.RandomMixEmgDataSet(train_data, self.batch_size, self.sampling_repetition)
         self.train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
         self.img_channel = train_data['gen_data_1']['timepoint_0'][0].shape[1]
         self.img_height = train_data['gen_data_1']['timepoint_0'][0].shape[2]
@@ -64,7 +64,7 @@ class ModelTraining():
         weight_decay = 0.0000
         beta = (0.7, 0.999)
         c_lambda = 10  # the weight of the gradient penalty
-        var_weight = 0.05  # the weight of blending factor variance
+        var_weight = 0.03  # the weight of blending factor variance
         construct_weight = 0.10  # the weight of constructed critic value
 
         # optimizer
@@ -83,8 +83,8 @@ class ModelTraining():
         # loss function
         # criterion = nn.BCEWithLogitsLoss()
         # criterion = nn.MSELoss()
-        # self.loss_fn = cGAN_Model.LossFunction(criterion)
-        self.loss_fn = cGAN_Model.WGANloss(c_lambda, var_weight, construct_weight)
+        # self.loss_fn = cGAN_Loss.LossFunction(criterion)
+        self.loss_fn = cGAN_Loss.WGANloss(c_lambda, var_weight, construct_weight)
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
@@ -96,17 +96,14 @@ class ModelTraining():
 
             # set the checkpoints to save models
             if (epoch_number + 1) % 10 == 0 and (epoch_number + 1) >= 10:
+                print(f"Saved checkpoint at epoch {epoch_number + 1}")
                 Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models, transition_type)
                 # estimate blending factors
                 blending_factors = self.estimateBlendingFactors(dataset, train_data)
                 Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors, transition_type)
-                # output discriminator results
-
-                print(f"Saved checkpoint at epoch {epoch_number + 1}")
 
         # estimate blending factors
         blending_factors = self.estimateBlendingFactors(dataset, train_data)
-
         return models, blending_factors
 
     def trainOneEpoch(self, epoch_number):
@@ -116,6 +113,7 @@ class ModelTraining():
         batch_count = 0  # Counter to keep track of the number of batches
         for gen_data, disc_data in tqdm(self.train_loader):
             # image_width = image.shape [3]
+
             batch_count += 1  # first train discriminator multiple times, then start to train generator
             cur_batch_size = len(disc_data)
             condition = gen_data[0].to(self.device)
