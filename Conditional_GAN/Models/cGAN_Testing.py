@@ -22,21 +22,32 @@ class ModelTesting():
         self.keys = list(test_data['gen_data_1'].keys())
         self.n_classes = len(self.keys)
         self.noise_dim = noise_dim
+        n_iterations = 100  # Number of times to calculate blending_factor for each time_point for averaging purpose
 
         blending_factors = {}
-        self.gen.train(False)
-        with torch.no_grad():  # close autograd
+        self.gen.train(False)  # Set the generator to evaluation mode
+        with torch.no_grad():  # Disable autograd for performance improvement
             for time_point in self.keys:
                 number = self.extract_and_normalize(time_point)
                 one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).unsqueeze(0).to(self.device)
-                if self.noise_dim > 0:
-                    # Get noise corresponding to the current batch_size
-                    fake_noise = torch.randn(1, self.noise_dim, device=self.device)
-                    # Combine the noise vectors and the one-hot labels for the generator
-                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
-                else:
-                    noise_and_labels = one_hot_labels.float()
-                blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
+
+                # Initialize a variable to store the sum of blending_factors over n_iterations
+                sum_blending_factors = 0.0
+                for _ in range(n_iterations):
+                    if self.noise_dim > 0:
+                        # Generate random noise
+                        fake_noise = torch.randn(1, self.noise_dim, device=self.device)
+                        # Concatenate noise and one-hot labels
+                        noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
+                    else:
+                        noise_and_labels = one_hot_labels.float()
+                    # Generate blending_factor and add it to the sum
+                    sum_blending_factors += self.gen(noise_and_labels).cpu().numpy()
+
+                # Compute the average blending_factor over n_iterations
+                avg_blending_factor = sum_blending_factors / n_iterations
+                # Store the average blending_factor
+                blending_factors[time_point] = avg_blending_factor
         return blending_factors
 
     # convert keys into numbers

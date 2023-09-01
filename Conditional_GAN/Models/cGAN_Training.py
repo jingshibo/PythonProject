@@ -65,7 +65,7 @@ class ModelTraining():
         beta = (0.7, 0.999)
         c_lambda = 10  # the weight of the gradient penalty
         var_weight = 0.03  # the weight of blending factor variance
-        construct_weight = 0.10  # the weight of constructed critic value
+        construct_weight = 0.15  # the weight of constructed critic value
 
         # optimizer
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=weight_decay, betas=beta)
@@ -180,19 +180,31 @@ class ModelTraining():
 
     def estimateBlendingFactors(self, dataset, train_data):
         blending_factors = {}
-        self.gen.train(False)
-        with torch.no_grad():  # close autograd
+        n_iterations = 100  # Number of times to calculate blending_factor at each time_point for averaging purpose
+
+        self.gen.train(False)  # Set the generator to evaluation mode
+        with torch.no_grad():  # Disable autograd for better performance
             for time_point in list(train_data['gen_data_1'].keys()):
                 number = dataset.extract_and_normalize(time_point)
                 one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).unsqueeze(0).to(self.device)
-                if self.noise_dim > 0:
-                    # Get noise corresponding to the current batch_size
-                    fake_noise = torch.randn(1, self.noise_dim, device=self.device)
-                    # Combine the noise vectors and the one-hot labels for the generator
-                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
-                else:
-                    noise_and_labels = one_hot_labels.float()
-                blending_factors[time_point] = self.gen(noise_and_labels).cpu().numpy()
+
+                # Initialize a variable to store the sum of blending_factors over n_iterations
+                sum_blending_factors = 0.0
+                for _ in range(n_iterations):
+                    if self.noise_dim > 0:
+                        # Generate random noise
+                        fake_noise = torch.randn(1, self.noise_dim, device=self.device)
+                        # Concatenate noise and one-hot labels
+                        noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
+                    else:
+                        noise_and_labels = one_hot_labels.float()
+                    # Generate blending_factor and add it to the sum
+                    sum_blending_factors += self.gen(noise_and_labels).cpu().numpy()
+
+                # Compute the average blending_factor over n_iterations
+                avg_blending_factor = sum_blending_factors / n_iterations
+                # Store the average blending_factor
+                blending_factors[time_point] = avg_blending_factor
         return blending_factors
 
 ## In order to train multiple transition types, we wrap up a single type of training process into a function

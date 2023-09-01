@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 
 ## loss function
@@ -72,12 +71,12 @@ class WGANloss():
             # Use the mask to extract the discriminator's predictions for fake and real images of the i-th class
             class_fake_pred = disc_fake_pred[class_mask]
             class_real_pred = disc_real_pred[class_mask]
+
             # Check if there are samples for this class in the batch
             if class_fake_pred.numel() > 0 and class_real_pred.numel() > 0:
                 # Compute the mean absolute difference for the i-th class
-                class_specific_mean_diff = torch.abs(torch.mean(class_fake_pred) - torch.mean(class_real_pred)).item()
-                # Add the computed mean difference to the list
-                class_specific_diffs.append(class_specific_mean_diff)
+                class_mean_diff = torch.abs(torch.mean(class_fake_pred) - torch.mean(class_real_pred))
+                class_specific_diffs.append(class_mean_diff)
 
         # Compute the overall average mean absolute difference, or set it to 0 if no classes are represented in the batch
         average_class_specific_diff = sum(class_specific_diffs) / len(class_specific_diffs) if class_specific_diffs else 0.0
@@ -95,11 +94,11 @@ class WGANloss():
 
             if class_blending_factor.numel() > 0:
                 # Compute variance along height and width dimensions of each channel for all samples in the class
-                class_variance = torch.var(class_blending_factor, dim=[0, 2, 3]).sum().item()  # Sum along channels and extract the result
+                class_variance = torch.var(class_blending_factor, dim=[0, 2, 3]).sum()  # Sum along channels to get the result
                 class_specific_variances.append(class_variance)
 
         # Calculate the mean variance, or return 0 if the list is empty
-        average_class_specific_variance = np.mean(class_specific_variances) if class_specific_variances else 0.0
+        average_class_specific_variance = sum(class_specific_variances) / len(class_specific_variances) if class_specific_variances else 0.0
         return average_class_specific_variance
 
     # return generator cost
@@ -112,7 +111,7 @@ class WGANloss():
         # Compute the variance value of blending_factor along the height and width dimensions for each sample, treat each channel separately
         variance_value = self.getVarianceWithinClass(blending_factor, image_one_hot_labels)
         # Compute the construct error between the generated data and real data in order to minimize the difference per class
-        construct_error = self.getConstructDiffWithinClass(image_one_hot_labels, disc_fake_pred, disc_real_pred)
+        construct_error = self.getConstructDiffWithinClass(image_one_hot_labels, fake, real)
         # construct_error = torch.abs((torch.mean(disc_fake_pred) - torch.mean(disc_real_pred)))
 
         # Add the variance term and construct error to the loss
@@ -132,3 +131,4 @@ class WGANloss():
 
         disc_loss = torch.mean(disc_fake_pred) - torch.mean(disc_real_pred) + self.c_lambda * g_p  # torch.mean() averages all value in a tensor
         return disc_loss
+

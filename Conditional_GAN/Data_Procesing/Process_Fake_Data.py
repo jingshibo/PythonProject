@@ -63,15 +63,15 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
             paired_indices = range(num_samples)  # use the original experiment session order for pairing
 
         # Iterate over each timepoint key
-        for key in gen_data_1.keys():
+        for time_point in gen_data_1.keys():
             # Determine the corresponding factor key in blending_factors
-            timepoint_number = int(key.split('_')[-1])
+            timepoint_number = int(time_point.split('_')[-1])
             factor_key = f"timepoint_{(timepoint_number // interval) * interval}"
             factor = blending_factors[factor_key]
 
             # Fetch data from gen_data_1 and its paired index from gen_data_2 based on the predetermined pairing
-            samples_1 = gen_data_1[key]  # note: this is not only one sample, samples_1 is an array of [sample, channel, height, width]
-            samples_2 = gen_data_2[key][paired_indices]
+            samples_1 = gen_data_1[time_point]  # note: this is not only one sample, samples_1 is an array of [sample, channel, height, width]
+            samples_2 = gen_data_2[time_point][paired_indices]
 
             # Apply the blending formula to produce the new data
             if factor.shape[1] == 1:  # one alpha parameter
@@ -81,7 +81,7 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
             elif factor.shape[1] == 3:  # three alpha parameters
                 new_data = samples_1 * factor[:, 0, :, :][:, np.newaxis, :, :] + samples_2 * factor[:, 1, :, :][:, np.newaxis, :,
                 :] + factor[:, 2, :, :][:, np.newaxis, :, :]
-            new_data_dict[key] = new_data
+            new_data_dict[time_point] = new_data
         # Append the generated data to the data_list
         new_data_list.append(new_data_dict)
 
@@ -90,14 +90,6 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
 
 ## Reorganize the generated_data in fake_data_list to construct time series data form at each repetition and reshape them for classification
 def reorganizeFakeData(fake_data_list):
-    """
-    Args:
-    - data_list (list): A list containing dictionaries with generated data.
-
-    Returns:
-    - reorganized_data_list (list): List containing reorganized data for each new_data_dict.
-    """
-
     reorganized_fake_data = []
     # Iterate over each new_data_dict in data_list
     for generated_data in fake_data_list:

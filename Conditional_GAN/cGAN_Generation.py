@@ -46,7 +46,7 @@ new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters
 
 
 ## test stable values
-# import numpy as np
+import numpy as np
 # keys = {'emg_LWLW': 200, 'emg_LWSA': 400, 'emg_SASA': 600, 'emg_LWSD': 150, 'emg_SDSD': 100}
 # for key, value in keys.items():
 #     for i, array in enumerate(old_emg_data[key]):
@@ -71,12 +71,13 @@ import numpy as np
 # emg_LWSA = np.tile(reshaped_values, (1, 130))
 
 
+## constant values
 array_first_half = np.full((450, 130), 100)
 array_second_half = np.full((450, 130), 900)
 emg_LWLW = np.vstack([array_first_half, array_second_half])
 
-array_first_half = np.full((450, 130), 900)
-array_second_half = np.full((450, 130), 100)
+array_first_half = np.full((450, 130), 500)
+array_second_half = np.full((450, 130), 500)
 emg_SASA = np.vstack([array_first_half, array_second_half])
 
 emg_LWSA = np.full((900, 130), 200)
@@ -87,11 +88,8 @@ keys = {'emg_LWLW': emg_LWLW, 'emg_SASA': emg_SASA, 'emg_LWSA': emg_LWSA}
 # Loop through each key-value pair in the keys dictionary
 for key, value in keys.items():
     for i, array in enumerate(old_emg_data[key]):
-        # Generate noise
         noise = 5 * np.random.randn(*array.shape)
-        # Add noise to the new array
         old_emg_data[key][i] = value + noise
-
 
 
 ## normalize and extract emg data for gan model training
@@ -115,7 +113,7 @@ batch_size = 1024  # this is also the number of samples to extract for each time
 sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
-noise_dim = 32
+noise_dim = 0
 blending_factor_dim = 2
 
 
@@ -144,7 +142,7 @@ print(datetime.datetime.now() - now)
 
 
 ## test generated data results
-epoch_number = 30
+epoch_number = 10
 gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)
