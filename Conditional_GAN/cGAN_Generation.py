@@ -113,7 +113,7 @@ batch_size = 1024  # this is also the number of samples to extract for each time
 sampling_repetition = 1  # the number of batches to repeat the extraction of samples for the same time points
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
-noise_dim = 0
+noise_dim = 32
 blending_factor_dim = 2
 
 
@@ -142,7 +142,7 @@ print(datetime.datetime.now() - now)
 
 
 ## test generated data results
-epoch_number = 10
+epoch_number = 70
 gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=epoch_number)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_data = old_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, repetition=1, random_pairing=False)

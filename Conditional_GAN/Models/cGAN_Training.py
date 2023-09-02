@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 import datetime
+import numpy as np
 from Conditional_GAN.Models import cGAN_Model, cGAN_Loss, Model_Storage, cGAN_DataSet
 
 
@@ -29,6 +30,7 @@ class ModelTraining():
         self.img_height = None
         self.img_width = None
         self.n_classes = None
+        self.epsilon = None  # soft label parameter
         self.gen = None
         self.disc = None
         self.gen_opt = None
@@ -53,8 +55,8 @@ class ModelTraining():
         # training model
         generator_input_dim = self.noise_dim + self.n_classes
         discriminator_input_channel = self.img_channel + self.n_classes
-        self.gen = cGAN_Model.Generator_UNet(generator_input_dim, self.img_height, self.img_width, self.blending_factor_dim).to(self.device)
-        self.disc = cGAN_Model.Discriminator_Same(discriminator_input_channel).to(self.device)
+        self.gen = cGAN_Model.Generator_UNet(generator_input_dim, self.img_height, self.img_width, self.blending_factor_dim, self.n_classes).to(self.device)
+        self.disc = cGAN_Model.Discriminator_Same(discriminator_input_channel, self.n_classes).to(self.device)
 
         # training parameters
         gen_lr = 0.0003  # initial learning rate
@@ -123,6 +125,9 @@ class ModelTraining():
 
             # convert condition into one hot vectors
             one_hot_labels = F.one_hot(condition, self.n_classes)
+            # Apply one-side label smoothing
+            self.epsilon = 0.95
+            one_hot_labels = one_hot_labels * self.epsilon
             # adding two additional dimensions to the one-hot encoded labels (size [batch_size, n_classes, 1, 1])
             image_one_hot_labels = one_hot_labels[:, :, None, None]
             # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
@@ -132,7 +137,7 @@ class ModelTraining():
             if batch_count % self.disc_update_interval == 0:
                 self.disc_opt.zero_grad()  # Zero out the discriminator gradients
                 fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
-                disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, self.disc)
+                disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, one_hot_labels, self.disc)
                 disc_loss.backward()  # Update gradients
                 self.disc_opt.step()  # Update optimizer
                 self.disc_losses += [disc_loss.item()]
@@ -141,7 +146,7 @@ class ModelTraining():
             if batch_count % self.gen_update_interval == 0:
                 self.gen_opt.zero_grad()
                 fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
-                gen_loss = self.loss_fn.get_gen_loss(fake, real, blending_factors, image_one_hot_labels, self.disc)
+                gen_loss = self.loss_fn.get_gen_loss(fake, real, blending_factors, image_one_hot_labels, one_hot_labels, self.disc)
                 gen_loss.backward()
                 self.gen_opt.step()
                 self.gen_losses += [gen_loss.item()]
@@ -166,7 +171,7 @@ class ModelTraining():
             noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
         else:
             noise_and_labels = one_hot_labels.float()
-        blending_factors = self.gen(noise_and_labels)  # Estimate blending factors
+        blending_factors = self.gen(noise_and_labels, one_hot_labels)  # Estimate blending factors
 
         # Generate fake images, according to the size of blending factors
         if self.blending_factor_dim == 1:
@@ -180,31 +185,28 @@ class ModelTraining():
 
     def estimateBlendingFactors(self, dataset, train_data):
         blending_factors = {}
-        n_iterations = 100  # Number of times to calculate blending_factor at each time_point for averaging purpose
+        n_iterations = 1000  # Number of times to calculate blending_factor at each time_point for averaging purpose
 
         self.gen.train(False)  # Set the generator to evaluation mode
         with torch.no_grad():  # Disable autograd for better performance
             for time_point in list(train_data['gen_data_1'].keys()):
                 number = dataset.extract_and_normalize(time_point)
-                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).unsqueeze(0).to(self.device)
+                one_hot_labels = self.epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
 
-                # Initialize a variable to store the sum of blending_factors over n_iterations
-                sum_blending_factors = 0.0
-                for _ in range(n_iterations):
-                    if self.noise_dim > 0:
-                        # Generate random noise
-                        fake_noise = torch.randn(1, self.noise_dim, device=self.device)
-                        # Concatenate noise and one-hot labels
-                        noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
-                    else:
-                        noise_and_labels = one_hot_labels.float()
-                    # Generate blending_factor and add it to the sum
-                    sum_blending_factors += self.gen(noise_and_labels).cpu().numpy()
+                if self.noise_dim > 0:
+                    # Generate random noise
+                    fake_noise = torch.randn(n_iterations, self.noise_dim, device=self.device)
+                    # Concatenate noise and one-hot labels
+                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
+                else:
+                    noise_and_labels = one_hot_labels.float()
+                # Generate blending_factor for all iterations at once
+                blending_outputs = self.gen(noise_and_labels, one_hot_labels).cpu().numpy()
 
                 # Compute the average blending_factor over n_iterations
-                avg_blending_factor = sum_blending_factors / n_iterations
+                mean_blending_factor = np.mean(blending_outputs, axis=0, keepdims=True)
                 # Store the average blending_factor
-                blending_factors[time_point] = avg_blending_factor
+                blending_factors[time_point] = mean_blending_factor
         return blending_factors
 
 ## In order to train multiple transition types, we wrap up a single type of training process into a function

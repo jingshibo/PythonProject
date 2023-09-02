@@ -5,8 +5,37 @@ from torchinfo import summary
 
 
 ## model structure
+class ConditionalBatchNorm2d(nn.Module):
+    def __init__(self, num_channels, num_classes):
+        super().__init__()
+        self.num_channels = num_channels
+        self.bn = nn.BatchNorm2d(num_channels, affine=False)
+        self.embed = nn.Linear(num_classes, num_channels * 2)
+
+    def forward(self, x, label):
+        out = self.bn(x)
+        gamma, beta = self.embed(label.to(torch.float32)).chunk(2, 1)
+        gamma = gamma.view(-1, self.num_channels, 1, 1)
+        beta = beta.view(-1, self.num_channels, 1, 1)
+        out = gamma * out + beta
+        return out
+
+class ConditionalInstanceNorm2d(nn.Module):
+    def __init__(self, num_channels, num_classes):
+        super(ConditionalInstanceNorm2d, self).__init__()
+        self.num_channels = num_channels
+        self.inst_norm = nn.InstanceNorm2d(num_channels, affine=False)
+        self.embed = nn.Linear(num_classes, num_channels * 2)
+
+    def forward(self, x, label):
+        x = self.inst_norm(x)
+        gamma, beta = self.embed(label.to(torch.float32)).chunk(2, 1)
+        gamma = gamma.unsqueeze(2).unsqueeze(3)
+        beta = beta.unsqueeze(2).unsqueeze(3)
+        return gamma * x + beta
+
 class ContractingBlock(nn.Module):
-    def __init__(self, input_channels, use_bn=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
+    def __init__(self, input_channels, num_classes, use_bn=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
         super(ContractingBlock, self).__init__()
         if SN:  # spectral normalization
             self.conv1 = nn.utils.spectral_norm(
@@ -15,20 +44,19 @@ class ContractingBlock(nn.Module):
             self.conv1 = nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode='replicate')
         self.activation = nn.ReLU() if activation == 'relu' else nn.LeakyReLU(0.2)
         if use_bn:
-            self.norm = nn.InstanceNorm2d(input_channels * 2)
-            # self.norm = nn.LayerNorm([input_channels * 2, 13, 10])
+            self.norm = ConditionalInstanceNorm2d(input_channels * 2, num_classes)
         self.use_bn = use_bn
 
-    def forward(self, x):
+    def forward(self, x, label):
         x = self.conv1(x)
         if self.use_bn:
-            x = self.norm(x)
+            x = self.norm(x, label)
         x = self.activation(x)
         return x
 
 
 class ExpandingBlock(nn.Module):
-    def __init__(self, input_channels, use_bn=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
+    def __init__(self, input_channels, num_classes, use_bn=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
         super(ExpandingBlock, self).__init__()
         if SN:  # spectral normalization
             self.conv1 = nn.utils.spectral_norm(
@@ -37,15 +65,14 @@ class ExpandingBlock(nn.Module):
             self.conv1 = nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=kernel_size, stride=stride, padding=padding)
         self.activation = nn.ReLU() if activation == 'relu' else nn.LeakyReLU(0.2)
         if use_bn:
-            self.norm = nn.InstanceNorm2d(input_channels // 2)
-            # self.norm = nn.LayerNorm([input_channels // 2, 13, 10])
+            self.norm = ConditionalInstanceNorm2d(input_channels // 2, num_classes)
         self.use_bn = use_bn
 
-    def forward(self, x, skip_con):
+    def forward(self, x, skip_con, label):
         x = torch.cat([x, skip_con], 1)
         x = self.conv1(x)
         if self.use_bn:
-            x = self.norm(x)
+            x = self.norm(x, label)
         x = self.activation(x)
         return x
 
@@ -66,7 +93,7 @@ class FeatureMapBlock(nn.Module):
 
 # UNet Generator
 class Generator_UNet(nn.Module):
-    def __init__(self, input_vector_dim, img_height, img_width, output_chan, hidden_channels=32):
+    def __init__(self, input_vector_dim, img_height, img_width, output_chan, num_classes, hidden_channels=32):
         super(Generator_UNet, self).__init__()
         # data size
         self.input_dim = input_vector_dim
@@ -79,34 +106,34 @@ class Generator_UNet(nn.Module):
 
         # encoder
         self.upfeature = FeatureMapBlock(output_chan, hidden_channels, stride=1, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, kernel_size=3, padding=1, SN=True)
-        self.contract2 = ContractingBlock(hidden_channels * 2, kernel_size=3, padding=1, SN=True)
-        self.contract3 = ContractingBlock(hidden_channels * 4, kernel_size=3, padding=1, SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, kernel_size=3, padding=1, SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, kernel_size=3, padding=1, SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, SN=True)
+        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, SN=True)
+        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, SN=True)
 
         # decoder
-        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, kernel_size=3, padding=1, SN=True)
-        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, kernel_size=3, padding=1, SN=True)
-        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, kernel_size=3, padding=1, SN=True)
-        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, kernel_size=3, padding=1, SN=True)
+        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, SN=True)
+        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, SN=True)
+        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, SN=True)
+        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, SN=True)
         self.downfeature = FeatureMapBlock(int(hidden_channels * 3), output_chan, stride=1, SN=True)
 
         self.sig = torch.nn.Sigmoid()
 
-    def forward(self, noise_and_class):
+    def forward(self, noise_and_class, label):
         # convert the noise and class tensor of size (n_samples, input_dim) to a 4d tensor of size (n_samples, input_dim, 1, 1)
         x = self.fc(noise_and_class)
         x = x.view(-1, self.output_chan, self.img_height, self.img_width)  # Reshaping to (batch_size, 2, 13, 10)
 
         x0 = self.upfeature(x)
-        x1 = self.contract1(x0)
-        x2 = self.contract2(x1)
-        x3 = self.contract3(x2)
-        x4 = self.contract4(x3)
-        y4 = self.expand4(x4, x3)  # Skip connection from contract1 to expand2
-        y3 = self.expand3(y4, x2)  # Skip connection from contract1 to expand2
-        y2 = self.expand2(y3, x1)  # Skip connection from upfeature to expand3
-        y1 = self.expand1(y2, x0)  # Skip connection from upfeature to expand3
+        x1 = self.contract1(x0, label)
+        x2 = self.contract2(x1, label)
+        x3 = self.contract3(x2, label)
+        x4 = self.contract4(x3, label)
+        y4 = self.expand4(x4, x3, label)  # Skip connection from contract1 to expand2
+        y3 = self.expand3(y4, x2, label)  # Skip connection from contract1 to expand2
+        y2 = self.expand2(y3, x1, label)  # Skip connection from upfeature to expand3
+        y1 = self.expand1(y2, x0, label)  # Skip connection from upfeature to expand3
         y0 = self.downfeature(y1)
         yn = self.sig(y0)
         return yn
@@ -119,42 +146,42 @@ class Generator_UNet(nn.Module):
 
 ##
 class Discriminator_Same(nn.Module):
-    def __init__(self, input_channels, hidden_channels=32):
+    def __init__(self, input_channels, num_classes, hidden_channels=32):
         super(Discriminator_Same, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, use_bn=False, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.contract2 = ContractingBlock(hidden_channels * 2, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.contract3 = ContractingBlock(hidden_channels * 4, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_bn=False, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.final = nn.Conv2d(hidden_channels * 16, 1, kernel_size=1)
 
-    def forward(self, image_and_class):
+    def forward(self, image_and_class, label):
         x = self.upfeature(image_and_class)
-        x = self.contract1(x)
-        x = self.contract2(x)
-        x = self.contract3(x)
-        x = self.contract4(x)
+        x = self.contract1(x, label)
+        x = self.contract2(x, label)
+        x = self.contract3(x, label)
+        x = self.contract4(x, label)
         x = self.final(x)
         return x
 
 class Discriminator_Shrinking(nn.Module):
-    def __init__(self, input_channels, padding='valid', hidden_channels=32):
+    def __init__(self, input_channels, num_classes, padding='valid', hidden_channels=32):
         super(Discriminator_Shrinking, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, padding=padding, use_bn=False, activation='lrelu', SN=True)
-        self.contract2 = ContractingBlock(hidden_channels * 2, padding=padding, activation='lrelu', SN=True)
-        self.contract3 = ContractingBlock(hidden_channels * 4, padding=padding, activation='lrelu', SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, padding=padding, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, padding=padding, use_bn=False, activation='lrelu', SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, padding=padding, activation='lrelu', SN=True)
+        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, padding=padding, activation='lrelu', SN=True)
+        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, padding=padding, activation='lrelu', SN=True)
         self.final = nn.Conv2d(hidden_channels * 16, 1, kernel_size=1)
 
-    def forward(self, image_and_class):
+    def forward(self, image_and_class, label):
         x = self.upfeature(image_and_class)
-        x = self.contract1(x)
-        x = self.contract2(x)
-        x = self.contract3(x)
-        x = self.contract4(x)
+        x = self.contract1(x, label)
+        x = self.contract2(x, label)
+        x = self.contract3(x, label)
+        x = self.contract4(x, label)
         x = self.final(x)
         return x
 

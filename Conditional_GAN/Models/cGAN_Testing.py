@@ -5,7 +5,7 @@
 ##  import
 import torch
 import torch.nn.functional as F
-
+import numpy as np
 
 ## training
 class ModelTesting():
@@ -22,30 +22,28 @@ class ModelTesting():
         self.keys = list(test_data['gen_data_1'].keys())
         self.n_classes = len(self.keys)
         self.noise_dim = noise_dim
-        n_iterations = 100  # Number of times to calculate blending_factor for each time_point for averaging purpose
+        n_iterations = 1000  # Number of times to calculate blending_factor for each time_point for averaging purpose
+        epsilon = 0.95  # one-side label smoothing parameter
 
         blending_factors = {}
         self.gen.train(False)  # Set the generator to evaluation mode
         with torch.no_grad():  # Disable autograd for performance improvement
             for time_point in self.keys:
                 number = self.extract_and_normalize(time_point)
-                one_hot_labels = F.one_hot(torch.tensor(number), self.n_classes).unsqueeze(0).to(self.device)
+                one_hot_labels = epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
 
-                # Initialize a variable to store the sum of blending_factors over n_iterations
-                sum_blending_factors = 0.0
-                for _ in range(n_iterations):
-                    if self.noise_dim > 0:
-                        # Generate random noise
-                        fake_noise = torch.randn(1, self.noise_dim, device=self.device)
-                        # Concatenate noise and one-hot labels
-                        noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
-                    else:
-                        noise_and_labels = one_hot_labels.float()
-                    # Generate blending_factor and add it to the sum
-                    sum_blending_factors += self.gen(noise_and_labels).cpu().numpy()
+                if self.noise_dim > 0:
+                    # Generate random noise
+                    fake_noise = torch.randn(n_iterations, self.noise_dim, device=self.device)
+                    # Concatenate noise and one-hot labels
+                    noise_and_labels = torch.cat((fake_noise.float(), one_hot_labels.float()), 1)
+                else:
+                    noise_and_labels = one_hot_labels.float()
+                # Generate blending_factor for all iterations at once
+                blending_outputs = self.gen(noise_and_labels, one_hot_labels).cpu().numpy()
 
                 # Compute the average blending_factor over n_iterations
-                avg_blending_factor = sum_blending_factors / n_iterations
+                avg_blending_factor = np.mean(blending_outputs, axis=0, keepdims=True)
                 # Store the average blending_factor
                 blending_factors[time_point] = avg_blending_factor
         return blending_factors
