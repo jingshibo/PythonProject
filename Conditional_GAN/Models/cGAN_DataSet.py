@@ -16,7 +16,7 @@ class RandomPureEmgDataSet(Dataset):
 
     def __init__(self, train_data, batch_size, sampling_repetition):
         self.batch_size = batch_size
-        self.repetition = sampling_repetition  # the number of batches to repeat the combination sampling for the same time points
+        self.repetition = sampling_repetition  # this refers to the number of batches to repeat for the same time points
         self.keys = list(train_data['gen_data_1'].keys())  # Assuming all three dicts have the same keys
         self.n_class = len(self.keys)
 
@@ -91,7 +91,7 @@ class FixedPureEmgDataSet(Dataset):
     '''
     def __init__(self, train_data, batch_size, sampling_repetition):
         self.batch_size = batch_size
-        self.repetition = sampling_repetition
+        self.repetition = sampling_repetition  # this refers to the number of batches to repeat for the same time points
         self.keys = list(train_data['gen_data_1'].keys())
         self.n_class = len(self.keys)
 
@@ -166,9 +166,12 @@ class FixedMixEmgDataSet(Dataset):
     '''
     def __init__(self, train_data, batch_size, sampling_repetition):
         self.batch_size = batch_size
-        self.repetition = sampling_repetition
-        self.keys = list(train_data['gen_data_1'].keys())
+        self.repetition = sampling_repetition  # the number of samples to collect at each time point
+        self.keys = list(train_data['gen_data_1'].keys())  # Assuming all three dicts have the same keys
         self.n_class = len(self.keys)
+        sorted_keys = sorted(train_data['gen_data_1'].keys(), key=lambda x: int(x.split('_')[-1]))
+        interval = int(sorted_keys[1].split('_')[-1]) - int(sorted_keys[0].split('_')[-1])
+        self.length = len(train_data['gen_data_1']) * interval
 
         # Convert data to Torch tensors
         self.gen_data_1 = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['gen_data_1'].items()}
@@ -177,7 +180,7 @@ class FixedMixEmgDataSet(Dataset):
 
         # Precompute and store all samples
         self.precomputed_samples = []
-        total_samples = self.batch_size * len(self.keys) * self.repetition
+        total_samples = ((self.length * self.repetition) // self.batch_size + 1) * self.batch_size
         for idx in range(total_samples):
             time_point = self.keys[idx % len(self.keys)]  # make sure each timepoint has the same number of samples
             condition = self.extract_and_normalize(time_point)
@@ -244,9 +247,12 @@ class RandomMixEmgDataSet(Dataset):
 
     def __init__(self, train_data, batch_size, sampling_repetition):
         self.batch_size = batch_size
-        self.repetition = sampling_repetition  # the number of batches to repeat the combination sampling for the same time points
+        self.repetition = sampling_repetition  # the number of samples to collect at each time point
         self.keys = list(train_data['gen_data_1'].keys())  # Assuming all three dicts have the same keys
         self.n_class = len(self.keys)
+        sorted_keys = sorted(train_data['gen_data_1'].keys(), key=lambda x: int(x.split('_')[-1]))
+        interval = int(sorted_keys[1].split('_')[-1]) - int(sorted_keys[0].split('_')[-1])
+        self.length = len(train_data['gen_data_1']) * interval
 
         # size [n_samples, n_channel, length, width]
         self.gen_data_1 = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['gen_data_1'].items()}
@@ -254,15 +260,14 @@ class RandomMixEmgDataSet(Dataset):
         self.disc_data = {key: [torch.from_numpy(arr).float() for arr in value] for key, value in train_data['disc_data'].items()}
 
         # Adjust the generation of epoch_keys
-        self.epoch_keys = []
-        for _ in range(self.repetition):
-            temp_keys = self.keys.copy()
-            random.shuffle(temp_keys)
-            self.epoch_keys.extend(temp_keys)
+        temp_keys = self.keys.copy()
+        random.shuffle(temp_keys)
+        self.epoch_keys = temp_keys
 
     def __len__(self):
         # the number of samples obtained in an epoch for each key = self.repetition * self.batch_size
-        return self.repetition * self.batch_size * len(self.keys)
+        n = (self.length * self.repetition) // self.batch_size + 1
+        return n * self.batch_size
 
     def __getitem__(self, idx):
         # Determine the key for this idx

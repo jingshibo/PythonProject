@@ -2,10 +2,10 @@ import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
+from torch.cuda.amp import autocast, GradScaler
 import datetime
 import numpy as np
 from Conditional_GAN.Models import cGAN_Model, cGAN_Loss, Model_Storage, cGAN_DataSet
-
 
 ## training process
 class ModelTraining():
@@ -36,13 +36,12 @@ class ModelTraining():
         self.gen_opt = None
         self.disc_opt = None
         self.lr_gen_opt = None
-        self.lr_disc_opt = None
-        self.loss_fn = None
         self.train_loader = None
         self.test_loader = None
+        self.loss_fn = None
         self.writer = None
 
-    def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, transition_type, select_channels='emg_all'):
+    def trainModel(self, train_data, checkpoint_model_path, checkpoint_result_path, training_parameters, transition_type, select_channels='emg_all'):
         # input data
         dataset = cGAN_DataSet.RandomMixEmgDataSet(train_data, self.batch_size, self.sampling_repetition)
         self.train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
@@ -65,9 +64,6 @@ class ModelTraining():
         disc_lr_decay_rate = 0.7
         weight_decay = 0.0000
         beta = (0.7, 0.999)
-        c_lambda = 10  # the weight of the gradient penalty
-        var_weight = 0.03  # the weight of blending factor variance
-        construct_weight = 0.15  # the weight of constructed critic value
 
         # optimizer
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=weight_decay, betas=beta)
@@ -86,10 +82,17 @@ class ModelTraining():
         # criterion = nn.BCEWithLogitsLoss()
         # criterion = nn.MSELoss()
         # self.loss_fn = cGAN_Loss.LossFunction(criterion)
-        self.loss_fn = cGAN_Loss.WGANloss(c_lambda, var_weight, construct_weight)
+        c_lambda = 10  # the weight of the gradient penalty
+        var_weight = 0.01  # the weight of blending factor variance
+        construct_weight = 0.2  # the weight of constructed critic value
+        factor_1_weight = 0  # the weight of blending factor 1
+        factor_2_weight = 0  # the weight of blending factor 2
+        factor_3_weight = 0.001  # the weight of blending factor 2
+        self.loss_fn = cGAN_Loss.WGANloss(c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight)
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
+
         for epoch_number in range(self.num_epochs):  # loop over each epoch
             # train the model
             self.trainOneEpoch(epoch_number)
@@ -102,7 +105,7 @@ class ModelTraining():
                 Model_Storage.saveCheckPointModels(checkpoint_model_path, epoch_number + 1, models, transition_type)
                 # estimate blending factors
                 blending_factors = self.estimateBlendingFactors(dataset, train_data)
-                Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors, transition_type)
+                Model_Storage.saveCheckPointCGanResults(checkpoint_result_path, epoch_number + 1, blending_factors, training_parameters, transition_type)
 
         # estimate blending factors
         blending_factors = self.estimateBlendingFactors(dataset, train_data)
@@ -126,7 +129,7 @@ class ModelTraining():
             # convert condition into one hot vectors
             one_hot_labels = F.one_hot(condition, self.n_classes)
             # Apply one-side label smoothing
-            self.epsilon = 0.95
+            self.epsilon = 0.90
             one_hot_labels = one_hot_labels * self.epsilon
             # adding two additional dimensions to the one-hot encoded labels (size [batch_size, n_classes, 1, 1])
             image_one_hot_labels = one_hot_labels[:, :, None, None]
@@ -233,7 +236,8 @@ def trainCGan(train_gan_data, transition_type, training_parameters, storage_para
     now = datetime.datetime.now()
     train_model = ModelTraining(num_epochs, batch_size, sampling_repetition, gen_update_interval, disc_update_interval, decay_epochs,
         noise_dim, blending_factor_dim)
-    gan_models, blending_factors = train_model.trainModel(train_gan_data, checkpoint_model_path, checkpoint_result_path, transition_type)
+    gan_models, blending_factors = train_model.trainModel(train_gan_data, checkpoint_model_path, checkpoint_result_path,
+        training_parameters, transition_type)
     print(datetime.datetime.now() - now)
 
     # save trained gan models and results

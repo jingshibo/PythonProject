@@ -29,7 +29,7 @@ class cGAN_Evaluation:
 
 
     # generate fake emg data and substitute original emg dataset using this data
-    def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, repetition=1, random_pairing=True):
+    def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, cutoff_frequency, repetition=1, random_pairing=True):
         '''
             :param data_source: selected from 'old' and 'new'
             :param modes_generation: such as  {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}. The order in the list is important,
@@ -40,18 +40,19 @@ class cGAN_Evaluation:
         data_for_generation = {'gen_data_1': None, 'gen_data_2': None, 'blending_factors': None}
 
         for transition_type, modes in modes_generation.items():
-            # construct data_for_generation dict
-            data_for_generation['gen_data_1'] = Process_Fake_Data.separateByTimeInterval(extracted_emg[transition_type][data_source][modes[0]],
-                timepoint_interval=1, length=length)
-            data_for_generation['gen_data_2'] = Process_Fake_Data.separateByTimeInterval(extracted_emg[transition_type][data_source][modes[1]],
-                timepoint_interval=1, length=length)
+            # create data_for_generation dict
+            data_for_generation['gen_data_1'] = Process_Fake_Data.separateByInterval(
+                extracted_emg[transition_type][data_source][modes[0]], timepoint_interval=1, length=length)
+            data_for_generation['gen_data_2'] = Process_Fake_Data.separateByInterval(
+                extracted_emg[transition_type][data_source][modes[1]], timepoint_interval=1, length=length)
             data_for_generation['blending_factors'] = self.gen_results[transition_type]['model_results']
             # generate fake data
-            fake_data = Process_Fake_Data.generateFakeData(data_for_generation,
+            fake_data = Process_Fake_Data.generateFakeDataByCurve(data_for_generation,
                 self.gen_results[transition_type]['training_parameters']['interval'], repetition=repetition, random_pairing=random_pairing)
             reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
+            filtered_fake_data = Process_Fake_Data.smoothGeneratedData(reorganized_fake_data, cutoff_frequency)
             # create synthetic training data
-            fake_emg_data = {modes[2]: reorganized_fake_data}
+            fake_emg_data = {modes[2]: filtered_fake_data}
             synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_data, synthetic_data)
 
         return synthetic_data

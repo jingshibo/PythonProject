@@ -2,15 +2,14 @@
 
 '''
 
-
 import numpy as np
 import copy
 from Cycle_GAN.Functions import Data_Processing
 import random
-
+from scipy import signal
 
 ## separate the dataset into multiple timepoint bins
-def separateByTimeInterval(data, timepoint_interval=50, length=850, output_list=False):
+def separateByInterval(data, timepoint_interval=50, length=850, output_list=False):
     '''
     :param data: input emg dataset
     :param timepoint_interval: how large is the bin to separate the dataset
@@ -49,7 +48,7 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
     blending_factors = reorganized_data['blending_factors']
 
     # List to store multiple sets of new data
-    new_data_list = []
+    fake_data = []
 
     # Repeat the generation process multiple times
     for _ in range(repetition):  # Note: if random_pairing=False, only 1 repetition is valid
@@ -83,33 +82,112 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
                 :] + factor[:, 2, :, :][:, np.newaxis, :, :]
             new_data_dict[time_point] = new_data
         # Append the generated data to the data_list
-        new_data_list.append(new_data_dict)
+        fake_data.append(new_data_dict)
 
-    return new_data_list
+    return fake_data
+
+
+## Generate fake data based on combinations of every two complete emg curves gen_data_1 and gen_data_2.
+def generateFakeDataByCurve(reorganized_data, interval, repetition=1, random_pairing=True):
+    '''
+    This function is modified based on the input and output of the above generateFakeData() function in order to be compatible with other
+    functions, so there are some additional data transformations and input arguments that look unnecessary.
+    '''
+    def reshapeGenData(data):
+        # Get the shape parameters
+        num_timepoints = len(data)
+        num_sample, channels, num_row, num_col = data['timepoint_0'].shape
+
+        # Pre-allocate a NumPy array for the reshaped data
+        reshaped_data = [np.zeros((num_timepoints, channels, num_row, num_col)) for _ in range(num_sample)]
+        # Loop through the sorted keys and fill the pre-allocated NumPy arrays
+        for idx, key in enumerate(sorted(data.keys(), key=lambda x: int(x.split('_')[-1]))):
+            current_array = data[key]  # Shape: (num_sample, 1, num_row, num_col)
+            for i in range(num_sample):
+                reshaped_data[i][idx] = current_array[i]
+        return reshaped_data
+
+    def reshapeBlendingFactors(data):
+        sorted_keys = sorted(data.keys(), key=lambda x: int(x.split('_')[-1]))
+        # Calculate the constant interval once, using the first two keys
+        interval = int(sorted_keys[1].split('_')[-1]) - int(sorted_keys[0].split('_')[-1])
+
+        # Initialize an empty list to store the reorganized data
+        reshaped_data_list = []
+        # Loop through the sorted keys to reorganize the data
+        for key in sorted_keys:
+            current_array = data[key]  # Shape: (1, 2, 13, 10)
+            # Replicate the current array 'constant_interval' times
+            replicated_array = np.repeat(current_array, interval, axis=0)  # Shape will be (constant_interval, 2, 13, 10)
+            # Add to the reorganized data list
+            reshaped_data_list.append(replicated_array)
+        # Concatenate all the arrays to form a single 4D array
+        reshaped_data = np.concatenate(reshaped_data_list, axis=0)
+        return reshaped_data
+
+    # Function to combine gen_data_1 and gen_data_2 based on blending_factors
+    def performBlendingOperation(gen_data_1, gen_data_2, blending_factors):
+        # Determine the shape parameters
+        num_samples = len(gen_data_1) * len(gen_data_2)
+        array_shape = gen_data_1[0].shape
+
+        # Pre-allocate a NumPy array to store the combined data
+        generated_data_array = np.zeros((num_samples, *array_shape))
+        # Pre-compute the slices of blending_factors to avoid repeated computation
+        blend_slices = [blending_factors[:, i, :, :][:, np.newaxis, :, :] for i in range(blending_factors.shape[1])]
+        # Loop through each array in gen_data_1 and gen_data_2 to combine them
+        index = 0
+        for array1 in gen_data_1:
+            for array2 in gen_data_2:
+                if blending_factors.shape[1] == 1:  # One alpha parameter
+                    generated_data_array[index] = array1 * blend_slices[0] + array2 * (1 - blend_slices[0])
+                elif blending_factors.shape[1] == 2:  # Two alpha parameters
+                    generated_data_array[index] = array1 * blend_slices[0] + array2 * blend_slices[1]
+                elif blending_factors.shape[1] == 3:  # Three alpha parameters
+                    generated_data_array[index] = array1 * blend_slices[0] + array2 * blend_slices[1] + blend_slices[2]
+                index += 1
+        # Convert the combined_data_array into a list of individual samples
+        combined_data_list = [generated_data_array[i] for i in range(num_samples)]
+        return combined_data_list
+
+    # Extracting the main data structures from the input dictionary
+    gen_data_1 = reshapeGenData(reorganized_data['gen_data_1'])
+    gen_data_2 = reshapeGenData(reorganized_data['gen_data_2'])
+    blending_factors = reshapeBlendingFactors(reorganized_data['blending_factors'])
+
+    # Initialize a dictionary to store the reorganized data
+    fake_data = {}
+    generated_data_list = performBlendingOperation(gen_data_1, gen_data_2, blending_factors)
+    # Loop through each timepoint (0 to 849)
+    for timepoint in range(len(reorganized_data['gen_data_1'])):
+        # Extract the slice corresponding to the current timepoint from each of the 121 arrays
+        slices_at_timepoint = [array[timepoint] for array in generated_data_list]
+        # Stack these slices along a new axis to form a new array of shape (121, 1, 13, 10)
+        array_at_timepoint = np.stack(slices_at_timepoint)
+        # Add this array to the dictionary with the key corresponding to the current timepoint
+        fake_data[f"timepoint_{timepoint}"] = array_at_timepoint
+
+    return [fake_data]
 
 
 ## Reorganize the generated_data in fake_data_list to construct time series data form at each repetition and reshape them for classification
 def reorganizeFakeData(fake_data_list):
     reorganized_fake_data = []
-    # Iterate over each new_data_dict in data_list
+    # Loop through each generated_data dictionary in fake_data_list
     for generated_data in fake_data_list:
-        # number of samples generated per timepoint
-        num_samples = generated_data['timepoint_0'].shape[0]
-        # Initialize a temporary list to store the reorganized data for the current new_data_dict
-        temp_reorganized_list = [[] for _ in range(num_samples)]
-
-        # Ensure the keys are sorted correctly based on the numeric value after "timepoint_"
+        # Get the shape parameters dynamically
+        num_samples, channels, num_row, num_col = generated_data['timepoint_0'].shape
+        num_timepoints = len(generated_data)
+        # Pre-allocate a NumPy array for the reorganized data
+        reorganized_array = np.zeros((num_samples, num_timepoints, channels, num_row, num_col))
+        # Ensure the keys are sorted correctly
         sorted_keys = sorted(generated_data.keys(), key=lambda x: int(x.split('_')[-1]))
-        # Iterate through the keys (timepoints)
-        for key in sorted_keys:  # the sorted() function sorts the keys in ascending order.
-            timepoint_data = generated_data[key]
 
-            # The enumerate function will return two values on each iteration: an index idx and the value at that index sample
-            for idx, sample in enumerate(timepoint_data):  # enumerate will iterate over the first axis
-                temp_reorganized_list[idx].append(sample)
-
-        # Convert inner lists to numpy arrays and append to the reorganized_data_list
-        reorganized_fake_data.extend([np.array(sample_series) for sample_series in temp_reorganized_list])
+        # Fill in the pre-allocated NumPy array
+        for t, key in enumerate(sorted_keys):
+            reorganized_array[:, t] = generated_data[key]  # reorganized_array[:, t] are equivalent to reorganized_array[:, t, :, :, :].
+        # Split the reorganized_array into individual sample series and remove the unnecessary first dimension
+        reorganized_fake_data.extend([sample_series.squeeze(axis=0) for sample_series in np.split(reorganized_array, num_samples, axis=0)])
 
     # reshape generated fake data for classification
     reshaped_fake_data = []
@@ -137,4 +215,10 @@ def replaceUsingRealEmg(mode_to_substitute, real_emg_normalized, train_dataset, 
     test_dataset['group_0']['test_set'][mode_to_substitute] = real_value[0: int(len(real_value) * test_ratio)]
     return test_dataset
 
+
+## filtering
+def smoothGeneratedData(data_list, cutoff_frequency):
+    sos = signal.butter(4, cutoff_frequency, fs=1000, btype="lowpass", output='sos')
+    filtered_fake_data = [signal.sosfiltfilt(sos, data, axis=0) for data in data_list]
+    return filtered_fake_data
 

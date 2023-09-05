@@ -82,7 +82,7 @@ def loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=200, tr
 
 
 ## save model results during training at certain check points
-def saveCheckPointCGanResults(checkpoint_result_path, epoch_number, blending_factors, transition_type=None):
+def saveCheckPointCGanResults(checkpoint_result_path, epoch_number, blending_factors, training_parameters, transition_type=None):
     checkpoint_models_folder = os.path.join(checkpoint_result_path, f'checkpoint_epoch_{epoch_number}')  # epoch number starts from 0
     # Create the directory if it doesn't exist
     if not os.path.exists(checkpoint_models_folder):
@@ -91,9 +91,9 @@ def saveCheckPointCGanResults(checkpoint_result_path, epoch_number, blending_fac
     checkpoint_result_file = f'{transition_type}_result_checkpoint_epoch_{epoch_number}.pt'
     result_path = os.path.join(checkpoint_models_folder, checkpoint_result_file)
 
-    model_results = {key: value.tolist() for key, value in blending_factors.items()}
+    result = {'model_results': {key: value.tolist() for key, value in blending_factors.items()}, 'training_parameters': training_parameters}
     with open(result_path, 'w') as json_file:
-        json.dump(model_results, json_file, indent=8)
+        json.dump(result, json_file, indent=8)
 
 
 ## load model results from certain check points
@@ -105,9 +105,8 @@ def loadCheckPointCGanResults(checkpoint_result_path, transition_type=None, epoc
     # read json file
     with open(result_path) as json_file:
         result_dict = json.load(json_file)
-
-    checkpoint_result = {key: np.array(value) for key, value in result_dict.items()}
-    return checkpoint_result
+    result_dict['model_results'] = {key: np.array(value) for key, value in result_dict['model_results'].items()}
+    return result_dict
 
 
 ## save classification accuracy and cm recall values
@@ -165,9 +164,9 @@ def loadClassifyModel(subject, version, model_type, project='cGAN_Model'):
 def loadBlendingFactors(subject, version, result_set, model_type, modes_generation, checkpoint_result_path, epoch_number=None):
     gen_results = {}
     for transition_type in modes_generation.keys():
-        gen_result = loadCGanResults(subject, version, result_set, model_type, transition_type, project='cGAN_Model')
-        if epoch_number is not None:  # if no epoch_number input, output the final epoch results
-            checkpoint_result = loadCheckPointCGanResults(checkpoint_result_path, transition_type, epoch_number=epoch_number)
-            gen_result['model_results'] = checkpoint_result
+        if epoch_number is None:
+            gen_result = loadCGanResults(subject, version, result_set, model_type, transition_type, project='cGAN_Model')
+        elif epoch_number is not None:  # if no epoch_number input, output the final epoch results
+            gen_result = loadCheckPointCGanResults(checkpoint_result_path, transition_type, epoch_number=epoch_number)
         gen_results[transition_type] = gen_result  # there could be more than one transition to generate
     return gen_results

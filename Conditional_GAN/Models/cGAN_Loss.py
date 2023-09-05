@@ -71,10 +71,13 @@ class LossFunction():
 
 ## GRADED FUNCTION: get_gradient
 class WGANloss():
-    def __init__(self, c_lambda, var_weight, construct_weight):
+    def __init__(self, c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight):
         self.c_lambda = c_lambda  # the weight of the gradient penalty
         self.var_weight = var_weight  # the weight of blending factor variance
         self.construct_weight = construct_weight  # the weight of blending factor variance
+        self.factor_1_weight = factor_1_weight  # the weight of blending factor 1 value
+        self.factor_2_weight = factor_2_weight  # the weight of blending factor 2 value
+        self.factor_3_weight = factor_3_weight  # the weight of blending factor 3 value
 
     # Return the gradient of the discic's scores with respect to mixes of real and fake images.
     def get_gradient(self, disc, real, fake, epsilon, one_hot_labels):
@@ -145,6 +148,16 @@ class WGANloss():
         average_class_specific_variance = sum(class_specific_variances) / len(class_specific_variances) if class_specific_variances else 0.0
         return average_class_specific_variance
 
+    def getWeightedTerm(self, blending_factor):
+        if blending_factor.shape[1] == 1:  # one alpha parameter
+            weighted_term = self.factor_1_weight * blending_factor[:, 0, :, :]
+        elif blending_factor.shape[1] == 2:  # two alpha parameters
+            weighted_term = self.factor_1_weight * blending_factor[:, 0, :, :] + self.factor_2_weight * (1 - blending_factor[:, 1, :, :])
+        elif blending_factor.shape[1] == 3:  # three alpha parameters
+            weighted_term = self.factor_1_weight * blending_factor[:, 0, :, :] + self.factor_2_weight * (
+                    1 - blending_factor[:, 1, :, :]) + self.factor_3_weight * blending_factor[:, 2, :, :]
+        return weighted_term
+
     # return generator cost
     def get_gen_loss(self, fake, real, blending_factor, image_one_hot_labels, one_hot_labels, disc):
         fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
@@ -156,10 +169,12 @@ class WGANloss():
         variance_value = self.getVarianceWithinClass(blending_factor, image_one_hot_labels)
         # Compute the construct error between the generated data and real data in order to minimize the difference per class
         construct_error = self.getConstructDiffWithinClass(image_one_hot_labels, fake, real)
-        # construct_error = torch.abs((torch.mean(disc_fake_pred) - torch.mean(disc_real_pred)))
+        # weighted term blending factor 1 and blending factor 2
+        weighted_term = self.getWeightedTerm(blending_factor)
 
         # Add the variance term and construct error to the loss
-        gen_loss = -1. * torch.mean(disc_fake_pred) + self.var_weight * variance_value + self.construct_weight * construct_error
+        gen_loss = -1. * torch.mean(
+            disc_fake_pred) + self.var_weight * variance_value + self.construct_weight * construct_error + torch.mean(weighted_term)
         return gen_loss
 
     # Return the loss of a disc given the disc's scores for fake and real images, the gradient penalty, and gradient penalty weight.

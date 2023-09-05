@@ -5,37 +5,26 @@ from torchinfo import summary
 
 
 ## model structure
-class ConditionalBatchNorm2d(nn.Module):
-    def __init__(self, num_channels, num_classes):
+class ConditionalNorm2d(nn.Module):
+    def __init__(self, num_channels, num_classes, norm='batch_norm'):
         super().__init__()
         self.num_channels = num_channels
-        self.bn = nn.BatchNorm2d(num_channels, affine=False)
+        if norm == 'batch_norm':
+            self.norm = nn.BatchNorm2d(num_channels, affine=False)
+        elif norm == 'instance_norm':
+            self.norm = nn.InstanceNorm2d(num_channels, affine=False)
         self.embed = nn.Linear(num_classes, num_channels * 2)
 
     def forward(self, x, label):
-        out = self.bn(x)
+        out = self.norm(x)
         gamma, beta = self.embed(label.to(torch.float32)).chunk(2, 1)
         gamma = gamma.view(-1, self.num_channels, 1, 1)
         beta = beta.view(-1, self.num_channels, 1, 1)
         out = gamma * out + beta
         return out
 
-class ConditionalInstanceNorm2d(nn.Module):
-    def __init__(self, num_channels, num_classes):
-        super(ConditionalInstanceNorm2d, self).__init__()
-        self.num_channels = num_channels
-        self.inst_norm = nn.InstanceNorm2d(num_channels, affine=False)
-        self.embed = nn.Linear(num_classes, num_channels * 2)
-
-    def forward(self, x, label):
-        x = self.inst_norm(x)
-        gamma, beta = self.embed(label.to(torch.float32)).chunk(2, 1)
-        gamma = gamma.unsqueeze(2).unsqueeze(3)
-        beta = beta.unsqueeze(2).unsqueeze(3)
-        return gamma * x + beta
-
 class ContractingBlock(nn.Module):
-    def __init__(self, input_channels, num_classes, use_bn=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
+    def __init__(self, input_channels, num_classes, use_norm=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
         super(ContractingBlock, self).__init__()
         if SN:  # spectral normalization
             self.conv1 = nn.utils.spectral_norm(
@@ -43,20 +32,20 @@ class ContractingBlock(nn.Module):
         else:
             self.conv1 = nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode='replicate')
         self.activation = nn.ReLU() if activation == 'relu' else nn.LeakyReLU(0.2)
-        if use_bn:
-            self.norm = ConditionalInstanceNorm2d(input_channels * 2, num_classes)
-        self.use_bn = use_bn
+        if use_norm:
+            self.norm = ConditionalNorm2d(input_channels * 2, num_classes, norm='batch_norm')
+        self.use_norm = use_norm
 
     def forward(self, x, label):
         x = self.conv1(x)
-        if self.use_bn:
+        if self.use_norm:
             x = self.norm(x, label)
         x = self.activation(x)
         return x
 
 
 class ExpandingBlock(nn.Module):
-    def __init__(self, input_channels, num_classes, use_bn=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
+    def __init__(self, input_channels, num_classes, use_norm=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
         super(ExpandingBlock, self).__init__()
         if SN:  # spectral normalization
             self.conv1 = nn.utils.spectral_norm(
@@ -64,14 +53,14 @@ class ExpandingBlock(nn.Module):
         else:
             self.conv1 = nn.ConvTranspose2d(input_channels, input_channels // 2, kernel_size=kernel_size, stride=stride, padding=padding)
         self.activation = nn.ReLU() if activation == 'relu' else nn.LeakyReLU(0.2)
-        if use_bn:
-            self.norm = ConditionalInstanceNorm2d(input_channels // 2, num_classes)
-        self.use_bn = use_bn
+        if use_norm:
+            self.norm = ConditionalNorm2d(input_channels // 2, num_classes, norm='batch_norm')
+        self.use_norm = use_norm
 
     def forward(self, x, skip_con, label):
         x = torch.cat([x, skip_con], 1)
         x = self.conv1(x)
-        if self.use_bn:
+        if self.use_norm:
             x = self.norm(x, label)
         x = self.activation(x)
         return x
@@ -150,7 +139,7 @@ class Discriminator_Same(nn.Module):
         super(Discriminator_Same, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_bn=False, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_norm=False, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
@@ -170,7 +159,7 @@ class Discriminator_Shrinking(nn.Module):
         super(Discriminator_Shrinking, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, padding=padding, use_bn=False, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, padding=padding, use_norm=False, activation='lrelu', SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, padding=padding, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, padding=padding, activation='lrelu', SN=True)
         self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, padding=padding, activation='lrelu', SN=True)

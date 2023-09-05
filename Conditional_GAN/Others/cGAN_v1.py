@@ -104,9 +104,9 @@ new_LWSA_data = np.vstack(new_emg_reshaped['emg_LWSA'])
 ## seperate dataset by timepoints
 time_interval = 50
 period = start_before_toeoff_ms + endtime_after_toeoff_ms
-separated_old_LWLW = Process_Fake_Data.separateByTimeInterval(old_LWLW_data, timepoint_interval=time_interval, length=period, output_list=True)
-separated_old_SASA = Process_Fake_Data.separateByTimeInterval(old_SASA_data, timepoint_interval=time_interval, length=period, output_list=True)
-separated_old_LWSA = Process_Fake_Data.separateByTimeInterval(old_LWSA_data, timepoint_interval=time_interval, length=period, output_list=True)
+separated_old_LWLW = Process_Fake_Data.separateByInterval(old_LWLW_data, timepoint_interval=time_interval, length=period, output_list=True)
+separated_old_SASA = Process_Fake_Data.separateByInterval(old_SASA_data, timepoint_interval=time_interval, length=period, output_list=True)
+separated_old_LWSA = Process_Fake_Data.separateByInterval(old_LWSA_data, timepoint_interval=time_interval, length=period, output_list=True)
 train_data = {'gen_data_1': separated_old_LWLW, 'gen_data_2': separated_old_SASA, 'disc_data': separated_old_LWSA}
 
 
@@ -159,8 +159,8 @@ estimated_blending_factors = {key: np.array(value) for key, value in gen_results
 
 ## separate dataset into 1ms interval
 period = start_before_toeoff_ms + endtime_after_toeoff_ms
-reorganized_old_LWLW = Process_Fake_Data.separateByTimeInterval(old_LWLW_data, timepoint_interval=1, length=period)
-reorganized_old_SASA = Process_Fake_Data.separateByTimeInterval(old_SASA_data, timepoint_interval=1, length=period)
+reorganized_old_LWLW = Process_Fake_Data.separateByInterval(old_LWLW_data, timepoint_interval=1, length=period)
+reorganized_old_SASA = Process_Fake_Data.separateByInterval(old_SASA_data, timepoint_interval=1, length=period)
 reorganized_data = {'gen_data_1': reorganized_old_LWLW, 'gen_data_2': reorganized_old_SASA, 'blending_factors': estimated_blending_factors}
 
 
@@ -244,8 +244,8 @@ accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_de
 '''
 ## separate dataset into 1ms interval
 period = start_before_toeoff_ms + endtime_after_toeoff_ms
-reorganized_new_LWLW = Process_Fake_Data.separateByTimeInterval(new_LWLW_data, timepoint_interval=1, length=period)
-reorganized_new_SASA = Process_Fake_Data.separateByTimeInterval(new_SASA_data, timepoint_interval=1, length=period)
+reorganized_new_LWLW = Process_Fake_Data.separateByInterval(new_LWLW_data, timepoint_interval=1, length=period)
+reorganized_new_SASA = Process_Fake_Data.separateByInterval(new_SASA_data, timepoint_interval=1, length=period)
 reorganized_data = {'gen_data_1': reorganized_new_LWLW, 'gen_data_2': reorganized_new_SASA, 'blending_factors': estimated_blending_factors}
 
 

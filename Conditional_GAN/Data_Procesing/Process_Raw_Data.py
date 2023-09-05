@@ -53,7 +53,7 @@ def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped,
             extracted_emg[transition_type]['old'][mode] = np.vstack(old_emg_reshaped[mode])
             extracted_emg[transition_type]['new'][mode] = np.vstack(new_emg_reshaped[mode])
 
-            train_gan_data[transition_type][data_keys[idx]] = Process_Fake_Data.separateByTimeInterval(
+            train_gan_data[transition_type][data_keys[idx]] = Process_Fake_Data.separateByInterval(
                 extracted_emg[transition_type]['old'][mode], timepoint_interval=time_interval, length=length, output_list=output_list)
 
     return extracted_emg, train_gan_data
@@ -62,9 +62,9 @@ def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped,
 ## get window parameters for gan and classify model training
 def returnWindowParameters():
     down_sampling = True
-    start_before_toeoff_ms = 500
+    start_before_toeoff_ms = 450
     endtime_after_toeoff_ms = 400
-    feature_window_ms = 350
+    feature_window_ms = 450
     predict_window_ms = start_before_toeoff_ms
     sample_rate = 1 if down_sampling is True else 2
     predict_window_size = predict_window_ms * sample_rate

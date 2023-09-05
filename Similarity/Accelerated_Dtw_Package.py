@@ -45,13 +45,13 @@ def calculateEmgMean(combined_emg_labelled):
 
 ## using dtw package to calculate DTW distance
 def calcuDtwDistance(input_data, gait_reference_label, gait_reference_data):
-    dtw_distance = []
-    warp_paths = []
     dtw_result = {}
     gait_group = [["LWLW", "LWSA", "LWSD", "LWSS"], ["SALW", "SASA", "SASS"], ["SDLW", "SDSD", "SDSS"], ["SSLW", "SSSA", "SSSD"]]  # 4 groups
     now = datetime.datetime.now()
     for gait_event_label, gait_event_data in input_data.items():  # the second-end elements in gait_event_data is the data
         # find and compare the emg sequences only within one of the 4 groups
+        dtw_distance = []
+        warp_paths = []
         if (any(x in gait_reference_label for x in gait_group[0]) and any(x in gait_event_label for x in gait_group[0]) or any(
             x in gait_reference_label for x in gait_group[1]) and any(x in gait_event_label for x in gait_group[1]) or any(
             x in gait_reference_label for x in gait_group[2]) and any(x in gait_event_label for x in gait_group[2]) or any(
@@ -62,8 +62,6 @@ def calcuDtwDistance(input_data, gait_reference_label, gait_reference_data):
                 dtw_distance.append(distance)
                 warp_paths.append(best_path)
             dtw_result[f"reference_{gait_reference_label}_{gait_event_label}"] = (dtw_distance, warp_paths)
-            dtw_distance = []
-            warp_paths = []
             print("reference:", gait_reference_label, ", data:", gait_event_label)
     print("reference:", gait_reference_label, datetime.datetime.now() - now)
     return dtw_result  # including distance and warp path
