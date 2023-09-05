@@ -91,7 +91,7 @@ class WGANloss():
             inputs=mixed_images,
             outputs=mixed_scores,
             # These other parameters have to do with the pytorch autograd engine works
-            grad_outputs=torch.ones_like(mixed_scores), create_graph=True, retain_graph=True)[0]
+            grad_outputs=torch.ones_like(mixed_scores), create_graph=True, retain_graph=False)[0]
         return gradient
 
     # Return the gradient penalty, given a gradient.

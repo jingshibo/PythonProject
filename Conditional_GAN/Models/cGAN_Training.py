@@ -36,6 +36,9 @@ class ModelTraining():
         self.gen_opt = None
         self.disc_opt = None
         self.lr_gen_opt = None
+        self.lr_disc_opt = None
+        self.disc_scaler = GradScaler()
+        self.gen_scaler = GradScaler()
         self.train_loader = None
         self.test_loader = None
         self.loss_fn = None
@@ -92,7 +95,6 @@ class ModelTraining():
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
-
         for epoch_number in range(self.num_epochs):  # loop over each epoch
             # train the model
             self.trainOneEpoch(epoch_number)
@@ -139,19 +141,25 @@ class ModelTraining():
             # Update the discriminator every m batches
             if batch_count % self.disc_update_interval == 0:
                 self.disc_opt.zero_grad()  # Zero out the discriminator gradients
-                fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
-                disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, one_hot_labels, self.disc)
-                disc_loss.backward()  # Update gradients
-                self.disc_opt.step()  # Update optimizer
+                # Runs the forward pass with autocasting.
+                with autocast():
+                    fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
+                    disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, one_hot_labels, self.disc)
+                self.disc_scaler.scale(disc_loss).backward()
+                self.disc_scaler.step(self.disc_opt)
+                self.disc_scaler.update()
                 self.disc_losses += [disc_loss.item()]
 
             # Update the generator every n batches
             if batch_count % self.gen_update_interval == 0:
                 self.gen_opt.zero_grad()
-                fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
-                gen_loss = self.loss_fn.get_gen_loss(fake, real, blending_factors, image_one_hot_labels, one_hot_labels, self.disc)
-                gen_loss.backward()
-                self.gen_opt.step()
+                # Runs the forward pass with autocasting.
+                with autocast():
+                    fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
+                    gen_loss = self.loss_fn.get_gen_loss(fake, real, blending_factors, image_one_hot_labels, one_hot_labels, self.disc)
+                self.gen_scaler.scale(gen_loss).backward()
+                self.gen_scaler.step(self.gen_opt)
+                self.gen_scaler.update()
                 self.gen_losses += [gen_loss.item()]
 
             if (self.current_step + 1) % self.display_step == 0:
