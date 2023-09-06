@@ -66,7 +66,7 @@ extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_ge
 ## hyperparameters
 num_epochs = 50
 decay_epochs = [30, 45]
-batch_size = 640  # this is also the number of samples to extract for each time_interval
+batch_size = 512  # this is also the number of samples to extract for each time_interval
 sampling_repetition = 100  # the number of times to sample at each time point
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
@@ -91,11 +91,11 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'result_set': result_set,
     'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
 now = datetime.datetime.now()
-results = {}
-for transition_type in modes_generation.keys():
-    gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
-    results[transition_type] = blending_factors
-print(datetime.datetime.now() - now)
+# results = {}
+# for transition_type in modes_generation.keys():
+#     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
+#     results[transition_type] = blending_factors
+# print(datetime.datetime.now() - now)
 
 
 ## test generated data results
@@ -125,12 +125,12 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
 ## generate fake data
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_old_data = old_evaluation.generateFakeData(extracted_emg_classify, 'old', modes_generation, old_emg_classify_normalized,
-    repetition=1, random_pairing=True)
+    envelope_cutoff, repetition=1, random_pairing=True)
 synthetic_old_data['emg_LWSA'] = synthetic_old_data['emg_LWSA'][0:60]
 # train classifier
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(synthetic_old_data, training_percent=0.8)
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
-acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
+# acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
 # test classifier
 shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, old_emg_classify_normalized, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
@@ -153,13 +153,13 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 ## generate fake data
 new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_new_data = new_evaluation.generateFakeData(extracted_emg_classify, 'new', modes_generation, new_emg_classify_normalized,
-    repetition=1, random_pairing=False)
+    envelope_cutoff, repetition=1, random_pairing=False)
 synthetic_new_data['emg_LWSA'] = synthetic_new_data['emg_LWSA'][0:60]
 
 # train classifier
 train_set, shuffled_train_set = new_evaluation.classifierTrainSet(synthetic_new_data, training_percent=0.8)
 models_new, model_results_new = new_evaluation.trainClassifier(shuffled_train_set)
-acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
+# acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
 # test classifier
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_classify_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_new[0], shuffled_test_set)
@@ -185,7 +185,7 @@ synthetic_mix_data = Process_Fake_Data.replaceUsingFakeEmg(old_emg_for_replaceme
 # train classifier
 train_set, shuffled_train_set = new_evaluation.classifierTrainSet(synthetic_mix_data, training_percent=0.8)
 models_compare, model_results_compare = new_evaluation.trainClassifier(shuffled_train_set)
-acc_compare, cm_compare = new_evaluation.evaluateClassifyResults(model_results_compare)
+# acc_compare, cm_compare = new_evaluation.evaluateClassifyResults(model_results_compare)
 # test classifier
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_classify_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_compare[0], shuffled_test_set)
