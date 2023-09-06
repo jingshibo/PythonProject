@@ -144,7 +144,17 @@ class ModelTraining():
                 # Runs the forward pass with autocasting.
                 with autocast():
                     fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
-                    disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, one_hot_labels, self.disc)
+                    disc_loss, real_image_and_labels, fake_image_and_labels, c_lambda = self.loss_fn.get_disc_loss(fake, real,
+                        image_one_hot_labels, one_hot_labels, self.disc)
+                # gradient penalty
+                epsilon = torch.rand(len(real), 1, 1, 1, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                    requires_grad=True)
+                gradient = self.loss_fn.get_gradient(self.disc, real_image_and_labels, fake_image_and_labels.detach(), epsilon, one_hot_labels)
+                with autocast():
+                    g_p = self.loss_fn.gradient_penalty(gradient)
+                    disc_loss = disc_loss + c_lambda * g_p
+                print(disc_loss)
+                # update parameters
                 self.disc_scale.scale(disc_loss).backward()
                 self.disc_scale.step(self.disc_opt)
                 self.disc_scale.update()

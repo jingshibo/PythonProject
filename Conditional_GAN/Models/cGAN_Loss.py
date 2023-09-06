@@ -1,4 +1,5 @@
 import torch
+from torch.cuda.amp import autocast, GradScaler
 
 
 ## loss function
@@ -82,10 +83,12 @@ class WGANloss():
 
     # Return the gradient of the discic's scores with respect to mixes of real and fake images.
     def get_gradient(self, disc, real, fake, epsilon, one_hot_labels):
-        # Get mixed images
-        mixed_images = real * epsilon + fake * (1 - epsilon)
-        # Calculate the disc's scores on the mixed images
-        mixed_scores = disc(mixed_images, one_hot_labels)
+        with autocast():
+            # Get mixed images
+            mixed_images = real * epsilon + fake * (1 - epsilon)
+            # Calculate the disc's scores on the mixed images
+            mixed_scores = disc(mixed_images, one_hot_labels)
+
         # Take the gradient of the scores with respect to the images
         gradient = torch.autograd.grad(
             # Note: You need to take the gradient of outputs with respect to inputs.
@@ -185,10 +188,6 @@ class WGANloss():
         disc_fake_pred = disc(fake_image_and_labels.detach(), one_hot_labels)
         disc_real_pred = disc(real_image_and_labels, one_hot_labels)
 
-        epsilon = torch.rand(len(real), 1, 1, 1, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), requires_grad=True)
-        gradient = self.get_gradient(disc, real_image_and_labels, fake_image_and_labels.detach(), epsilon, one_hot_labels)
-        g_p = self.gradient_penalty(gradient)
-
-        disc_loss = torch.mean(disc_fake_pred) - torch.mean(disc_real_pred) + self.c_lambda * g_p  # torch.mean() averages all value in a tensor
-        return disc_loss
+        disc_loss = torch.mean(disc_fake_pred) - torch.mean(disc_real_pred)
+        return disc_loss, real_image_and_labels, fake_image_and_labels, self.c_lambda
 
