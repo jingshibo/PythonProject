@@ -37,8 +37,8 @@ class ModelTraining():
         self.disc_opt = None
         self.lr_gen_opt = None
         self.lr_disc_opt = None
-        self.disc_scaler = GradScaler()
-        self.gen_scaler = GradScaler()
+        self.disc_scale = GradScaler()
+        self.gen_scale = GradScaler()
         self.train_loader = None
         self.test_loader = None
         self.loss_fn = None
@@ -91,7 +91,7 @@ class ModelTraining():
         factor_1_weight = 0  # the weight of blending factor 1
         factor_2_weight = 0  # the weight of blending factor 2
         factor_3_weight = 0.001  # the weight of blending factor 2
-        self.loss_fn = cGAN_Loss.WGANloss(c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight)
+        self.loss_fn = cGAN_Loss.WGANloss(c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight, self.disc_scale)
 
         # train the model
         models = {'gen': self.gen, 'disc': self.disc}
@@ -145,9 +145,9 @@ class ModelTraining():
                 with autocast():
                     fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
                     disc_loss = self.loss_fn.get_disc_loss(fake, real, image_one_hot_labels, one_hot_labels, self.disc)
-                self.disc_scaler.scale(disc_loss).backward()
-                self.disc_scaler.step(self.disc_opt)
-                self.disc_scaler.update()
+                self.disc_scale.scale(disc_loss).backward()
+                self.disc_scale.step(self.disc_opt)
+                self.disc_scale.update()
                 self.disc_losses += [disc_loss.item()]
 
             # Update the generator every n batches
@@ -157,9 +157,9 @@ class ModelTraining():
                 with autocast():
                     fake, blending_factors = self.generateFakeData(cur_batch_size, one_hot_labels, gen_data_1, gen_data_2)
                     gen_loss = self.loss_fn.get_gen_loss(fake, real, blending_factors, image_one_hot_labels, one_hot_labels, self.disc)
-                self.gen_scaler.scale(gen_loss).backward()
-                self.gen_scaler.step(self.gen_opt)
-                self.gen_scaler.update()
+                self.gen_scale.scale(gen_loss).backward()
+                self.gen_scale.step(self.gen_opt)
+                self.gen_scale.update()
                 self.gen_losses += [gen_loss.item()]
 
             if (self.current_step + 1) % self.display_step == 0:

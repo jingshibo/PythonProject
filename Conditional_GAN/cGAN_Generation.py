@@ -57,7 +57,7 @@ old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Pro
 # modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
 # modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
-time_interval = 2
+time_interval = 1
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
     length, output_list=True)
@@ -66,7 +66,7 @@ extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_ge
 ## hyperparameters
 num_epochs = 50
 decay_epochs = [30, 45]
-batch_size = 640  # this is also the number of samples to extract for each time_interval
+batch_size = 1024  # this is also the number of samples to extract for each time_interval
 sampling_repetition = 100  # the number of times to sample at each time point
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.

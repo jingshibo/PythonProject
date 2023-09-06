@@ -71,25 +71,26 @@ class LossFunction():
 
 ## GRADED FUNCTION: get_gradient
 class WGANloss():
-    def __init__(self, c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight):
+    def __init__(self, c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight, disc_scaler):
         self.c_lambda = c_lambda  # the weight of the gradient penalty
         self.var_weight = var_weight  # the weight of blending factor variance
         self.construct_weight = construct_weight  # the weight of blending factor variance
         self.factor_1_weight = factor_1_weight  # the weight of blending factor 1 value
         self.factor_2_weight = factor_2_weight  # the weight of blending factor 2 value
         self.factor_3_weight = factor_3_weight  # the weight of blending factor 3 value
+        self.disc_scale = disc_scaler
 
     # Return the gradient of the discic's scores with respect to mixes of real and fake images.
     def get_gradient(self, disc, real, fake, epsilon, one_hot_labels):
         # Get mixed images
         mixed_images = real * epsilon + fake * (1 - epsilon)
-        # Calculate the discic's scores on the mixed images
+        # Calculate the disc's scores on the mixed images
         mixed_scores = disc(mixed_images, one_hot_labels)
         # Take the gradient of the scores with respect to the images
         gradient = torch.autograd.grad(
             # Note: You need to take the gradient of outputs with respect to inputs.
             inputs=mixed_images,
-            outputs=mixed_scores,
+            outputs=self.disc_scale.scale(mixed_scores),
             # These other parameters have to do with the pytorch autograd engine works
             grad_outputs=torch.ones_like(mixed_scores), create_graph=True, retain_graph=False)[0]
         return gradient
