@@ -1,3 +1,9 @@
+'''
+    plot average emg data (channel mean, repetition mean, all dataset mean) and frequency spectrum
+'''
+
+
+##
 import copy
 from scipy.fft import fft
 import numpy as np
@@ -5,31 +11,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-## calculate the mean value of all repetitions for each channel and the mean value of all data from each transition event
-def averageRepetitionAndEventValues(emg_values):
-    emg_1_channel_list = {}
-    emg_2_channel_list = {}
-    emg_1_event_mean = {}  # emg device 1: tibialis
-    emg_2_event_mean = {}  # emg device 2: rectus
-    # sum the emg data of all channels and samples up for the same gait event
-    for gait_event_label, gait_event_emg in emg_values.items():
-        emg_1_channel_list[f"{gait_event_label}_data"] = [np.sum(emg_per_repetition[:, 0:65], axis=1) / 65 for emg_per_repetition in
-            gait_event_emg]  # average the emg values of all channels
-        emg_2_channel_list[f"{gait_event_label}_data"] = [np.sum(emg_per_repetition[:, 65:130], axis=1) / 65 for emg_per_repetition in
-            gait_event_emg]  # average the emg values of all channels
-        emg_1_event_mean[f"{gait_event_label}_data"] = np.add.reduce(emg_1_channel_list[f"{gait_event_label}_data"]) / len(
-            emg_1_channel_list[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
-        emg_2_event_mean[f"{gait_event_label}_data"] = np.add.reduce(emg_2_channel_list[f"{gait_event_label}_data"]) / len(
-            emg_2_channel_list[f"{gait_event_label}_data"])  # average all repetitions for the same gait event
-    return emg_1_channel_list, emg_2_channel_list, emg_1_event_mean, emg_2_event_mean
-
-
-## calculate the mean value of all channels for each repetition
-def averageChannelValues(emg_value):
+## calculate the mean value of emg data to get average value of all channels/all repetitions/all channel and repetitions.
+def averageEmgValues(emg_values):
+    # calculate the mean value of all channels for each repetition
     emg_1_repetition_list = {}
     emg_2_repetition_list = {}
     # Loop through each key in the original dictionary
-    for gait_event_label, gait_event_emg in emg_value.items():
+    for gait_event_label, gait_event_emg in emg_values.items():
         result_shape = (gait_event_emg[0].shape[0], len(gait_event_emg))
         # Initialize arrays to store the column-wise averages for the first and second parts for the current key
         result_for_key_part1 = np.zeros(result_shape)
@@ -37,7 +25,7 @@ def averageChannelValues(emg_value):
         # Loop through each list (of shape (1800, 130) in your case)
         for i, array in enumerate(gait_event_emg):
             # In this demonstration, I'll split the 130 columns into two
-            array_part1, array_part2 = np.split(array, [65], axis=1)
+            array_part1, array_part2 = np.split(array, 2, axis=1)
             # Calculate the column-wise average for each part
             column_avg_part1 = np.mean(array_part1, axis=1)
             column_avg_part2 = np.mean(array_part2, axis=1)
@@ -46,65 +34,108 @@ def averageChannelValues(emg_value):
             result_for_key_part2[:, i] = column_avg_part2  # Store the (1800, 60) ndarrays in the result_dict for the current key and part
         emg_1_repetition_list[gait_event_label] = result_for_key_part1
         emg_2_repetition_list[gait_event_label] = result_for_key_part2
-    return emg_1_repetition_list, emg_2_repetition_list
+
+    # calculate the mean value of all repetitions for each channel
+    emg_1_channel_list = {}
+    emg_2_channel_list = {}
+    # Loop through each key in the original dictionary
+    for gait_event_label, gait_event_emg in emg_values.items():
+        # Convert the list of arrays for each key to a 3D NumPy array and Calculate the mean along the first axis
+        average_array = np.mean(np.stack(gait_event_emg), axis=0)
+        # Store the average array in the dictionary with the corresponding key
+        array_part1, array_part2 = np.split(average_array, 2, axis=1)
+        # Store the split arrays in the dictionary with the corresponding key
+        emg_1_channel_list[gait_event_label] = array_part1
+        emg_2_channel_list[gait_event_label] = array_part2
+
+    #  calculate the mean value of all data at each timepoint for a gait event
+    emg_1_event_mean = {}  # emg device 1: tibialis
+    emg_2_event_mean = {}  # emg device 2: rectus
+    # Loop through each key in the original dictionary
+    for gait_event_label, gait_event_emg in emg_values.items():
+        emg_1_event_mean[gait_event_label] = np.mean(emg_1_channel_list[gait_event_label], axis=1)
+        emg_2_event_mean[gait_event_label] = np.mean(emg_2_channel_list[gait_event_label], axis=1)
+
+    # store all mean values in a dict
+    emg_mean_values = {'emg_1_repetition_list': emg_1_repetition_list, 'emg_2_repetition_list': emg_2_repetition_list,
+        'emg_1_channel_list': emg_1_channel_list, 'emg_2_channel_list': emg_2_channel_list,
+        'emg_1_event_mean': emg_1_event_mean, 'emg_2_event_mean': emg_2_event_mean}
+    return emg_mean_values
 
 
-## plot the average value of all channels from selected repetitions in a mode
-def plotAverageChannel(emg_data, mode, title=None, ylim=None):
+## plot the time series value of muliple columns from a locomotion mode
+def plotAverageValue(emg_data, mode, selected_columns, layout, title=None, ylim=None):
     # Define the plotting parameters
-    start_index = 0
-    end_index = 30   # select 30 repetitions for plotting
-    horizontal = 6
-    vertical = 5
+    horizontal = layout[0]
+    vertical = layout[1]
     # Plot using a single line of code
-    (pd.DataFrame(emg_data[mode])).iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical),
+    (pd.DataFrame(emg_data[mode])).iloc[:, selected_columns].plot(subplots=True, layout=(horizontal, vertical),
         title=title, figsize=(15, 10), ylim=ylim)
 
 
-## plot the PSD value of
-def plotPsd(fake_data, real_data, mode):
+##  Plotting multiple average values in a single plots
+def plotMultipleModeValues(emg_list):
+    plt.figure(figsize=(10, 6))
+    for label, arr in emg_list.items():
+        plt.plot(arr, label=label)
 
+    plt.title('Multiple EMG data')
+    plt.xlabel('Index')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.grid(True)
+    plt.show(block=False)
+
+
+## calculate and plot the PSD of mean emg values
+def plotPsd(emg_data, mode, selected_columns, layout, title=None):
     # compute the frequency spectrum of a 2D array
-    def compute_frequency_spectrum(data, fs):
-        N = data.shape[0]  # Number of data points
+    def compute_frequency_spectrum(time_series_data, fs):
+        N = time_series_data.shape[0]  # Number of data points
         freq = np.fft.fftfreq(N, 1/fs)  # Frequency bins
-        fft_values = fft(data, axis=0)  # FFT along the time axis
+        fft_values = fft(time_series_data, axis=0)  # FFT along the time axis
         psd_values = np.abs(fft_values)**2 / N  # PSD values
         return freq, psd_values
-
     # plot the frequency spectrum of a 2D array
-    def plot_frequency_spectrum(freq, magnitude, title):
+    def plot_frequency_spectrum(freq, magnitude, label):
         plt.plot(freq, magnitude)
-        plt.title(title)
+        plt.title(label)
         plt.ylim(0, 0.1)
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Magnitude')
         plt.grid(True)
 
-    # Compute the frequency spectrum for the first 2D array in the data list
-    _, _, fake_1_event_mean, fake_2_event_mean = averageRepetitionAndEventValues(fake_data)
-    _, _, real_1_event_mean, real_2_event_mean = averageRepetitionAndEventValues(real_data)
-    fs = 1000  # Sampling frequency (Hz)
-
-    # Apply a Hanning window to the first 2D array in the data list
-    window = np.hanning(fake_1_event_mean[mode].shape)
-    windowed_filtered_data = fake_1_event_mean[mode] * window[:, None]
-    freq_filtered, magnitude_filtered = compute_frequency_spectrum(windowed_filtered_data, fs)
-
-    window = np.hanning(real_1_event_mean[mode].shape[0])
-    windowed_real_data = real_1_event_mean[mode] * window[:, None]
-    freq_real, magnitude_real = compute_frequency_spectrum(windowed_real_data, fs)
-
-    # Plotting
-    plt.figure(figsize=(14, 6))
-    plt.subplot(1, 2, 1)
-    plot_frequency_spectrum(freq_filtered, magnitude_filtered[:, 0], 'filtered data (mean)')
-    # Plot frequency spectrum of windowed data
-    plt.subplot(1, 2, 2)
-    plot_frequency_spectrum(freq_real, magnitude_real[:, 0], 'real data (mean)')
-    plt.tight_layout()
-    plt.show()
-
+    if emg_data[mode].ndim == 1:  # draw only one plot using the single vector
+        # Apply a Hanning window and compute PSD
+        window = np.hanning(emg_data[mode].shape[0])
+        windowed_data = emg_data[mode] * window
+        freq, magnitude = compute_frequency_spectrum(windowed_data, 1000)
+        # Plotting
+        plt.figure(figsize=(14, 6))
+        plot_frequency_spectrum(freq, magnitude, title)
+        plt.tight_layout()
+        plt.show(block=False)
+    elif emg_data[mode].ndim == 2:  # draw multiple subplots for selected columns
+        # Apply a Hanning window and compute PSD
+        window = np.hanning(emg_data[mode].shape[0])
+        windowed_real_data = emg_data[mode] * window[:, None]
+        freq, magnitude = compute_frequency_spectrum(windowed_real_data[:, ], 1000)
+        # Create subplots
+        horizontal = layout[0]
+        vertical = layout[1]
+        fig, axes = plt.subplots(horizontal, vertical, figsize=(18, 15))
+        fig.suptitle(title)
+        # Flatten the 2D axes array to make it easier to iterate
+        flattened_axes = axes.flatten()
+        # Loop through each selected column
+        for i, column in enumerate(selected_columns):
+            # Select the subplot
+            plt.sca(flattened_axes[i])
+            # Plotting using the modified function
+            label = f'{column + 1}'
+            plot_frequency_spectrum(freq, magnitude[:, column], label)
+        plt.tight_layout()
+        plt.show(block=False)
 
 
 

@@ -194,7 +194,8 @@ class ModelTraining():
         with torch.no_grad():  # Disable autograd for better performance
             for time_point in list(train_data['gen_data_1'].keys()):
                 number = dataset.extract_and_normalize(time_point)
-                one_hot_labels = self.epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
+                # one_hot_labels = self.epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
+                one_hot_labels = F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
 
                 if self.noise_dim > 0:
                     # Generate random noise

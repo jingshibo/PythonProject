@@ -7,8 +7,7 @@ plot the filtered emg data from each channel at each gait event
 from Transition_Prediction.Pre_Processing.Utility_Functions import Data_Reshaping, Feature_Storage
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Pre_Processing import Preprocessing
-from Conditional_GAN.Data_Procesing import Plot_Emg_Data
-import numpy as np
+from Conditional_GAN.Data_Procesing import Plot_Emg
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
@@ -61,24 +60,26 @@ combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions
 new_emg_envelope = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
-## For demonstration purposes, we'll use data from result_dict_part1 for 'key_1'
-old_emg_envelope_1, old_emg_envelope_2 = Plot_Emg_Data.averageChannelValues(old_emg_envelope)
-new_emg_envelope_1, new_emg_envelope_2 = Plot_Emg_Data.averageChannelValues(new_emg_envelope)
+## calculate average values
+old_emg_value = Plot_Emg.averageEmgValues(old_emg_envelope)
+new_emg_value = Plot_Emg.averageEmgValues(new_emg_envelope)
 # Plot using a single line of code
-Plot_Emg_Data.plotAverageChannel(old_emg_envelope_1, "emg_LWLW", title='old_emg_LWLW', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageChannel(old_emg_envelope_1, "emg_SASA", title='old_emg_SASA', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageChannel(old_emg_envelope_1, "emg_LWSA", title='old_emg_LWSA', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageChannel(new_emg_envelope_1, "emg_LWLW", title='new_emg_LWLW', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageChannel(new_emg_envelope_1, "emg_SASA", title='new_emg_SASA', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageChannel(new_emg_envelope_1, "emg_LWSA", title='new_emg_LWSA', ylim=(0, 1000))
+Plot_Emg.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWLW", title='old_emg_LWLW', ylim=(0, 1000))
+Plot_Emg.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_SASA", title='old_emg_SASA', ylim=(0, 1000))
+Plot_Emg.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWSA", title='old_emg_LWSA', ylim=(0, 1000))
+Plot_Emg.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWLW", title='new_emg_LWLW', ylim=(0, 1000))
+Plot_Emg.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_SASA", title='new_emg_SASA', ylim=(0, 1000))
+Plot_Emg.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWSA", title='new_emg_LWSA', ylim=(0, 1000))
 
 
-## plot event average value in a single plot
+## plot average channel value in a single plot
 # List of datasets and titles
-datasets1 = [(pd.DataFrame(old_emg_envelope_1["emg_LWLW"])).mean(axis=1), (pd.DataFrame(old_emg_envelope_1["emg_SDSD"])).mean(axis=1),
-    (pd.DataFrame(old_emg_envelope_1["emg_LWSD"])).mean(axis=1)]
-datasets2 = [(pd.DataFrame(new_emg_envelope_1["emg_LWLW"])).mean(axis=1), (pd.DataFrame(new_emg_envelope_1["emg_SDSD"])).mean(axis=1),
-    (pd.DataFrame(new_emg_envelope_1["emg_LWSD"])).mean(axis=1)]
+datasets1 = [(pd.DataFrame(old_emg_value['emg_1_repetition_list']["emg_LWLW"])).mean(axis=1),
+    (pd.DataFrame(old_emg_value['emg_1_repetition_list']["emg_SDSD"])).mean(axis=1),
+    (pd.DataFrame(old_emg_value['emg_1_repetition_list']["emg_LWSD"])).mean(axis=1)]
+datasets2 = [(pd.DataFrame(new_emg_value['emg_1_repetition_list']["emg_LWLW"])).mean(axis=1),
+    (pd.DataFrame(new_emg_value['emg_1_repetition_list']["emg_SDSD"])).mean(axis=1),
+    (pd.DataFrame(new_emg_value['emg_1_repetition_list']["emg_LWSD"])).mean(axis=1)]
 titles1 = ["old_emg_LWLW", "old_emg_SASA", "old_emg_LWSA"]
 titles2 = ["new_emg_LWLW", "new_emg_SASA", "new_emg_LWSA"]
 
@@ -98,93 +99,50 @@ plt.show()
 
 
 ##  plot summed series emg data
-emg_1_channel_list, emg_2_channel_list, emg_1_event_mean, emg_2_event_mean = Plot_Emg_Data.averageRepetitionAndEventValues(old_emg_envelope)
 left_number = 000
 right_number = 1800
-emg_1_value = copy.deepcopy(emg_1_event_mean)
-for event, value in emg_1_event_mean.items():
+emg_1_value = copy.deepcopy(old_emg_value['emg_1_event_mean'])
+for event, value in old_emg_value['emg_1_event_mean'].items():
     emg_1_value[event] = value[left_number:right_number]
-emg_2_value = copy.deepcopy(emg_2_event_mean)
-for event, value in emg_2_event_mean.items():
+emg_2_value = copy.deepcopy(old_emg_value['emg_2_event_mean'])
+for event, value in old_emg_value['emg_2_event_mean'].items():
     emg_2_value[event] = value[left_number:right_number]
 pd.DataFrame(emg_1_value).plot(subplots=True, layout=(4, 4), title="EMG 1")
 pd.DataFrame(emg_2_value).plot(subplots=True, layout=(4, 4), title="EMG 2")
 
 
 ##  plot summed series emg data by group
-emd_data = emg_2_value
+emd = emg_2_value
 x = list(range(left_number-1000, right_number-1000))
 plt.figure()
-plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_SASA_data"], x, emd_data["emg_SALW_data"])
-plt.legend(['emg_LWLW_data', 'emg_LWSA_data', 'emg_SASA_data', 'emg_SALW_data'])
+plt.plot(x, emd["emg_LWLW"], x, emd["emg_LWSA"], x, emd["emg_SASA"], x, emd["emg_SALW"])
+plt.legend(['emg_LWLW', 'emg_LWSA', 'emg_SASA', 'emg_SALW'])
 plt.title("LWSA")
 plt.figure()
-plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_SDSD_data"], x, emd_data["emg_SDLW_data"])
-plt.legend(['emg_LWLW_data', 'emg_LWSD_data', 'emg_SDSD_data', 'emg_SDLW_data'])
+plt.plot(x, emd["emg_LWLW"], x, emd["emg_LWSD"], x, emd["emg_SDSD"], x, emd["emg_SDLW"])
+plt.legend(['emg_LWLW', 'emg_LWSD', 'emg_SDSD', 'emg_SDLW'])
 plt.title("LWSD")
 
 
 ##  plot summed series emg data by group
-emd_data = emg_2_value
+emd = emg_2_value
 x = list(range(left_number-1000, right_number-1000))
 plt.figure()
-plt.plot(x, emd_data["emg_LWLW_data"], x, emd_data["emg_LWSA_data"], x, emd_data["emg_LWSD_data"], x, emd_data["emg_LWSS_data"])
-plt.legend(['emg_LWLW_data', 'emg_LWSA_data', 'emg_LWSD_data', 'emg_LWSS_data'])
+plt.plot(x, emd["emg_LWLW"], x, emd["emg_LWSA"], x, emd["emg_LWSD"], x, emd["emg_LWSS"])
+plt.legend(['emg_LWLW', 'emg_LWSA', 'emg_LWSD', 'emg_LWSS'])
 plt.title("LW")
 # plt.figure()
-# plt.plot(x, emd_data["emg_SASA_data"], x, emd_data["emg_SALW_data"], x, emd_data["emg_SASS_data"])
-# plt.legend(['emg_SASA_data', 'emg_SALW_data', 'emg_SASS_data'])
+# plt.plot(x, emd["emg_SASA"], x, emd["emg_SALW"], x, emd["emg_SASS"])
+# plt.legend(['emg_SASA', 'emg_SALW', 'emg_SASS'])
 # plt.title("SA")
 # plt.figure()
-# plt.plot(x, emd_data["emg_SDSD_data"], x, emd_data["emg_SDLW_data"], x, emd_data["emg_SDSS_data"])
-# plt.legend(['emg_SDSD_data', 'emg_SDLW_data', 'emg_SDSS_data'])
+# plt.plot(x, emd["emg_SDSD"], x, emd["emg_SDLW"], x, emd["emg_SDSS"])
+# plt.legend(['emg_SDSD', 'emg_SDLW', 'emg_SDSS'])
 # plt.title("SD")
 # plt.figure()
-# plt.plot(x, emd_data["emg_SSLW_data"], x, emd_data["emg_SSSA_data"], x, emd_data["emg_SSSD_data"])
-# plt.legend(['emg_SSLW_data', 'emg_SSSA_data', 'emg_SSSD_data'])
+# plt.plot(x, emd["emg_SSLW"], x, emd["emg_SSSA"], x, emd["emg_SSSD"])
+# plt.legend(['emg_SSLW', 'emg_SSSA', 'emg_SSSD'])
 # plt.title("SS")
-
-
-
-
-
-## organize channel summed emg data
-emd_data = emg_1_channel_list
-start_index = 0  # note: the first image is the mean value for the entire dataset of the gait event (emg_1_mean_events)
-end_index = 30
-horizontal = 6
-vertical = 5
-
-(pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
-(pd.DataFrame(emd_data["emg_LWSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSA")
-(pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
-(pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
-(pd.DataFrame(emd_data["emg_LWSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSD")
-(pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
-
-
-# ## transit from LW
-# (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
-# (pd.DataFrame(emd_data["emg_LWSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSA")
-# (pd.DataFrame(emd_data["emg_LWSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSD")
-# (pd.DataFrame(emd_data["emg_LWSS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWSS")
-# ## transit from SA
-# (pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
-# (pd.DataFrame(emd_data["emg_SALW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SALW")
-# (pd.DataFrame(emd_data["emg_SASS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASS")
-# ## transit from SD
-# (pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
-# (pd.DataFrame(emd_data["emg_SDLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDLW")
-# (pd.DataFrame(emd_data["emg_SDSS_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSS")
-# ## transit from SS
-# (pd.DataFrame(emd_data["emg_SSLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSLW")
-# (pd.DataFrame(emd_data["emg_SSSA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSSA")
-# (pd.DataFrame(emd_data["emg_SSSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SSSD")
-# ## no transition
-# (pd.DataFrame(emd_data["emg_LWLW_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="LWLW")
-# (pd.DataFrame(emd_data["emg_SASA_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SASA")
-# (pd.DataFrame(emd_data["emg_SDSD_data"])).T.iloc[:, start_index:end_index].plot(subplots=True, layout=(horizontal, vertical), title="SDSD")
-
 
 
 
@@ -193,15 +151,12 @@ vertical = 5
 subject = "Shibo"
 version = 1  # which experiment data to process
 feature_set = 0  # which feature set to use
-emg_feature_data = Feature_Storage.readEmgFeatures(subject, version, feature_set)
+emg_feature = Feature_Storage.readEmgFeatures(subject, version, feature_set)
 # if you need to use CNN model, you need to reshape the data
-emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_feature_data)
+emg_feature_reshaped = Data_Reshaping.reshapeEmgFeatures(emg_feature)
 # reduce the sample number of certain modes to balance the dataset
-emg_feature_sample_reduced = copy.deepcopy(emg_feature_data)
+emg_feature_sample_reduced = copy.deepcopy(emg_feature)
 emg_feature_sample_reduced['emg_LW_features'] = emg_feature_sample_reduced['emg_LW_features'][
-int(emg_feature_data['emg_LW_features'].shape[0] / 4): int(emg_feature_data['emg_LW_features'].shape[0] * 3 / 4), :]
-
-
-
+int(emg_feature['emg_LW_features'].shape[0] / 4): int(emg_feature['emg_LW_features'].shape[0] * 3 / 4), :]
 
 

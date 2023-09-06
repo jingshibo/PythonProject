@@ -1,9 +1,7 @@
 ##
-import copy
 from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, cGAN_Evaluation, Model_Storage
 from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data, Plot_Emg_Data
 import datetime
-import matplotlib.pyplot as plt
 
 
 '''train generative model'''
@@ -57,7 +55,7 @@ old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Pro
 # modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
 # modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
-time_interval = 2
+time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
     length, output_list=True)
@@ -66,7 +64,7 @@ extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_ge
 ## hyperparameters
 num_epochs = 50
 decay_epochs = [30, 45]
-batch_size = 512  # this is also the number of samples to extract for each time_interval
+batch_size = 1024  # this is also the number of samples to extract for each time_interval
 sampling_repetition = 100  # the number of times to sample at each time point
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
@@ -90,7 +88,7 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
     'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'result_set': result_set,
     'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-now = datetime.datetime.now()
+# now = datetime.datetime.now()
 # results = {}
 # for transition_type in modes_generation.keys():
 #     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
@@ -105,6 +103,22 @@ test_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters
 synthetic_data = test_evaluation.generateFakeData(extracted_emg, 'old', modes_generation, old_emg_normalized, envelope_cutoff, repetition=1, random_pairing=False)
 synthetic_data['emg_LWSA'] = synthetic_data['emg_LWSA'][0:60]
 
+
+## plotting fake and real emg data for comparison
+fake = Plot_Emg_Data.averageEmgValues(synthetic_data)
+real = Plot_Emg_Data.averageEmgValues(old_emg_normalized)
+# plot multiple emg values of each locomotion mode in subplots for comparison
+Plot_Emg_Data.plotAverageValue(fake['emg_2_repetition_list'], 'emg_LWSA', list(range(30)), [6, 5], title='fake_LWSA', ylim=(0, 1))
+Plot_Emg_Data.plotAverageValue(real['emg_2_repetition_list'], 'emg_LWSA', list(range(30)), [6, 5], title='real_LWSA', ylim=(0, 1))
+Plot_Emg_Data.plotAverageValue(real['emg_2_repetition_list'], 'emg_LWLW', list(range(30)), [6, 5], title='real_LWLW', ylim=(0, 1))
+# plot emg of multiple locomotion modes in a single plot for comparison
+emg_to_plot = {'fake_LWSA': fake['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real['emg_1_event_mean']['emg_LWSA'],
+    'real_SASA': real['emg_1_event_mean']['emg_SASA'], 'real_LWLW': real['emg_1_event_mean']['emg_LWLW']}
+Plot_Emg_Data.plotMultipleModeValues(emg_to_plot)
+# plot the average psd of each locomotion mode for comparison
+Plot_Emg_Data.plotPsd(fake['emg_1_event_mean'], 'emg_LWSA',  list(range(30)), [6, 5], title='fake_LWSA')
+Plot_Emg_Data.plotPsd(real['emg_1_event_mean'], 'emg_LWSA', list(range(30)), [6, 5], title='real_LWSA')
+Plot_Emg_Data.plotPsd(real['emg_1_event_mean'], 'emg_LWLW', list(range(30)), [6, 5], title='real_LWLW')
 
 
 '''
