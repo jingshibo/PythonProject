@@ -130,9 +130,9 @@ class ModelTraining():
 
             # convert condition into one hot vectors
             one_hot_labels = F.one_hot(condition, self.n_classes)
-            # Apply one-side label smoothing
-            self.epsilon = 0.90
-            one_hot_labels = one_hot_labels * self.epsilon
+            # # Apply one-side label smoothing
+            # self.epsilon = 0.9
+            # one_hot_labels = one_hot_labels * self.epsilon
             # adding two additional dimensions to the one-hot encoded labels (size [batch_size, n_classes, 1, 1])
             image_one_hot_labels = one_hot_labels[:, :, None, None]
             # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])

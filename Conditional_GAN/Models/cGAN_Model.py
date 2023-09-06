@@ -13,11 +13,15 @@ class ConditionalNorm2d(nn.Module):
             self.norm = nn.BatchNorm2d(num_channels, affine=False)
         elif norm == 'instance_norm':
             self.norm = nn.InstanceNorm2d(num_channels, affine=False)
-        self.embed = nn.Linear(num_classes, num_channels * 2)
+        self.embed = nn.Embedding(num_classes, num_channels * 2)
+        self.embed.weight.data[:, :num_channels].fill_(1.)  # Initialize scale at 1
+        self.embed.weight.data[:, num_channels:].zero_()  # Initialize bias at 0
 
     def forward(self, x, label):
         out = self.norm(x)
-        gamma, beta = self.embed(label.to(torch.float32)).chunk(2, 1)
+        # Convert one_hot to index tensor
+        label = torch.argmax(label, dim=1)
+        gamma, beta = self.embed(label.to(torch.long)).chunk(2, 1)
         gamma = gamma.view(-1, self.num_channels, 1, 1)
         beta = beta.view(-1, self.num_channels, 1, 1)
         out = gamma * out + beta
@@ -124,6 +128,7 @@ class Generator_UNet(nn.Module):
         y2 = self.expand2(y3, x1, label)  # Skip connection from upfeature to expand3
         y1 = self.expand1(y2, x0, label)  # Skip connection from upfeature to expand3
         y0 = self.downfeature(y1)
+        y0 = y0.to(torch.float32)
         yn = self.sig(y0)
         return yn
 
