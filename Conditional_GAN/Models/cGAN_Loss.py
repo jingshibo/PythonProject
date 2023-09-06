@@ -95,7 +95,19 @@ class WGANloss():
             inputs=mixed_images,
             outputs=self.disc_scale.scale(mixed_scores),
             # These other parameters have to do with the pytorch autograd engine works
-            grad_outputs=torch.ones_like(mixed_scores), create_graph=True, retain_graph=False)[0]
+            grad_outputs=torch.ones_like(mixed_scores), create_graph=True, retain_graph=True)[0]
+
+        # Unscale the gradient
+        inv_scale = 1. / self.disc_scale.get_scale()
+        # print("Current Scale:", inv_scale)
+        # if inv_scale == 0:
+        #     print("Scale reached zero. Debug info:")
+        #     for name, param in self.model.named_parameters():
+        #         if param.grad is not None:
+        #             print(name, "Grad Max:", param.grad.data.max(), "Grad Min:", param.grad.data.min())
+        #     break  # Exit the loop or handle this situation
+        gradient = gradient * inv_scale
+
         return gradient
 
     # Return the gradient penalty, given a gradient.
