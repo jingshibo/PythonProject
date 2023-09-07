@@ -13,16 +13,17 @@ class ConditionalNorm2d(nn.Module):
             self.norm = nn.BatchNorm2d(num_channels, affine=False)
         elif norm == 'instance_norm':
             self.norm = nn.InstanceNorm2d(num_channels, affine=False)
-        # self.embed = nn.Embedding(num_classes, num_channels * 2)
-        # self.embed.weight.data[:, :num_channels].fill_(1.)  # Initialize scale at 1
-        # self.embed.weight.data[:, num_channels:].zero_()  # Initialize bias at 0
-        self.embed = nn.Linear(num_classes, num_channels * 2)
+        self.embed = nn.Embedding(num_classes, num_channels * 2)
+        self.embed.weight.data[:, :num_channels].fill_(1.)  # Initialize scale at 1
+        self.embed.weight.data[:, num_channels:].zero_()  # Initialize bias at 0
+        # self.embed = nn.Linear(num_classes, num_channels * 2)
 
     def forward(self, x, label):
         out = self.norm(x)
         # Convert one_hot to index tensor
-        # label = torch.argmax(label, dim=1)
+        label = torch.argmax(label, dim=1)
         gamma, beta = self.embed(label.to(torch.long)).chunk(2, 1)
+        # gamma, beta = self.embed(label.to(torch.float32)).chunk(2, 1)
         gamma = gamma.view(-1, self.num_channels, 1, 1)
         beta = beta.view(-1, self.num_channels, 1, 1)
         out = gamma * out + beta
@@ -100,16 +101,16 @@ class Generator_UNet(nn.Module):
 
         # encoder
         self.upfeature = FeatureMapBlock(output_chan, hidden_channels, stride=1, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
 
         # decoder
-        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
         self.downfeature = FeatureMapBlock(int(hidden_channels * 3), output_chan, stride=1, SN=True)
 
         self.sig = torch.nn.Sigmoid()
@@ -144,7 +145,7 @@ class Discriminator_Same(nn.Module):
         super(Discriminator_Same, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_norm=False, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_norm=True, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
@@ -164,7 +165,7 @@ class Discriminator_Shrinking(nn.Module):
         super(Discriminator_Shrinking, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, padding=padding, use_norm=False, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, padding=padding, use_norm=True, activation='lrelu', SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, padding=padding, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, padding=padding, activation='lrelu', SN=True)
         self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, padding=padding, activation='lrelu', SN=True)

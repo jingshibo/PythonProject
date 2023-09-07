@@ -21,7 +21,7 @@ def normalizeZeroToOne(array, limit):
 
 
 ## normalize data using min-max way
-def normalizeEmgData(original_data, range_limit=2000, normalize='(-1,1)'):
+def normalizeEmgData(original_data, range_limit=2000, normalize='(0,1)'):
     normalized_data = {}
     for locomotion_type, locomotion_value in original_data.items():
         if normalize == '(-1,1)':  # min-max to (-1,1) for those original value with both positive and negative values

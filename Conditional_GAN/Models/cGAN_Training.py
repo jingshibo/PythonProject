@@ -129,8 +129,8 @@ class ModelTraining():
             # convert condition into one hot vectors
             one_hot_labels = F.one_hot(condition, self.n_classes)
             # Apply one-side label smoothing
-            self.epsilon = 0.90
-            one_hot_labels = one_hot_labels * self.epsilon
+            # self.epsilon = 0.90
+            # one_hot_labels = one_hot_labels * self.epsilon
             # adding two additional dimensions to the one-hot encoded labels (size [batch_size, n_classes, 1, 1])
             image_one_hot_labels = one_hot_labels[:, :, None, None]
             # match the spatial dimensions of the image.(size [batch_size, n_classes, image_height, image_width])
@@ -194,8 +194,8 @@ class ModelTraining():
         with torch.no_grad():  # Disable autograd for better performance
             for time_point in list(train_data['gen_data_1'].keys()):
                 number = dataset.extract_and_normalize(time_point)
-                # one_hot_labels = self.epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
                 one_hot_labels = F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
+                # one_hot_labels = self.epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
 
                 if self.noise_dim > 0:
                     # Generate random noise

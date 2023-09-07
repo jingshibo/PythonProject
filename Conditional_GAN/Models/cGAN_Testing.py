@@ -23,14 +23,15 @@ class ModelTesting():
         self.n_classes = len(self.keys)
         self.noise_dim = noise_dim
         n_iterations = 1000  # Number of times to calculate blending_factor for each time_point for averaging purpose
-        epsilon = 0.95  # one-side label smoothing parameter
+        epsilon = 0.90  # one-side label smoothing parameter
 
         blending_factors = {}
         self.gen.train(False)  # Set the generator to evaluation mode
         with torch.no_grad():  # Disable autograd for performance improvement
             for time_point in self.keys:
                 number = self.extract_and_normalize(time_point)
-                one_hot_labels = epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
+                one_hot_labels = F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
+                # one_hot_labels = epsilon * F.one_hot(torch.tensor([number] * n_iterations), self.n_classes).to(self.device)
 
                 if self.noise_dim > 0:
                     # Generate random noise

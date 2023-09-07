@@ -26,7 +26,7 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
 
 
 ## normalize filtered data and reshape them to be images
-def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(-1,1)'):
+def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)'):
     old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit, normalize=normalize)
     new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, range_limit=limit, normalize=normalize)
     old_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(-1, 13, 10, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v]

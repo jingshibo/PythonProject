@@ -7,7 +7,7 @@ plot the filtered emg data from each channel at each gait event
 from Transition_Prediction.Pre_Processing.Utility_Functions import Data_Reshaping, Feature_Storage
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Pre_Processing import Preprocessing
-from Conditional_GAN.Data_Procesing import Plot_Emg
+from Conditional_GAN.Data_Procesing import Plot_Emg_Data
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
@@ -61,15 +61,15 @@ new_emg_envelope = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
 ## calculate average values
-old_emg_value = Plot_Emg.averageEmgValues(old_emg_envelope)
-new_emg_value = Plot_Emg.averageEmgValues(new_emg_envelope)
+old_emg_value = Plot_Emg_Data.averageEmgValues(old_emg_envelope)
+new_emg_value = Plot_Emg_Data.averageEmgValues(new_emg_envelope)
 # Plot using a single line of code
-Plot_Emg.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWLW", title='old_emg_LWLW', ylim=(0, 1000))
-Plot_Emg.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_SASA", title='old_emg_SASA', ylim=(0, 1000))
-Plot_Emg.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWSA", title='old_emg_LWSA', ylim=(0, 1000))
-Plot_Emg.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWLW", title='new_emg_LWLW', ylim=(0, 1000))
-Plot_Emg.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_SASA", title='new_emg_SASA', ylim=(0, 1000))
-Plot_Emg.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWSA", title='new_emg_LWSA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWLW", title='old_emg_LWLW', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_SASA", title='old_emg_SASA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWSA", title='old_emg_LWSA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWLW", title='new_emg_LWLW', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_SASA", title='new_emg_SASA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWSA", title='new_emg_LWSA', ylim=(0, 1000))
 
 
 ## plot average channel value in a single plot

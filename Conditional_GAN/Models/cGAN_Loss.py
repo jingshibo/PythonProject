@@ -141,7 +141,12 @@ class WGANloss():
 
             if class_blending_factor.numel() > 0:
                 # Compute variance along height and width dimensions of each channel for all samples in the class
-                class_variance = torch.var(class_blending_factor, dim=[0, 2, 3]).sum()  # Sum along channels to get the result
+                if class_blending_factor.shape[3] == 5:  # only one electrode grid
+                    class_variance = torch.var(class_blending_factor, dim=[0, 2, 3]).sum()  # Sum along channels to get the result
+                elif class_blending_factor.shape[3] == 10:  # two electrode grids, you should compute the variance for two grids sepqrately
+                    var_first_5_columns = torch.var(class_blending_factor[:, :, :, :5], dim=[0, 2, 3]).sum()
+                    var_second_5_columns = torch.var(class_blending_factor[:, :, :, 5:], dim=[0, 2, 3]).sum()
+                    class_variance = var_first_5_columns + var_second_5_columns
                 class_specific_variances.append(class_variance)
 
         # Calculate the mean variance, or return 0 if the list is empty

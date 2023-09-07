@@ -9,6 +9,7 @@ from scipy.fft import fft
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import math
 
 
 ## calculate the mean value of emg data to get average value of all channels/all repetitions/all channel and repetitions.
@@ -64,31 +65,35 @@ def averageEmgValues(emg_values):
 
 
 ## plot the time series value of muliple columns from a locomotion mode
-def plotAverageValue(emg_data, mode, selected_columns, layout, title=None, ylim=None):
+def plotAverageValue(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
     # Define the plotting parameters
-    horizontal = layout[0]
-    vertical = layout[1]
+    if layout is None:
+        vertical = int(math.ceil(math.sqrt(num_columns)))
+        horizontal = int(math.ceil(num_columns / vertical))
+    else:
+        horizontal, vertical = layout
     # Plot using a single line of code
-    (pd.DataFrame(emg_data[mode])).iloc[:, selected_columns].plot(subplots=True, layout=(horizontal, vertical),
+    (pd.DataFrame(emg_data[mode])).iloc[:, :num_columns].plot(subplots=True, layout=(horizontal, vertical),
         title=title, figsize=(15, 10), ylim=ylim)
 
 
 ##  Plotting multiple average values in a single plots
-def plotMultipleModeValues(emg_list):
+def plotMultipleModeValues(emg_list, title=None, ylim=(0, 0.5)):
     plt.figure(figsize=(10, 6))
     for label, arr in emg_list.items():
         plt.plot(arr, label=label)
 
-    plt.title('Multiple EMG data')
+    plt.title(title)
     plt.xlabel('Index')
     plt.ylabel('Value')
+    plt.ylim(*ylim)
     plt.legend()
     plt.grid(True)
     plt.show(block=False)
 
 
 ## calculate and plot the PSD of mean emg values
-def plotPsd(emg_data, mode, selected_columns, layout, title=None):
+def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None):
     # compute the frequency spectrum of a 2D array
     def compute_frequency_spectrum(time_series_data, fs):
         N = time_series_data.shape[0]  # Number of data points
@@ -120,17 +125,21 @@ def plotPsd(emg_data, mode, selected_columns, layout, title=None):
         window = np.hanning(emg_data[mode].shape[0])
         windowed_real_data = emg_data[mode] * window[:, None]
         freq, magnitude = compute_frequency_spectrum(windowed_real_data[:, ], 1000)
-        # Create subplots
-        horizontal = layout[0]
-        vertical = layout[1]
+        # Define the plotting parameters
+        if layout is None:
+            vertical = int(math.ceil(math.sqrt(num_columns)))
+            horizontal = int(math.ceil(num_columns / vertical))
+        else:
+            horizontal, vertical = layout
+        # plot
         fig, axes = plt.subplots(horizontal, vertical, figsize=(18, 15))
         fig.suptitle(title)
         # Flatten the 2D axes array to make it easier to iterate
         flattened_axes = axes.flatten()
         # Loop through each selected column
-        for i, column in enumerate(selected_columns):
+        for column in range(num_columns):
             # Select the subplot
-            plt.sca(flattened_axes[i])
+            plt.sca(flattened_axes[column])
             # Plotting using the modified function
             label = f'{column + 1}'
             plot_frequency_spectrum(freq, magnitude[:, column], label)

@@ -50,7 +50,7 @@ class cGAN_Evaluation:
             fake_data = Process_Fake_Data.generateFakeDataByCurve(data_for_generation,
                 self.gen_results[transition_type]['training_parameters']['interval'], repetition=repetition, random_pairing=random_pairing)
             reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
-            filtered_fake_data = Process_Fake_Data.smoothGeneratedData(reorganized_fake_data, cutoff_frequency)
+            filtered_fake_data = Process_Fake_Data.clipSmoothEmgData(reorganized_fake_data, cutoff_frequency, clip_range=(0, 1))
             # create synthetic training data
             fake_emg_data = {modes[2]: filtered_fake_data}
             synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_data, synthetic_data)

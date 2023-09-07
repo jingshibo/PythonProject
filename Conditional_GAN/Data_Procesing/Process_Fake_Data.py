@@ -8,6 +8,7 @@ from Cycle_GAN.Functions import Data_Processing
 import random
 from scipy import signal
 
+
 ## separate the dataset into multiple timepoint bins
 def separateByInterval(data, timepoint_interval=50, length=850, output_list=False):
     '''
@@ -217,8 +218,9 @@ def replaceUsingRealEmg(mode_to_substitute, real_emg_normalized, train_dataset, 
 
 
 ## filtering
-def smoothGeneratedData(data_list, cutoff_frequency):
+def clipSmoothEmgData(data_list, cutoff_frequency, clip_range=(0, 1)):
     sos = signal.butter(4, cutoff_frequency, fs=1000, btype="lowpass", output='sos')
-    filtered_fake_data = [signal.sosfiltfilt(sos, data, axis=0) for data in data_list]
-    return filtered_fake_data
+    filtered_emg_data = [signal.sosfiltfilt(sos, data, axis=0) for data in data_list]
+    clipped_emg_data = [np.clip(array, clip_range[0], clip_range[1]) for array in filtered_emg_data]
+    return clipped_emg_data
 
