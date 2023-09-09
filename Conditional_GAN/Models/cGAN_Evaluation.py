@@ -52,7 +52,7 @@ class cGAN_Evaluation:
             reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
             filtered_fake_data = Process_Fake_Data.clipSmoothEmgData(reorganized_fake_data, cutoff_frequency, clip_range=(0, 1))
             # create synthetic training data
-            fake_emg_data = {modes[2]: filtered_fake_data}
+            fake_emg_data = {transition_type: filtered_fake_data}
             synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_data, synthetic_data)
 
         return synthetic_data

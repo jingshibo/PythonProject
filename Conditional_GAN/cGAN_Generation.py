@@ -269,9 +269,9 @@ accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(tes
 ## load check point models
 output = {}
 for transition_type in modes_generation.keys():
-    test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=50, transition_type=transition_type)
+    test_model = Model_Storage.loadCheckPointModels(checkpoint_model_path, model_name, epoch_number=30, transition_type=transition_type)
     gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
-    result = gen_model.estimateBlendingFactors(train_gan_data[transition_type], noise_dim=0)
+    result = gen_model.estimateBlendingFactors(train_gan_data[transition_type], noise_dim=noise_dim)
     output[transition_type] = result
 
 

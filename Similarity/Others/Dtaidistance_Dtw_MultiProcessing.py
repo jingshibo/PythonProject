@@ -83,15 +83,15 @@ if __name__ == '__main__':
     print(datetime.datetime.now() - now)
 
 # # plot the two sequences and connect the mapping points
-# dtwvis.plot_warpingpaths(signal_1, signal_2, paths, best_path)
-# fig = plt.figure()
-# ax = plt.axes()
-# # Remove the border and axes ticks
-# fig.patch.set_visible(False)
-# ax.axis('off')
-# for [map_x, map_y] in best_path:
-#     ax.plot([map_x, map_y], [signal_1[map_x], signal_2[map_y]], linewidth=4)
-# ax.plot(signal_1, '-ro', label='x', linewidth=2, markersize=5, markerfacecolor='lightcoral', markeredgecolor='lightcoral')
-# ax.plot(signal_2, '-bo', label='y', linewidth=2, markersize=5, markerfacecolor='skyblue', markeredgecolor='skyblue')
-# ax.set_title("DTW Distance", fontsize=28, fontweight="bold")
-# plt.legend()
+dtwvis.plot_warpingpaths(signal_1, signal_2, paths, best_path)
+fig = plt.figure()
+ax = plt.axes()
+# Remove the border and axes ticks
+fig.patch.set_visible(False)
+ax.axis('off')
+for [map_x, map_y] in best_path:
+    ax.plot([map_x, map_y], [signal_1[map_x], signal_2[map_y]], linewidth=4)
+ax.plot(signal_1, '-ro', label='x', linewidth=2, markersize=5, markerfacecolor='lightcoral', markeredgecolor='lightcoral')
+ax.plot(signal_2, '-bo', label='y', linewidth=2, markersize=5, markerfacecolor='skyblue', markeredgecolor='skyblue')
+ax.set_title("DTW Distance", fontsize=28, fontweight="bold")
+plt.legend()
