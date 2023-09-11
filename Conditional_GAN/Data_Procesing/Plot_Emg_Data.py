@@ -93,7 +93,7 @@ def plotMultipleModeValues(emg_list, title=None, ylim=(0, 0.5)):
 
 
 ## calculate and plot the PSD of mean emg values
-def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None):
+def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
     # compute the frequency spectrum of a 2D array
     def compute_frequency_spectrum(time_series_data, fs):
         N = time_series_data.shape[0]  # Number of data points

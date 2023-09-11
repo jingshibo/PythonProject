@@ -6,7 +6,7 @@ import datetime
 
 '''train generative model'''
 ##  define windows
-window_parameters = Process_Raw_Data.returnWindowParameters()
+window_parameters = Process_Raw_Data.ganWindowParameters()
 
 ## read and filter old data
 subject = 'Number4'

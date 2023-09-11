@@ -23,14 +23,15 @@ class Raw_Cnn_2d(nn.Module):
         self.conv1_parameter = [32, 3]
         self.conv2_parameter = [32, 3]
         self.conv3_parameter = [32, 3]
-        self.linear1_parameter = 500
+        # self.conv4_parameter = [16, 3]
+        self.linear1_parameter = 1000
         self.linear2_parameter = 100
 
         # define convolutional layer
         self.convolutional_layer = nn.Sequential(
             nn.Conv2d(in_channels=input_size, out_channels=self.conv1_parameter[0], kernel_size=self.conv1_parameter[1], dilation=2, stride=2),
             nn.BatchNorm2d(self.conv1_parameter[0]),
-            nn.ReLU(),
+            nn.ReLU(), #nn.LeakyReLU(0.2)
             nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
 
             nn.Conv2d(in_channels=self.conv1_parameter[0], out_channels=self.conv2_parameter[0], kernel_size=self.conv2_parameter[1], dilation=2, stride=2),
@@ -41,7 +42,12 @@ class Raw_Cnn_2d(nn.Module):
             nn.Conv2d(in_channels=self.conv2_parameter[0], out_channels=self.conv3_parameter[0], kernel_size=self.conv3_parameter[1], dilation=2, stride=2),
             nn.BatchNorm2d(self.conv3_parameter[0]),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=1, padding=0)
+            nn.AvgPool2d(kernel_size=2, stride=1, padding=0),
+
+            # nn.Conv2d(in_channels=self.conv3_parameter[0], out_channels=self.conv4_parameter[0], kernel_size=self.conv4_parameter[1], dilation=2, stride=1),
+            # nn.BatchNorm2d(self.conv4_parameter[0]),
+            # nn.ReLU(),
+            # nn.AvgPool2d(kernel_size=2, stride=1, padding=0)
         )
 
         # define dense layer
@@ -49,12 +55,12 @@ class Raw_Cnn_2d(nn.Module):
             nn.LazyLinear(self.linear1_parameter),
             nn.BatchNorm1d(self.linear1_parameter),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(0.2),
 
             nn.LazyLinear(self.linear2_parameter),
             nn.BatchNorm1d(self.linear2_parameter),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(0.2),
 
             nn.LazyLinear(class_number)
         )
@@ -92,7 +98,7 @@ class Raw_Cnn_2d(nn.Module):
 
 ## model summary
 # model = Raw_Cnn_2d(1, 13).to('cpu')  # move the model to GPU
-# summary(model, input_size=(1500, 1, 350, 130))
+# summary(model, input_size=(1024, 1, 450, 65))
 
 
 ## training

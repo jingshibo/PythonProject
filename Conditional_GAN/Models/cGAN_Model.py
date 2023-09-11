@@ -101,16 +101,16 @@ class Generator_UNet(nn.Module):
 
         # encoder
         self.upfeature = FeatureMapBlock(output_chan, hidden_channels, stride=1, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
-        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
-        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
-        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
 
         # decoder
-        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
-        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
-        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
-        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, activation='relu', SN=True)
+        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.downfeature = FeatureMapBlock(int(hidden_channels * 3), output_chan, stride=1, SN=True)
 
         self.sig = torch.nn.Sigmoid()

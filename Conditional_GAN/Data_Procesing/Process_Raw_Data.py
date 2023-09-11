@@ -60,11 +60,11 @@ def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped,
 
 
 ## get window parameters for gan and classify model training
-def returnWindowParameters():
+def returnWindowParameters(start_before_toeoff_ms, endtime_after_toeoff_ms, feature_window_ms):
     down_sampling = True
-    start_before_toeoff_ms = 450
-    endtime_after_toeoff_ms = 400
-    feature_window_ms = 450
+    start_before_toeoff_ms = start_before_toeoff_ms
+    endtime_after_toeoff_ms = endtime_after_toeoff_ms
+    feature_window_ms = feature_window_ms
     predict_window_ms = start_before_toeoff_ms
     sample_rate = 1 if down_sampling is True else 2
     predict_window_size = predict_window_ms * sample_rate
@@ -84,4 +84,5 @@ def returnWindowParameters():
         'predict_window_per_repetition': predict_window_per_repetition}
 
     return window_parameters
+
 

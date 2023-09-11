@@ -72,8 +72,8 @@ class cGAN_Evaluation:
     def classifierTestSet(self, modes_generation, real_emg_normalized, train_dataset, test_ratio=0.5):
         test_dataset = copy.deepcopy(train_dataset)
         for transition_type, modes in modes_generation.items():
-            test_dataset = Process_Fake_Data.replaceUsingRealEmg(modes[2], real_emg_normalized, test_dataset, test_ratio)
-        sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(test_dataset,
+            test_dataset = Process_Fake_Data.replaceUsingRealEmg(transition_type, real_emg_normalized, test_dataset, test_ratio)
+        sliding_window_dataset, self.feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(test_dataset,
             self.feature_window_size, increment=self.feature_window_increment_ms * self.sample_rate)
         normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
         shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)

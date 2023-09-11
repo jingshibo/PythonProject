@@ -6,10 +6,10 @@ import datetime
 
 '''train generative model'''
 ##  define windows
-window_parameters = Process_Raw_Data.returnWindowParameters()
+window_parameters = Process_Raw_Data.ganWindowParameters()
 lower_limit = 20
-higher_limit = 400
-envelope_cutoff = 400
+higher_limit = 200
+envelope_cutoff = 200
 envelope = True  # the output will always be rectified if set True
 
 
@@ -62,9 +62,9 @@ extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_ge
 
 
 ## hyperparameters
-num_epochs = 50
+num_epochs = 20
 decay_epochs = [30, 45]
-batch_size = 1000
+batch_size = 80
 sampling_repetition = 100  # the number of samples for each time point
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
@@ -74,7 +74,7 @@ blending_factor_dim = 2
 
 ## GAN data storage information
 subject = 'Test'
-version = 2  # the data from which experiment version to process
+version = 1  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -104,38 +104,17 @@ synthetic_data = test_evaluation.generateFakeData(extracted_emg, 'old', modes_ge
 
 
 ## screen representative fake data for classification model training
-# low pass filtering
-cutoff_frequency = 50
-synthetic_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, cutoff_frequency) for key, value in synthetic_data.items()}
-old_emg_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, cutoff_frequency) for key, value in old_emg_normalized.items()}
-# calculate mean value across all channels for each repetition
-fake = Plot_Emg_Data.averageEmgValues(synthetic_envelope)
-real = Plot_Emg_Data.averageEmgValues(old_emg_envelope)
-
-# compute dtw distance between fake data and references
-dtw_distance = Dtw_Similarity.Dtw_Distance(modes_generation, num_sample=60, num_reference=1)
-dtw_results_1 = dtw_distance.calcuDtwDistance(fake['emg_1_repetition_list'], real['emg_1_repetition_list'])
-dtw_results_2 = dtw_distance.calcuDtwDistance(fake['emg_2_repetition_list'], real['emg_2_repetition_list'])
-selected_fake_data_1, selected_fake_index_1, selected_reference_index_1 = dtw_distance.selectFakeData(dtw_results_1, synthetic_data)
-selected_fake_data_2, selected_fake_index_2, selected_reference_index_2 = dtw_distance.selectFakeData(dtw_results_2, synthetic_data)
-
-# combine two curves into one
-# fake_both = {}
-# real_both = {}
-# for transition_type in modes_generation.keys():
-#     fake_both[transition_type] = np.concatenate((fake['emg_1_repetition_list'][transition_type], fake['emg_2_repetition_list'][transition_type]), axis=0)
-#     real_both[transition_type] = np.concatenate((real['emg_1_repetition_list'][transition_type], real['emg_2_repetition_list'][transition_type]), axis=0)
-# dtw_results = dtw_distance.calcuDtwDistance(fake_both, real_both)
-# selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data)
+extracted_data = Dtw_Similarity.extractFakeData(synthetic_data, old_emg_normalized, modes_generation, cutoff_frequency=50, num_sample=60,
+    num_reference=1, method='best')
 
 
 ## plot to see how the dtw plot looks like (test other envelope cutoff frequency, or use eular distance directly)
-dtw_distance.plotPath(fake, real, source='emg_1_repetition_list', mode='emg_LWSA', fake_index=selected_fake_index_1[0],
-    reference_index=selected_reference_index_1[0])
+Dtw_Similarity.plotPath(extracted_data['fake_averaged'], extracted_data['real_averaged'], source='emg_1_repetition_list', mode='emg_LWSA',
+    fake_index=extracted_data['selected_fake_index_1'][1], reference_index=extracted_data['selected_reference_index_1'][0])
 
 
 ## plotting fake and real emg data for comparison
-fake_old_1 = Plot_Emg_Data.averageEmgValues(selected_fake_data_1)
+fake_old_1 = Plot_Emg_Data.averageEmgValues(extracted_data['selected_fake_data_1'])
 real_old = Plot_Emg_Data.averageEmgValues(old_emg_normalized)
 # plot multiple locomotion mode emg in a single plot for comparison
 old_to_plot_1 = {'fake_LWSA': fake_old_1['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_1_event_mean']['emg_LWSA'],
@@ -146,7 +125,7 @@ old_to_plot_2 = {'fake_LWSA': fake_old_1['emg_2_event_mean']['emg_LWSA'], 'real_
 Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_1', ylim=(0, 0.5))
 
 # plot multiple locomotion mode emg in a single plot for comparison
-fake_old_2 = Plot_Emg_Data.averageEmgValues(selected_fake_data_2)
+fake_old_2 = Plot_Emg_Data.averageEmgValues(extracted_data['selected_fake_data_2'])
 old_to_plot_1 = {'fake_LWSA': fake_old_2['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_1_event_mean']['emg_LWSA'],
     'real_SASA': real_old['emg_1_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_1_event_mean']['emg_LWLW']}
 Plot_Emg_Data.plotMultipleModeValues(old_to_plot_1, title='emg_1_on_2', ylim=(0, 0.5))
@@ -166,4 +145,11 @@ Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_2', ylim=(0,
 
 
 ##
-
+# combine two curves into one
+# fake_both = {}
+# real_both = {}
+# for transition_type in modes_generation.keys():
+#     fake_both[transition_type] = np.concatenate((fake['emg_1_repetition_list'][transition_type], fake['emg_2_repetition_list'][transition_type]), axis=0)
+#     real_both[transition_type] = np.concatenate((real['emg_1_repetition_list'][transition_type], real['emg_2_repetition_list'][transition_type]), axis=0)
+# dtw_results = dtw_distance.calcuDtwDistance(fake_both, real_both)
+# selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data)

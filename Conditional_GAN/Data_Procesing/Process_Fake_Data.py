@@ -92,7 +92,7 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
 def generateFakeDataByCurve(reorganized_data, interval, repetition=1, random_pairing=True):
     '''
     This function is modified based on the input and output of the above generateFakeData() function in order to be compatible with other
-    functions, so there are some additional data transformations and input arguments that look unnecessary.
+    functions, so there are some additional transformations below and unnecessary input arguments: interval, repetition=1, random_pairing.
     '''
     def reshapeGenData(data):
         # Get the shape parameters
@@ -209,11 +209,12 @@ def replaceUsingFakeEmg(fake_data, real_emg_normalized):
 
 
 ## substitute the test dataset using real data
-def replaceUsingRealEmg(mode_to_substitute, real_emg_normalized, train_dataset, test_ratio):
+def replaceUsingRealEmg(mode, real_emg_normalized, train_dataset, test_ratio):
     test_dataset = copy.deepcopy(train_dataset)
-    real_value = real_emg_normalized[mode_to_substitute]
+    real_value = real_emg_normalized[mode]
     random.Random(5).shuffle(real_value)
-    test_dataset['group_0']['test_set'][mode_to_substitute] = real_value[0: int(len(real_value) * test_ratio)]
+    # random.shuffle(real_value)
+    test_dataset['group_0']['test_set'][mode] = real_value[0: int(len(real_value) * test_ratio)]
     return test_dataset
 
 
@@ -223,4 +224,34 @@ def clipSmoothEmgData(data_list, cutoff_frequency, clip_range=(0, 1)):
     filtered_emg_data = [signal.sosfiltfilt(sos, data, axis=0) for data in data_list]
     clipped_emg_data = [np.clip(array, clip_range[0], clip_range[1]) for array in filtered_emg_data]
     return clipped_emg_data
+
+
+## Reorder the columns of a 2D numpy array every other 13 columns.
+def reorder_columns(emg_data):
+    num_columns = emg_data.shape[1]
+    # Check if the number of columns is a multiple of 65
+    if num_columns % 65 != 0:
+        raise ValueError("Array should have a number of columns that is a multiple of 65.")
+    num_rep = num_columns // 65  # Number of repetitions of the 65-column pattern
+    columns_per_group = 13  # Each group contains 13 columns
+
+    reordered_idx = []
+    for rep in range(num_rep):  # for each repetition of the 65-column pattern
+        for i in range(0, 65, columns_per_group):  # for each 13 columns
+            group_indices = list(range(rep * 65 + i, rep * 65 + i + columns_per_group))
+            # Reverse the order of every second group
+            if (i // columns_per_group) % 2 != 0:
+                group_indices = group_indices[::-1]
+            reordered_idx.extend(group_indices)
+
+    reordered_data = emg_data[:, reordered_idx]
+    return reordered_data
+
+
+## reorder dataset based on the reorder_column function
+def reorderDataSet(dataset):
+    reordered_dataset = copy.deepcopy(dataset)
+    for locomotion_type, locomotion_data in dataset.items():
+        reordered_dataset[locomotion_type] = [reorder_columns(data) for data in locomotion_data]
+    return reordered_dataset
 
