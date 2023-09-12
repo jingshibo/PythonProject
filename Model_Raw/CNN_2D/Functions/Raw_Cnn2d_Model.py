@@ -23,7 +23,7 @@ class Raw_Cnn_2d(nn.Module):
         self.conv1_parameter = [32, 3]
         self.conv2_parameter = [32, 3]
         self.conv3_parameter = [32, 3]
-        # self.conv4_parameter = [16, 3]
+        # self.conv4_parameter = [32, 3]
         self.linear1_parameter = 1000
         self.linear2_parameter = 100
 
@@ -55,12 +55,12 @@ class Raw_Cnn_2d(nn.Module):
             nn.LazyLinear(self.linear1_parameter),
             nn.BatchNorm1d(self.linear1_parameter),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
 
             nn.LazyLinear(self.linear2_parameter),
             nn.BatchNorm1d(self.linear2_parameter),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
 
             nn.LazyLinear(class_number)
         )

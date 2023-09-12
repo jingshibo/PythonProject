@@ -1,4 +1,6 @@
 ##
+import copy
+
 from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, cGAN_Evaluation, Model_Storage
 from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data, Plot_Emg_Data, Dtw_Similarity
 import datetime
@@ -161,28 +163,30 @@ for key, array_list in reordered_fake_old_data.items():
     # Loop through each array in the list and select only the first 65 columns
     shorten_fake_emg[key] = [arr[start:end, :] for arr in array_list]
     # Loop through each array in the list and set the first 100 rows to 0
-for key, array_list in shorten_fake_emg.items():
+for key, array_list in reordered_real_old_data.items():
     # Loop through each array in the list and select only the first 65 columns
     for arr in array_list:
-        arr[:200, :] = 0.1 + np.random.normal(0, 0.01, arr[:200, :].shape)
+        arr[:200, :] = 0
+        # arr[:200, :] = 0.1 + np.random.normal(0, 0.01, arr[:200, :].shape)
 
 shorten_old_emg = {}
 # Loop through each key-value pair in the original dictionary
-for key, array_list in reordered_real_old_data.items():
+for key, array_list in old_emg_classify_normalized.items():
     shorten_old_emg[key] = [arr[start:end, :] for arr in array_list]
 for key, array_list in shorten_old_emg.items():
     # Loop through each array in the list and select only the first 65 columns
     for arr in array_list:
-        arr[:200, :] = 0.1 + np.random.normal(0, 0.01, arr[:200, :].shape)
+        arr[:200, :] = 0
+        # arr[:200, :] = 0.1 + np.random.normal(0, 0.01, arr[:200, :].shape)
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450-start, endtime_after_toeoff_ms=end-450, feature_window_ms=450-start)
 
 
-## screen representative fake data for classification model training
+# screen representative fake data for classification model training
 extracted_old_data = Dtw_Similarity.extractFakeData(shorten_fake_emg, shorten_old_emg, modes_generation, cutoff_frequency=50, num_sample=60,
-    num_reference=30, method='select')
+    num_reference=1, method='select')
 
 
-## retain one emg
+# retain one emg
 fake_emg_dict_1 = {}
 fake_emg_dict_2 = {}
 channel_number = 65
@@ -199,19 +203,17 @@ for key, array_list in shorten_old_emg.items():
     real_emg_dict_1[key] = [arr[:, :channel_number] for arr in array_list]
     real_emg_dict_2[key] = [arr[:, channel_number:] for arr in array_list]
 
-## reference data
-import numpy as np
-reference_data = {'emg_LWSA': [real_emg_dict_2['emg_LWSA'][index] for index in extracted_old_data['selected_reference_index_2']['emg_LWSA']]}
-reference_data['emg_LWSA'] = [np.concatenate([arr, arr], axis=1) for arr in reference_data['emg_LWSA']]
 
-## median filtering
+# median filtering
 import pandas as pd
+import copy
 from scipy import ndimage
-filtered_fake_dict = {}
+filtered_fake_dict = copy.deepcopy(fake_emg_dict_2)
 # Loop through each key-value pair in the original dictionary
 for key, array_list in fake_emg_dict_2.items():
+    # if key in modes_generation.keys():
     # Loop through each array in the list and apply median filtering
-    filtered_array_list = [pd.DataFrame(ndimage.median_filter(arr, mode='nearest', size=5)).to_numpy() for arr in array_list]
+    filtered_array_list = [pd.DataFrame(ndimage.median_filter(arr, mode='nearest', size=3)).to_numpy() for arr in array_list]
     # Add the new list of filtered arrays to the new dictionary
     filtered_fake_dict[key] = filtered_array_list
 
@@ -224,13 +226,19 @@ for key, array_list in real_emg_dict_2.items():
     filtered_real_dict[key] = filtered_array_list
 
 
-##
+# construct reference data and
+import numpy as np
+reference_data = {'emg_LWSA': [real_emg_dict_2['emg_LWSA'][index] for index in extracted_old_data['selected_reference_index_2']['emg_LWSA']]}
+reference_data['emg_LWSA'] = [np.concatenate([arr, arr], axis=1) for arr in reference_data['emg_LWSA']]
+
+
+#
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-train_set, shuffled_train_set = old_evaluation.classifierTrainSet(filtered_fake_dict, training_percent=0.8)
+train_set, shuffled_train_set = old_evaluation.classifierTrainSet(fake_emg_dict_2, training_percent=0.8)
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
 acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
 # test classifier
-shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, real_emg_dict_2, train_set, test_ratio=0.5)
+shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, filtered_real_dict, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
