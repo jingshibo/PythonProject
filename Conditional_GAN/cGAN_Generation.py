@@ -181,7 +181,7 @@ for key, array_list in shorten_old_emg.items():
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450-start, endtime_after_toeoff_ms=end-450, feature_window_ms=450-start)
 
 
-# screen representative fake data for classification model training
+## screen representative fake data for classification model training
 extracted_old_data = Dtw_Similarity.extractFakeData(shorten_fake_emg, shorten_old_emg, modes_generation, cutoff_frequency=50, num_sample=60,
     num_reference=1, method='select')
 
@@ -204,7 +204,7 @@ for key, array_list in shorten_old_emg.items():
     real_emg_dict_2[key] = [arr[:, channel_number:] for arr in array_list]
 
 
-# median filtering
+## median filtering
 import pandas as pd
 import copy
 from scipy import ndimage
@@ -232,7 +232,7 @@ reference_data = {'emg_LWSA': [real_emg_dict_2['emg_LWSA'][index] for index in e
 reference_data['emg_LWSA'] = [np.concatenate([arr, arr], axis=1) for arr in reference_data['emg_LWSA']]
 
 
-#
+##
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(fake_emg_dict_2, training_percent=0.8)
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
