@@ -227,7 +227,7 @@ def clipSmoothEmgData(data_list, cutoff_frequency, clip_range=(0, 1)):
 
 
 ## Reorder the columns of a 2D numpy array every other 13 columns.
-def reorder_columns(emg_data):
+def reorderColumns(emg_data):
     num_columns = emg_data.shape[1]
     # Check if the number of columns is a multiple of 65
     if num_columns % 65 != 0:
@@ -248,10 +248,17 @@ def reorder_columns(emg_data):
     return reordered_data
 
 
-## reorder dataset based on the reorder_column function
-def reorderDataSet(dataset):
-    reordered_dataset = copy.deepcopy(dataset)
+## reorder, filter and clip data
+def reorderSmoothDataSet(dataset, lowpass_frequency=None, clip_range=(0, 1)):
+    postprocessed_dataset = copy.deepcopy(dataset)
     for locomotion_type, locomotion_data in dataset.items():
-        reordered_dataset[locomotion_type] = [reorder_columns(data) for data in locomotion_data]
-    return reordered_dataset
+        # reorder emg electrode order
+        reordered_dataset = [reorderColumns(data) for data in locomotion_data]
+        # lowpoass filter emg data
+        if lowpass_frequency is not None:
+            filtered_fake_data = clipSmoothEmgData(reordered_dataset, lowpass_frequency, clip_range=clip_range)
+        else:
+            filtered_fake_data = reordered_dataset
+        postprocessed_dataset[locomotion_type] = [array.astype(np.float32) for array in filtered_fake_data]
+    return postprocessed_dataset
 

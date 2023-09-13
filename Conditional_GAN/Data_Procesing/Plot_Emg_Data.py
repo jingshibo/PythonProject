@@ -13,54 +13,45 @@ import math
 
 
 ## calculate the mean value of emg data to get average value of all channels/all repetitions/all channel and repetitions.
-def averageEmgValues(emg_values):
-    # calculate the mean value of all channels for each repetition
-    emg_1_repetition_list = {}
-    emg_2_repetition_list = {}
-    # Loop through each key in the original dictionary
+def averageEmgValues(emg_values, split=True):
+    emg_repetition_list = {}
+    emg_channel_list = {}
+    emg_event_mean = {}
+
     for gait_event_label, gait_event_emg in emg_values.items():
-        result_shape = (gait_event_emg[0].shape[0], len(gait_event_emg))
-        # Initialize arrays to store the column-wise averages for the first and second parts for the current key
-        result_for_key_part1 = np.zeros(result_shape)
-        result_for_key_part2 = np.zeros(result_shape)
-        # Loop through each list (of shape (1800, 130) in your case)
+        num_columns = gait_event_emg[0].shape[1]
+        if split:
+            num_parts = num_columns // 65
+        else:
+            num_parts = 1
+
         for i, array in enumerate(gait_event_emg):
-            # In this demonstration, I'll split the 130 columns into two
-            array_part1, array_part2 = np.split(array, 2, axis=1)
-            # Calculate the column-wise average for each part
-            column_avg_part1 = np.mean(array_part1, axis=1)
-            column_avg_part2 = np.mean(array_part2, axis=1)
-            # Store the column-wise average in the corresponding position of the result_for_key_part arrays
-            result_for_key_part1[:, i] = column_avg_part1
-            result_for_key_part2[:, i] = column_avg_part2  # Store the (1800, 60) ndarrays in the result_dict for the current key and part
-        emg_1_repetition_list[gait_event_label] = result_for_key_part1
-        emg_2_repetition_list[gait_event_label] = result_for_key_part2
+            split_arrays = np.split(array, num_parts, axis=1)
+            for j, part in enumerate(split_arrays):
+                part_key = f'grid_{j + 1}'
+                # Update emg_repetition_list
+                if part_key not in emg_repetition_list:
+                    emg_repetition_list[part_key] = {}
+                if gait_event_label not in emg_repetition_list[part_key]:
+                    result_shape = (array.shape[0], len(gait_event_emg))
+                    emg_repetition_list[part_key][gait_event_label] = np.zeros(result_shape)
+                emg_repetition_list[part_key][gait_event_label][:, i] = np.mean(part, axis=1)
 
-    # calculate the mean value of all repetitions for each channel
-    emg_1_channel_list = {}
-    emg_2_channel_list = {}
-    # Loop through each key in the original dictionary
-    for gait_event_label, gait_event_emg in emg_values.items():
-        # Convert the list of arrays for each key to a 3D NumPy array and Calculate the mean along the first axis
+        # Update emg_channel_list and emg_event_mean
         average_array = np.mean(np.stack(gait_event_emg), axis=0)
-        # Store the average array in the dictionary with the corresponding key
-        array_part1, array_part2 = np.split(average_array, 2, axis=1)
-        # Store the split arrays in the dictionary with the corresponding key
-        emg_1_channel_list[gait_event_label] = array_part1
-        emg_2_channel_list[gait_event_label] = array_part2
+        split_avg_arrays = np.split(average_array, num_parts, axis=1)
 
-    #  calculate the mean value of all data at each timepoint for a gait event
-    emg_1_event_mean = {}  # emg device 1: tibialis
-    emg_2_event_mean = {}  # emg device 2: rectus
-    # Loop through each key in the original dictionary
-    for gait_event_label, gait_event_emg in emg_values.items():
-        emg_1_event_mean[gait_event_label] = np.mean(emg_1_channel_list[gait_event_label], axis=1)
-        emg_2_event_mean[gait_event_label] = np.mean(emg_2_channel_list[gait_event_label], axis=1)
+        for i, part in enumerate(split_avg_arrays):
+            part_key = f'grid_{i + 1}'
+            if part_key not in emg_channel_list:
+                emg_channel_list[part_key] = {}
+            emg_channel_list[part_key][gait_event_label] = part
+            if part_key not in emg_event_mean:
+                emg_event_mean[part_key] = {}
+            emg_event_mean[part_key][gait_event_label] = np.mean(part, axis=1)
 
-    # store all mean values in a dict
-    emg_mean_values = {'emg_1_repetition_list': emg_1_repetition_list, 'emg_2_repetition_list': emg_2_repetition_list,
-        'emg_1_channel_list': emg_1_channel_list, 'emg_2_channel_list': emg_2_channel_list,
-        'emg_1_event_mean': emg_1_event_mean, 'emg_2_event_mean': emg_2_event_mean}
+    emg_mean_values = {'emg_repetition_list': emg_repetition_list, 'emg_channel_list': emg_channel_list, 'emg_event_mean': emg_event_mean}
+
     return emg_mean_values
 
 

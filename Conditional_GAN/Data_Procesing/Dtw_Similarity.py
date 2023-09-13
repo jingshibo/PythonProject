@@ -13,7 +13,6 @@ class Dtw_Distance:
         self.num_sample = num_sample
         self.num_reference = num_reference
 
-
     ## using dtw package to calculate DTW distance between reference and synthetic data
     def calcuDtwDistance(self, fake_data, real_data):
         dtw_results = {}
@@ -35,30 +34,8 @@ class Dtw_Distance:
 
         return dtw_results
 
-
     ## select reference curves and return the most matching fake dataset
     def selectFakeData(self, dtw_results, synthetic_data, random_reference=False):
-        # when selecting fake data based on references, there may be same data from different reference. Then we would get the next one instead.
-        def avoidReplicatedData(): # nested functions have access to variables from the enclosing function's scope, so no need for any arguments
-            select_fake_index = []
-            added_fake_indices = set()  # To keep track of already added fake indices
-            for i in selected_reference_index:
-                sorted_fake_index = np.argsort(dtw_results[transition_type]['fake_reference_ds'][i, :])
-
-                count = 0  # To keep track of how many unique fake indices have been added for the current i
-                idx = 0  # To iterate through sorted_fake_index
-                current_selected_fake = []  # To temporarily store the selected fake indices for the current i
-                while count < self.num_sample // self.num_reference:
-                    if sorted_fake_index[idx] not in added_fake_indices:
-                        current_selected_fake.append(sorted_fake_index[idx])
-                        added_fake_indices.add(sorted_fake_index[idx])
-                        count += 1
-                    idx += 1
-                select_fake_index.extend(current_selected_fake)
-
-            select_fake_index = np.array(select_fake_index)
-            return select_fake_index
-
         selected_fake_data = copy.deepcopy(synthetic_data)
         selected_fake_indices = {}
         selected_reference_indices = {}
@@ -66,14 +43,16 @@ class Dtw_Distance:
         for transition_type in self.modes_generation.keys():
             # select reference data
             if random_reference:  # select references randomly
-                selected_reference_index = random.sample(range(len(dtw_results[transition_type]['within_reference_ds']), self.num_sample))
+                selected_reference_index = random.sample(range(len(dtw_results[transition_type]['within_reference_ds'])), self.num_reference)
             else:  # select representative references
                 dtw_reference_mean = np.mean(dtw_results[transition_type]['within_reference_ds'], axis=0)
                 sorted_reference_index = np.argsort(dtw_reference_mean)
+                if len(sorted_reference_index) < self.num_reference: # in case selected reference number is larger than the available number
+                    self.num_reference = len(sorted_reference_index)
                 selected_reference_index = sorted_reference_index[0::len(sorted_reference_index) // self.num_reference][0: self.num_reference]
 
-            # return the fake dataset closest to the selected references
-            selected_fake_index = avoidReplicatedData()
+            # select fake data closest to the references
+            selected_fake_index = self.avoidReplicatedData(dtw_results, selected_reference_index, transition_type)
             # selected_fake_index = []
             # for i in selected_reference_index:  # i is the row index of references in the dtw_results 2d array, the column refers to fake data
             #     sorted_fake_index = np.argsort(dtw_results[transition_type]['fake_reference_ds'][i, :])
@@ -84,7 +63,6 @@ class Dtw_Distance:
             selected_fake_indices[transition_type] = selected_fake_index
             selected_reference_indices[transition_type] = selected_reference_index
         return selected_fake_data, selected_fake_indices, selected_reference_indices
-
 
     # select representative fake data based on all reference curves available
     def bestFakeData(self, dtw_results, synthetic_data):
@@ -101,32 +79,63 @@ class Dtw_Distance:
         selected_reference_index = []  # for consistence with the pickFakeData() function.
         return fake_data, selected_fake_indices, selected_reference_index
 
+    # when selecting fake data based on references, there may be same data from different reference. Then we would get the next one instead.
+    def avoidReplicatedData(self, dtw_results, selected_reference_index, transition_type):
+        select_fake_index = []
+        added_fake_indices = set()  # To keep track of already added fake indices
+        for i in selected_reference_index:
+            sorted_fake_index = np.argsort(dtw_results[transition_type]['fake_reference_ds'][i, :])
 
-def extractFakeData(synthetic_data, real_data, modes_generation, cutoff_frequency, num_sample, num_reference, method='select'):
-    # low pass filtering
-    synthetic_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, cutoff_frequency) for key, value in synthetic_data.items()}
-    old_emg_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, cutoff_frequency) for key, value in real_data.items()}
+            count = 0  # To keep track of how many unique fake indices have been added for the current i
+            idx = 0  # To iterate through sorted_fake_index
+            current_selected_fake = []  # To temporarily store the selected fake indices for the current i
+            while count < self.num_sample // self.num_reference:
+                if sorted_fake_index[idx] not in added_fake_indices:
+                    current_selected_fake.append(sorted_fake_index[idx])
+                    added_fake_indices.add(sorted_fake_index[idx])
+                    count += 1
+                idx += 1
+            select_fake_index.extend(current_selected_fake)
+
+        select_fake_index = np.array(select_fake_index)
+        return select_fake_index
+
+
+def extractFakeData(synthetic_data, real_data, modes_generation, envelope_frequency, num_sample, num_reference, method='select',
+        random_reference=False, split_grids=True):
+    # low pass filtering to get the envelope of emg
+    synthetic_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, envelope_frequency) for key, value in synthetic_data.items()}
+    old_emg_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, envelope_frequency) for key, value in real_data.items()}
     # calculate mean value across all channels for each repetition
-    fake = Plot_Emg_Data.averageEmgValues(synthetic_envelope)
-    real = Plot_Emg_Data.averageEmgValues(old_emg_envelope)
-    # compute dtw distance between fake data and references
+    fake_average = Plot_Emg_Data.averageEmgValues(synthetic_envelope, split=split_grids)
+    real_average = Plot_Emg_Data.averageEmgValues(old_emg_envelope, split=split_grids)
+
+    # create dtw distance object for calculation
     dtw_distance = Dtw_Distance(modes_generation, num_sample=num_sample, num_reference=num_reference)
-    dtw_results_1 = dtw_distance.calcuDtwDistance(fake['emg_1_repetition_list'], real['emg_1_repetition_list'])
-    dtw_results_2 = dtw_distance.calcuDtwDistance(fake['emg_2_repetition_list'], real['emg_2_repetition_list'])
-    if method == 'select':
-        selected_fake_data_1, selected_fake_index_1, selected_reference_index_1 = dtw_distance.selectFakeData(dtw_results_1, synthetic_data)
-        selected_fake_data_2, selected_fake_index_2, selected_reference_index_2 = dtw_distance.selectFakeData(dtw_results_2, synthetic_data)
-    elif method == 'best':
-        selected_fake_data_1, selected_fake_index_1, selected_reference_index_1 = dtw_distance.bestFakeData(dtw_results_1, synthetic_data)
-        selected_fake_data_2, selected_fake_index_2, selected_reference_index_2 = dtw_distance.bestFakeData(dtw_results_2, synthetic_data)
-    extracted_data = {'selected_fake_data_1': selected_fake_data_1, 'selected_fake_index_1': selected_fake_index_1,
-        'selected_reference_index_1': selected_reference_index_1, 'selected_fake_data_2': selected_fake_data_2,
-        'selected_fake_index_2': selected_fake_index_2, 'selected_reference_index_2': selected_reference_index_2, 'fake_averaged': fake,
-        'real_averaged': real}
+    extracted_data = {}
+    for grid_key in fake_average['emg_repetition_list'].keys():  # Assuming keys like 'grid_1', 'grid_2', etc for emg grid 1, emg grid 2,etc.
+        # calculate the dtw distance based on each EMG grid
+        dtw_results = dtw_distance.calcuDtwDistance(fake_average['emg_repetition_list'][grid_key],
+            real_average['emg_repetition_list'][grid_key])
+        if method == 'select':
+            selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data,
+                random_reference=random_reference)
+        elif method == 'best':
+            selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.bestFakeData(dtw_results, synthetic_data)
+        # Store the results for the current part in the extracted_data dict
+        extracted_data[f'dtw_results_based_on_{grid_key}'] = dtw_results
+        extracted_data[f'fake_data_based_on_{grid_key}'] = selected_fake_data
+        extracted_data[f'fake_index_based_on_{grid_key}'] = selected_fake_index
+        extracted_data[f'reference_index_based_on_{grid_key}'] = selected_reference_index
+
+    # Store the averaged fake and real data as well
+    extracted_data['fake_envelope_averaged'] = fake_average
+    extracted_data['real_envelope_averaged'] = real_average
+
     return extracted_data
 
 
-def plotPath(fake_curve, real_curve, source, mode, fake_index, reference_index):
+def plotDtwPath(fake_curve, real_curve, source, mode, fake_index, reference_index):
     s1 = fake_curve[source][mode][:, fake_index]
     s2 = real_curve[source][mode][:, reference_index]
     d, paths = dtw.warping_paths(s1, s2)  # distance and DTW matrix
