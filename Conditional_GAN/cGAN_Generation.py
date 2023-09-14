@@ -233,6 +233,26 @@ test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
 
+# construct reference data and
+import numpy as np
+reference_data = {'emg_LWSA': [real_emg_dict_2['emg_LWSA'][index] for index in extracted_old_data['selected_reference_index_2']['emg_LWSA']]}
+reference_data['emg_LWSA'] = [np.concatenate([arr, arr], axis=1) for arr in reference_data['emg_LWSA']]
+
+# Initialize an empty dictionary to store the modified arrays
+filtered_fake = {}
+# Loop through each key-value pair in the original dictionary
+for key, array_list in filtered_fake_dict.items():
+    # Loop through each array in the list and concatenate it with itself along the second dimension (axis=1)
+    filtered_fake[key] = [np.concatenate([arr, arr], axis=1) for arr in array_list]
+    # Add the new list of extended arrays to the new dictionary
+
+# Initialize an empty dictionary to store the modified arrays
+filtered_real = {}
+# Loop through each key-value pair in the original dictionary
+for key, array_list in filtered_real_dict.items():
+    # Loop through each array in the list and concatenate it with itself along the second dimension (axis=1)
+    filtered_real[key] = [np.concatenate([arr, arr], axis=1) for arr in array_list]
+    # Add the new list of extended arrays to the new dictionary
 
 ## plot to see how the dtw plot looks like (test other envelope cutoff frequency, or use eular distance directly)
 # Dtw_Similarity.plotPath(extracted_old_data['fake_averaged'], extracted_old_data['real_averaged'], source='emg_1_repetition_list',
@@ -240,8 +260,8 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 
 
 ## plotting fake and real emg data for comparison
-fake_old_1 = Plot_Emg_Data.averageEmgValues(extracted_old_data['selected_fake_data_1'])
-fake_old_2 = Plot_Emg_Data.averageEmgValues(extracted_old_data['selected_fake_data_2'])
+fake_old_1 = Plot_Emg_Data.averageEmgValues(filtered_fake)
+fake_old_2 = Plot_Emg_Data.averageEmgValues(filtered_fake)
 real_old = Plot_Emg_Data.averageEmgValues(shorten_old_emg)
 reference = Plot_Emg_Data.averageEmgValues(reference_data)
 ## plot multiple locomotion mode emg in a single plot for comparison
