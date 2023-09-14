@@ -49,8 +49,8 @@ new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_p
 
 ## normalize and extract emg data for gan model training
 range_limit = 2000
-old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
-    new_emg_data_classify, range_limit, normalize='(0,1)')
+# old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
+#     new_emg_data_classify, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
 # modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'], 'SALW': ['emg_SASA',
 # 'emg_LWLW', 'emg_SALW'], 'SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
@@ -59,8 +59,8 @@ modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
 # modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
-extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
-    length, output_list=True)
+# extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
+#     length, output_list=True)
 
 
 # hyperparameters
@@ -76,7 +76,7 @@ blending_factor_dim = 2
 
 # GAN data storage information
 subject = 'Test'
-version = 2  # the data from which experiment version to process
+version = 3  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -144,7 +144,7 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
     time_interval, length, output_list=False)
 
 
-## generate fake data
+# generate fake data
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_old_data = old_evaluation.generateFakeData(extracted_emg_classify, 'old', modes_generation, old_emg_classify_normalized,
     envelope_cutoff, repetition=1, random_pairing=True)  # repetition and random_pairing are two unnecessary parameters.
@@ -152,36 +152,26 @@ reordered_fake_old_data = Process_Fake_Data.reorderDataSet(synthetic_old_data)
 reordered_real_old_data = Process_Fake_Data.reorderDataSet(old_emg_classify_normalized)
 
 
-## selected given time range of data
+# selected given time range of data
 import numpy as np
 # train classifier
 shorten_fake_emg = {}
 start = 0
-end = 750
+end = 850
 # Loop through each key-value pair in the original dictionary
 for key, array_list in reordered_fake_old_data.items():
     # Loop through each array in the list and select only the first 65 columns
     shorten_fake_emg[key] = [arr[start:end, :] for arr in array_list]
-    # Loop through each array in the list and set the first 100 rows to 0
-for key, array_list in reordered_real_old_data.items():
-    # Loop through each array in the list and select only the first 65 columns
-    for arr in array_list:
-        arr[:200, :] = 0
-        # arr[:200, :] = 0.1 + np.random.normal(0, 0.01, arr[:200, :].shape)
 
 shorten_old_emg = {}
 # Loop through each key-value pair in the original dictionary
 for key, array_list in old_emg_classify_normalized.items():
     shorten_old_emg[key] = [arr[start:end, :] for arr in array_list]
-for key, array_list in shorten_old_emg.items():
-    # Loop through each array in the list and select only the first 65 columns
-    for arr in array_list:
-        arr[:200, :] = 0
-        # arr[:200, :] = 0.1 + np.random.normal(0, 0.01, arr[:200, :].shape)
+
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450-start, endtime_after_toeoff_ms=end-450, feature_window_ms=450-start)
 
 
-## screen representative fake data for classification model training
+# screen representative fake data for classification model training
 extracted_old_data = Dtw_Similarity.extractFakeData(shorten_fake_emg, shorten_old_emg, modes_generation, cutoff_frequency=50, num_sample=60,
     num_reference=1, method='select')
 
@@ -204,7 +194,7 @@ for key, array_list in shorten_old_emg.items():
     real_emg_dict_2[key] = [arr[:, channel_number:] for arr in array_list]
 
 
-## median filtering
+# median filtering
 import pandas as pd
 import copy
 from scipy import ndimage
@@ -232,9 +222,9 @@ reference_data = {'emg_LWSA': [real_emg_dict_2['emg_LWSA'][index] for index in e
 reference_data['emg_LWSA'] = [np.concatenate([arr, arr], axis=1) for arr in reference_data['emg_LWSA']]
 
 
-##
+#
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-train_set, shuffled_train_set = old_evaluation.classifierTrainSet(fake_emg_dict_2, training_percent=0.8)
+train_set, shuffled_train_set = old_evaluation.classifierTrainSet(filtered_fake_dict, training_percent=0.8)
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
 acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
 # test classifier
@@ -245,19 +235,19 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 
 
 ## plot to see how the dtw plot looks like (test other envelope cutoff frequency, or use eular distance directly)
-Dtw_Similarity.plotPath(extracted_old_data['fake_averaged'], extracted_old_data['real_averaged'], source='emg_1_repetition_list',
-    mode='emg_LWSA', fake_index=extracted_old_data['selected_fake_index_1'][1], reference_index=extracted_old_data['selected_reference_index_1'][0])
+# Dtw_Similarity.plotPath(extracted_old_data['fake_averaged'], extracted_old_data['real_averaged'], source='emg_1_repetition_list',
+#     mode='emg_LWSA', fake_index=extracted_old_data['selected_fake_index_1'][1], reference_index=extracted_old_data['selected_reference_index_1'][0])
 
 
 ## plotting fake and real emg data for comparison
 fake_old_1 = Plot_Emg_Data.averageEmgValues(extracted_old_data['selected_fake_data_1'])
 fake_old_2 = Plot_Emg_Data.averageEmgValues(extracted_old_data['selected_fake_data_2'])
 real_old = Plot_Emg_Data.averageEmgValues(shorten_old_emg)
-
+reference = Plot_Emg_Data.averageEmgValues(reference_data)
 ## plot multiple locomotion mode emg in a single plot for comparison
-old_to_plot_1 = {'fake_LWSA': fake_old_1['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_1_event_mean']['emg_LWSA'],
-    'real_SASA': real_old['emg_1_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_1_event_mean']['emg_LWLW'], 'real_LWSS': real_old['emg_1_event_mean']['emg_LWSS']}
-Plot_Emg_Data.plotMultipleModeValues(old_to_plot_1, title='emg_1_on_1', ylim=(0, 0.5))
+# old_to_plot_1 = {'fake_LWSA': fake_old_1['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_1_event_mean']['emg_LWSA'],
+#     'real_SASA': real_old['emg_1_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_1_event_mean']['emg_LWLW'], 'real_LWSS': real_old['emg_1_event_mean']['emg_LWSS']}
+# Plot_Emg_Data.plotMultipleModeValues(old_to_plot_1, title='emg_1_on_1', ylim=(0, 0.5))
 # old_to_plot_2 = {'fake_LWSA': fake_old_1['emg_2_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_2_event_mean']['emg_LWSA'],
 #     'real_SASA': real_old['emg_2_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_2_event_mean']['emg_LWLW'], 'real_LWSS': real_old['emg_2_event_mean']['emg_LWSS']}
 # Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_1', ylim=(0, 0.5))
@@ -271,22 +261,22 @@ old_to_plot_2 = {'fake_LWSA': fake_old_2['emg_2_event_mean']['emg_LWSA'], 'real_
 Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_2', ylim=(0, 0.5))
 
 
-## plot multiple repetition values of each locomotion mode in subplots for comparison
-Plot_Emg_Data.plotAverageValue(fake_old_2['emg_2_repetition_list'], 'emg_LWSA', num_columns=30, title='fake_LWSA', ylim=(0, 1))
-Plot_Emg_Data.plotAverageValue(real_old['emg_2_repetition_list'], 'emg_LWSA', num_columns=30, title='real_LWSA', ylim=(0, 1))
-Plot_Emg_Data.plotAverageValue(real_old['emg_2_repetition_list'], 'emg_LWLW', num_columns=30, title='real_LWLW', ylim=(0, 1))
-Plot_Emg_Data.plotAverageValue(real_old['emg_2_repetition_list'], 'emg_LWSS', num_columns=30, title='real_LWSS', ylim=(0, 1))
-reference = Plot_Emg_Data.averageEmgValues(reference_data)
-Plot_Emg_Data.plotAverageValue(reference['emg_2_repetition_list'], 'emg_LWSA', num_columns=30, title='reference_LWSA', ylim=(0, 1))
-
-
-## plot multiple channel values of each locomotion mode in subplots for comparison
-Plot_Emg_Data.plotAverageValue(fake_old_2['emg_2_channel_list'], 'emg_LWSA', num_columns=30, title='fake_LWSA', ylim=(0, 1))
-Plot_Emg_Data.plotAverageValue(real_old['emg_2_channel_list'], 'emg_LWSA', num_columns=30, title='real_LWSA', ylim=(0, 1))
-Plot_Emg_Data.plotAverageValue(real_old['emg_2_channel_list'], 'emg_LWLW', num_columns=30, title='real_LWLW', ylim=(0, 1))
-Plot_Emg_Data.plotAverageValue(real_old['emg_2_channel_list'], 'emg_LWSS', num_columns=30, title='real_LWSS', ylim=(0, 1))
-reference = Plot_Emg_Data.averageEmgValues(reference_data)
-Plot_Emg_Data.plotAverageValue(reference['emg_2_channel_list'], 'emg_LWSA', num_columns=30, title='reference_LWSA', ylim=(0, 1))
+# ## plot multiple repetition values of each locomotion mode in subplots for comparison
+# Plot_Emg_Data.plotAverageValue(fake_old_2['emg_2_repetition_list'], 'emg_LWSA', num_columns=30, title='fake_LWSA', ylim=(0, 1))
+# Plot_Emg_Data.plotAverageValue(real_old['emg_2_repetition_list'], 'emg_LWSA', num_columns=30, title='real_LWSA', ylim=(0, 1))
+# Plot_Emg_Data.plotAverageValue(real_old['emg_2_repetition_list'], 'emg_LWLW', num_columns=30, title='real_LWLW', ylim=(0, 1))
+# Plot_Emg_Data.plotAverageValue(real_old['emg_2_repetition_list'], 'emg_LWSS', num_columns=30, title='real_LWSS', ylim=(0, 1))
+# reference = Plot_Emg_Data.averageEmgValues(reference_data)
+# Plot_Emg_Data.plotAverageValue(reference['emg_2_repetition_list'], 'emg_LWSA', num_columns=30, title='reference_LWSA', ylim=(0, 1))
+#
+#
+# ## plot multiple channel values of each locomotion mode in subplots for comparison
+# Plot_Emg_Data.plotAverageValue(fake_old_2['emg_2_channel_list'], 'emg_LWSA', num_columns=30, title='fake_LWSA', ylim=(0, 1))
+# Plot_Emg_Data.plotAverageValue(real_old['emg_2_channel_list'], 'emg_LWSA', num_columns=30, title='real_LWSA', ylim=(0, 1))
+# Plot_Emg_Data.plotAverageValue(real_old['emg_2_channel_list'], 'emg_LWLW', num_columns=30, title='real_LWLW', ylim=(0, 1))
+# Plot_Emg_Data.plotAverageValue(real_old['emg_2_channel_list'], 'emg_LWSS', num_columns=30, title='real_LWSS', ylim=(0, 1))
+# reference = Plot_Emg_Data.averageEmgValues(reference_data)
+# Plot_Emg_Data.plotAverageValue(reference['emg_2_channel_list'], 'emg_LWSA', num_columns=30, title='reference_LWSA', ylim=(0, 1))
 
 
 ## plot the average psd of each locomotion mode for comparison
