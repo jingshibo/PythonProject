@@ -49,18 +49,18 @@ new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_p
 
 ## normalize and extract emg data for gan model training
 range_limit = 2000
-# old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
-#     new_emg_data_classify, range_limit, normalize='(0,1)')
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
+    new_emg_data_classify, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
-modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA', 'emg_LWSS'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD', 'emg_LWSS'],
-    'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW', 'emg_SASS'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW', 'emg_SDSS']}
-# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA', 'emg_LWSS'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD', 'emg_LWSS']}
-# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA', 'emg_LWSS']}
-# modes_generation = {'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD', 'emg_LWSS']}
+modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
+    'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
+# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
+# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
+# modes_generation = {'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
-# extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
-#     length, output_list=True)
+extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
+    length, output_list=True)
 
 
 ## hyperparameters
@@ -76,7 +76,7 @@ blending_factor_dim = 2
 
 # GAN data storage information
 subject = 'Test'
-version = 3  # the data from which experiment version to process
+version = 0  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'

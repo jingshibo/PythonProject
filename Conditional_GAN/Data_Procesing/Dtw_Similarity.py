@@ -135,9 +135,9 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
     return extracted_data
 
 
-def plotDtwPath(fake_curve, real_curve, source, mode, fake_index, reference_index):
-    s1 = fake_curve[source][mode][:, fake_index]
-    s2 = real_curve[source][mode][:, reference_index]
+def plotDtwPath(fake_curve, real_curve, fake_index, reference_index):
+    s1 = fake_curve[:, fake_index]
+    s2 = real_curve[:, reference_index]
     d, paths = dtw.warping_paths(s1, s2)  # distance and DTW matrix
     best_path = dtw.best_path(paths)  # optimal path
     dtwvis.plot_warping(s1, s2, best_path)  # plot optimal path connecting two curves in two subplots

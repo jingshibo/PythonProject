@@ -42,7 +42,7 @@ def separateByInterval(data, timepoint_interval=50, length=850, output_list=Fals
 
 
 ## Generate fake data based on defined index pair correspondence between gen_data_1 and gen_data_2.
-def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=True):
+def generateFakeDataRandomMatch(reorganized_data, interval, repetition=1, random_pairing=True):
     # Extracting the main data structures from the input dictionary
     gen_data_1 = reorganized_data['gen_data_1']
     gen_data_2 = reorganized_data['gen_data_2']
@@ -91,8 +91,8 @@ def generateFakeData(reorganized_data, interval, repetition=1, random_pairing=Tr
 ## Generate fake data based on combinations of every two complete emg curves gen_data_1 and gen_data_2.
 def generateFakeDataByCurve(reorganized_data, interval, repetition=1, random_pairing=True):
     '''
-    This function is modified based on the input and output of the above generateFakeData() function in order to be compatible with other
-    functions, so there are some additional transformations below and unnecessary input arguments: interval, repetition=1, random_pairing.
+    This function is modified based on the input and output of the above generateFakeDataRandomMatch() function for compatibility,
+    so there are some additional transformations below and unnecessary input arguments: interval, repetition, random_pairing.
     '''
     def reshapeGenData(data):
         # Get the shape parameters

@@ -166,7 +166,7 @@ reorganized_data = {'gen_data_1': reorganized_old_LWLW, 'gen_data_2': reorganize
 
 ## generate fake data at each timestamp
 interval = gen_results['training_parameters']['interval']
-fake_data = Process_Fake_Data.generateFakeData(reorganized_data, interval, repetition=1, random_pairing=False)
+fake_data = Process_Fake_Data.generateFakeDataRandomMatch(reorganized_data, interval, repetition=1, random_pairing=False)
 reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
 # build training data
 fake_emg_data = {'emg_LWSA': reorganized_fake_data}
@@ -251,7 +251,7 @@ reorganized_data = {'gen_data_1': reorganized_new_LWLW, 'gen_data_2': reorganize
 
 ## generate fake data at each timestamp
 interval = gen_results['training_parameters']['interval']
-fake_data = Process_Fake_Data.generateFakeData(reorganized_data, interval, repetition=1, random_pairing=False)
+fake_data = Process_Fake_Data.generateFakeDataRandomMatch(reorganized_data, interval, repetition=1, random_pairing=False)
 reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
 # build training data
 fake_emg_data = {'emg_LWSA': reorganized_fake_data}

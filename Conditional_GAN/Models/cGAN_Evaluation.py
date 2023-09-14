@@ -29,11 +29,13 @@ class cGAN_Evaluation:
 
 
     # generate fake emg data and substitute original emg dataset using this data
-    def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, cutoff_frequency, repetition=1, random_pairing=True):
+    def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, repetition=1, random_pairing=True):
         '''
             :param data_source: selected from 'old' and 'new'
-            :param modes_generation: such as  {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}. The order in the list is important,
-            which corresponds to gen_data_1 and gen_data_2. There could be more than one transition mode to generate.
+            :param modes_generation: such as  {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}.
+            The order in the list is important, corresponding to gen_data_1 and gen_data_2.
+            :param repetition and random_pairing are two unnecessary parameter, used for compatibility with the generateFakeDataRandomMatch() function.
+
         '''
         length = self.start_before_toeoff_ms + self.endtime_after_toeoff_ms
         synthetic_data = copy.deepcopy(real_emg_normalized)
@@ -47,7 +49,7 @@ class cGAN_Evaluation:
                 extracted_emg[transition_type][data_source][modes[1]], timepoint_interval=1, length=length)
             data_for_generation['blending_factors'] = self.gen_results[transition_type]['model_results']
             # generate fake data
-            fake_data = Process_Fake_Data.generateFakeDataByCurve(data_for_generation,
+            fake_data = Process_Fake_Data.generateFakeDataByCurve(data_for_generation,  # only the first parameter is useful
                 self.gen_results[transition_type]['training_parameters']['interval'], repetition=repetition, random_pairing=random_pairing)
             reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
             # create synthetic training data

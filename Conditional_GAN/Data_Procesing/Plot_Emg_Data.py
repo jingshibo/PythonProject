@@ -20,9 +20,9 @@ def averageEmgValues(emg_values, split=True):
 
     for gait_event_label, gait_event_emg in emg_values.items():
         num_columns = gait_event_emg[0].shape[1]
-        if split:
+        if split:  # calculate each electrode grid separately
             num_parts = num_columns // 65
-        else:
+        else:  # calculate all electrode grids as a whole
             num_parts = 1
 
         for i, array in enumerate(gait_event_emg):
@@ -96,7 +96,7 @@ def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
     def plot_frequency_spectrum(freq, magnitude, label):
         plt.plot(freq, magnitude)
         plt.title(label)
-        plt.ylim(0, 0.1)
+        plt.ylim(*ylim)
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Magnitude')
         plt.grid(True)
@@ -138,9 +138,37 @@ def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
         plt.show(block=False)
 
 
+##  plot average emg values from multiple locomotion modes in a single plot for comparison
+def plotMultipleEventMeanValues(fake_data, real_data, modes, title=None, ylim=(0, 0.5), grid='grid_1'):
+    mean_emg_to_plot = {f'fake_{modes[2]}': fake_data['emg_event_mean'][grid][modes[2]],
+        f'real_{modes[2]}': real_data['emg_event_mean'][grid][modes[2]],
+        f'fake_{modes[0]}': fake_data['emg_event_mean'][grid][modes[0]],
+        f'fake_{modes[1]}': fake_data['emg_event_mean'][grid][modes[1]]}
+    plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
 
 
+## plot multiple repetition values of each locomotion mode in subplots for comparison
+def plotMultipleRepetitionValues(fake_data, real_data, reference, modes, ylim=(0, 1), num_columns=30, grid='grid_1'):
+    plotAverageValue(fake_data['emg_repetition_list'][grid], modes[2], num_columns=num_columns, title=f'fake_repeat_{modes[2]}', ylim=ylim)
+    plotAverageValue(real_data['emg_repetition_list'][grid], modes[2], num_columns=num_columns, title=f'real_repeat_{modes[2]}', ylim=ylim)
+    plotAverageValue(fake_data['emg_repetition_list'][grid], modes[0], num_columns=num_columns, title=f'real_repeat_{modes[0]}', ylim=ylim)
+    # plotAverageValue(fake_data['emg_repetition_list'][grid], modes[1], num_columns=num_columns, title=f'real_repeat_{modes[1]}', ylim=ylim)
+    plotAverageValue(reference['emg_repetition_list'][grid], modes[2], num_columns=num_columns, title=f'reference_repeat_{modes[2]}', ylim=ylim)
 
 
+## plot multiple repetition values of each locomotion mode in subplots for comparison
+def plotMultipleChannelValues(fake_data, real_data, reference, modes, ylim=(0, 1), num_columns=30, grid='grid_1'):
+    plotAverageValue(fake_data['emg_channel_list'][grid], modes[2], num_columns=num_columns, title=f'fake_channel_{modes[2]}', ylim=ylim)
+    plotAverageValue(real_data['emg_channel_list'][grid], modes[2], num_columns=num_columns, title=f'real_channel_{modes[2]}', ylim=ylim)
+    plotAverageValue(fake_data['emg_channel_list'][grid], modes[0], num_columns=num_columns, title=f'real_channel_{modes[0]}', ylim=ylim)
+    # plotAverageValue(fake_data['emg_channel_list'][grid], modes[1], num_columns=num_columns, title=f'real_channel_{modes[1]}', ylim=ylim)
+    plotAverageValue(reference['emg_channel_list'][grid], modes[2], num_columns=num_columns, title=f'reference_{modes[2]}', ylim=ylim)
 
 
+## plot the average psd of each locomotion mode for comparison
+def plotMutipleEventPsdMeanValues(fake_data, real_data, reference, modes, ylim=(0, 1), grid='grid_1'):
+    plotPsd(fake_data['emg_event_mean'][grid],  modes[2], title=f'fake_{modes[2]}', ylim=ylim)
+    plotPsd(real_data['emg_event_mean'][grid],  modes[2], title=f'real_{modes[2]}', ylim=ylim)
+    plotPsd(fake_data['emg_event_mean'][grid],  modes[0], title=f'real_{modes[0]}', ylim=ylim)
+    # plotPsd(fake_data['emg_event_mean'][grid],  modes[1], title=f'real_{modes[1]}', ylim=ylim)
+    plotPsd(reference['emg_event_mean'][grid],  modes[2], title=f'reference_{modes[2]}', ylim=ylim)

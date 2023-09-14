@@ -41,7 +41,7 @@ def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, n
 def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval, length, output_list=False):
     extracted_emg = {}
     train_gan_data = {}
-    data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is important, corresponding to the locomotion modes
+    data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is critical, corresponding to the locomotion modes
 
     for transition_type, modes in modes_generation.items():
         # Initialize transition_type key in real_emg and train_gan_data dictionaries
