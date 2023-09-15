@@ -137,7 +137,7 @@ filtered_old_fake_data = Post_Process_Data.medianFiltering(selected_old_fake_dat
 filtered_old_real_data = Post_Process_Data.medianFiltering(sliced_old_real_data, size=5)
 
 
-# classification
+## classification
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(filtered_old_fake_data, training_percent=0.8)
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
@@ -148,7 +148,7 @@ test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
 
-# plotting fake and real emg data for comparison
+## plotting fake and real emg data for comparison
 transition_type = 'emg_SALW'
 modes = modes_generation[transition_type]
 # calculate average values
@@ -193,7 +193,7 @@ new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normali
 
 
 ## only preprocess selected grid and define time range of data
-processed_new_fake_data = Process_Fake_Data.reorderSmoothDataSet(new_fake_emg_grids['grid_2'], filtering=False, modes=modes_generation)
+processed_new_fake_data = Process_Fake_Data.reorderSmoothDataSet(new_fake_emg_grids['grid_2'], filtering=True, modes=modes_generation)
 processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_2'], filtering=False, modes=None)
 sliced_new_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_new_fake_data, start=50, end=750)
 sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=50, end=750)
