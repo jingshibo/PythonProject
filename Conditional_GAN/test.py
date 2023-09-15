@@ -123,7 +123,7 @@ old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normali
 
 
 ## only preprocess selected grid and define time range of data
-processed_old_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_fake_emg_grids['grid_2'], lowpass_frequency=400)
+processed_old_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_fake_emg_grids['grid_2'], lowpass_frequency=None)
 processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_2'], lowpass_frequency=None)
 sliced_old_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_old_fake_data, start=0, end=850)
 sliced_old_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_old_real_data, start=0, end=850)
