@@ -124,7 +124,7 @@ old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normali
 
 ## only preprocess selected grid and define time range of data
 processed_old_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_fake_emg_grids['grid_2'], lowpass_frequency=400)
-processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_2'], lowpass_frequency=400)
+processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_2'], lowpass_frequency=None)
 sliced_old_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_old_fake_data, start=0, end=850)
 sliced_old_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_old_real_data, start=0, end=850)
 
@@ -149,7 +149,7 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 
 
 ## plotting fake and real emg data for comparison
-transition_type = 'emg_SDLW'
+transition_type = 'emg_SALW'
 modes = modes_generation[transition_type]
 # calculate average values
 reference_old_data = {transition_type: [sliced_old_real_data[transition_type][index] for index in
@@ -161,7 +161,7 @@ reference_old = Plot_Emg_Data.averageEmgValues(reference_old_data)
 Plot_Emg_Data.plotMultipleEventMeanValues(fake_old_2, real_old, modes, title='emg_2_on_2', ylim=(0, 0.5))
 # Plot_Emg_Data.plotMultipleRepetitionValues(fake_old_2, real_old, reference_old, modes, ylim=(0, 1))
 # Plot_Emg_Data.plotMultipleChannelValues(fake_old_2, real_old, reference_old, modes, ylim=(0, 1))
-Plot_Emg_Data.plotMutipleEventPsdMeanValues(fake_old_2, real_old, reference_old, modes, ylim=(0, 0.1), grid='grid_1')
+# Plot_Emg_Data.plotMutipleEventPsdMeanValues(fake_old_2, real_old, reference_old, modes, ylim=(0, 0.1), grid='grid_1')
 # # plot the dtw distance curve (two selected)
 # old_fake_envelopes = selected_old_fake_data['fake_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
 # old_real_envelopes = selected_old_fake_data['real_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
