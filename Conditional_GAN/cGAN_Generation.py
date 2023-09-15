@@ -52,10 +52,10 @@ range_limit = 2000
 # old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
 #     new_emg_data_classify, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
-# modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'], 'SALW': ['emg_SASA',
-# 'emg_LWLW', 'emg_SALW'], 'SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
+modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'], 'emg_SALW': ['emg_SASA',
+'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
 # modes_generation = {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
-modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
+# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
 # modes_generation = {'LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
@@ -276,8 +276,8 @@ reference = Plot_Emg_Data.averageEmgValues(reference_data)
 # old_to_plot_1 = {'fake_LWSA': fake_old_2['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_1_event_mean']['emg_LWSA'],
 #     'real_SASA': real_old['emg_1_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_1_event_mean']['emg_LWLW'], 'real_LWSS': real_old['emg_1_event_mean']['emg_LWSS']}
 # Plot_Emg_Data.plotMultipleModeValues(old_to_plot_1, title='emg_1_on_2', ylim=(0, 0.5))
-old_to_plot_2 = {'fake_LWSA': fake_old_2['emg_2_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_2_event_mean']['emg_LWSA'],
-    'real_SASA': real_old['emg_2_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_2_event_mean']['emg_LWLW'], 'real_LWSS': real_old['emg_2_event_mean']['emg_LWSS']}
+old_to_plot_2 = {'fake_SALW': fake_old_2['emg_2_event_mean']['emg_SALW'], 'real_SALW': real_old['emg_2_event_mean']['emg_SALW'],
+    'real_SASA': real_old['emg_2_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_2_event_mean']['emg_LWLW']}
 Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_2', ylim=(0, 0.5))
 
 
@@ -300,12 +300,12 @@ Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_2', ylim=(0,
 
 
 ## plot the average psd of each locomotion mode for comparison
-Plot_Emg_Data.plotPsd(fake_old_2['emg_2_event_mean'], 'emg_LWSA', num_columns=30, title='fake_LWSA')
-Plot_Emg_Data.plotPsd(real_old['emg_2_event_mean'], 'emg_LWSA', num_columns=30, title='real_LWSA')
-Plot_Emg_Data.plotPsd(real_old['emg_2_event_mean'], 'emg_LWLW', num_columns=30, title='real_LWLW')
-Plot_Emg_Data.plotPsd(real_old['emg_2_event_mean'], 'emg_LWSS', num_columns=30, title='real_LWSS')
-
-Plot_Emg_Data.plotPsd(reference['emg_2_event_mean'], 'emg_LWSA', num_columns=30, title='real_LWSA')
+# Plot_Emg_Data.plotPsd(fake_old_2['emg_2_event_mean'], 'emg_LWSA', num_columns=30, title='fake_LWSA')
+# Plot_Emg_Data.plotPsd(real_old['emg_2_event_mean'], 'emg_LWSA', num_columns=30, title='real_LWSA')
+# Plot_Emg_Data.plotPsd(real_old['emg_2_event_mean'], 'emg_LWLW', num_columns=30, title='real_LWLW')
+# Plot_Emg_Data.plotPsd(real_old['emg_2_event_mean'], 'emg_LWSS', num_columns=30, title='real_LWSS')
+#
+# Plot_Emg_Data.plotPsd(reference['emg_2_event_mean'], 'emg_LWSA', num_columns=30, title='real_LWSA')
 
 
 
