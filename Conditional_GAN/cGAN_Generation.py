@@ -262,7 +262,7 @@ for key, array_list in filtered_real_dict.items():
 ## plotting fake and real emg data for comparison
 fake_old_1 = Plot_Emg_Data.averageEmgValues(filtered_fake)
 fake_old_2 = Plot_Emg_Data.averageEmgValues(filtered_fake)
-real_old = Plot_Emg_Data.averageEmgValues(shorten_old_emg)
+real_old = Plot_Emg_Data.averageEmgValues(filtered_real)
 reference = Plot_Emg_Data.averageEmgValues(reference_data)
 ## plot multiple locomotion mode emg in a single plot for comparison
 # old_to_plot_1 = {'fake_LWSA': fake_old_1['emg_1_event_mean']['emg_LWSA'], 'real_LWSA': real_old['emg_1_event_mean']['emg_LWSA'],
@@ -277,7 +277,7 @@ reference = Plot_Emg_Data.averageEmgValues(reference_data)
 #     'real_SASA': real_old['emg_1_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_1_event_mean']['emg_LWLW'], 'real_LWSS': real_old['emg_1_event_mean']['emg_LWSS']}
 # Plot_Emg_Data.plotMultipleModeValues(old_to_plot_1, title='emg_1_on_2', ylim=(0, 0.5))
 old_to_plot_2 = {'fake_SALW': fake_old_2['emg_2_event_mean']['emg_SALW'], 'real_SALW': real_old['emg_2_event_mean']['emg_SALW'],
-    'real_SASA': real_old['emg_2_event_mean']['emg_SASA'], 'real_LWLW': real_old['emg_2_event_mean']['emg_LWLW']}
+    'real_SASA': fake_old_2['emg_2_event_mean']['emg_SASA'], 'real_LWLW': fake_old_2['emg_2_event_mean']['emg_LWLW']}
 Plot_Emg_Data.plotMultipleModeValues(old_to_plot_2, title='emg_2_on_2', ylim=(0, 0.5))
 
 
