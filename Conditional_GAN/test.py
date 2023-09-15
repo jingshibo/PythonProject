@@ -50,10 +50,10 @@ range_limit = 2000
 # old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
 #     new_emg_data_classify, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
-# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
-#     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
+modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
+    'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
 # modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
-modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
+# modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}
 # modes_generation = {'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
@@ -74,7 +74,7 @@ blending_factor_dim = 2
 
 # GAN data storage information
 subject = 'Test'
-version = 2  # the data from which experiment version to process
+version = 3  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -149,7 +149,7 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 
 
 ## plotting fake and real emg data for comparison
-transition_type = 'emg_LWSA'
+transition_type = 'emg_SDLW'
 modes = modes_generation[transition_type]
 # calculate average values
 reference_old_data = {transition_type: [sliced_old_real_data[transition_type][index] for index in
