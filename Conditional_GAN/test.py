@@ -123,13 +123,13 @@ old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normali
 
 
 ## only preprocess selected grid and define time range of data
-processed_old_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_fake_emg_grids['grid_2'], lowpass_frequency=None)
-processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_2'], lowpass_frequency=None)
+processed_old_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_fake_emg_grids['grid_2'], filtering=False, modes=modes_generation)
+processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_2'], filtering=False, modes=None)
 sliced_old_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_old_fake_data, start=0, end=850)
 sliced_old_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_old_real_data, start=0, end=850)
 
 
-## screen representative fake data for classification model training
+# screen representative fake data for classification model training
 selected_old_fake_data = Dtw_Similarity.extractFakeData(sliced_old_fake_data, sliced_old_real_data, modes_generation, envelope_frequency=50,
     num_sample=60, num_reference=1, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
 # median filtering
@@ -148,7 +148,7 @@ test_results = old_evaluation.testClassifier(models_old[0], shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
 
-## plotting fake and real emg data for comparison
+# plotting fake and real emg data for comparison
 transition_type = 'emg_SALW'
 modes = modes_generation[transition_type]
 # calculate average values
@@ -193,8 +193,8 @@ new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normali
 
 
 ## only preprocess selected grid and define time range of data
-processed_new_fake_data = Process_Fake_Data.reorderSmoothDataSet(new_fake_emg_grids['grid_2'], lowpass_frequency=400)
-processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_2'], lowpass_frequency=400)
+processed_new_fake_data = Process_Fake_Data.reorderSmoothDataSet(new_fake_emg_grids['grid_2'], filtering=False, modes=modes_generation)
+processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_2'], filtering=False, modes=None)
 sliced_new_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_new_fake_data, start=50, end=750)
 sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=50, end=750)
 

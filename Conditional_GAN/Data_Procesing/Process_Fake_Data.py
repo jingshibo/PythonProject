@@ -249,16 +249,19 @@ def reorderColumns(emg_data):
 
 
 ## reorder, filter and clip data
-def reorderSmoothDataSet(dataset, lowpass_frequency=None, clip_range=(0, 1)):
-    postprocessed_dataset = copy.deepcopy(dataset)
+def reorderSmoothDataSet(dataset, filtering=True, modes=None, lowpass_frequency=400, clip_range=(0, 1)):
+    processed_dataset = copy.deepcopy(dataset)
     for locomotion_type, locomotion_data in dataset.items():
         # reorder emg electrode order
-        reordered_dataset = [reorderColumns(data) for data in locomotion_data]
-        # lowpoass filter emg data
-        if lowpass_frequency is not None:
-            filtered_fake_data = clipSmoothEmgData(reordered_dataset, lowpass_frequency, clip_range=clip_range)
-        else:
-            filtered_fake_data = reordered_dataset
-        postprocessed_dataset[locomotion_type] = [array.astype(np.float32) for array in filtered_fake_data]
-    return postprocessed_dataset
+        reordered_data = [reorderColumns(data) for data in locomotion_data]
+        # lowposs filter emg data
+        if filtering:
+            if modes is None or locomotion_type in modes:  # filtering all modes or only selected modes
+                filtered_data = clipSmoothEmgData(reordered_data, lowpass_frequency, clip_range=clip_range)
+            else:  # not filtering other modes
+                filtered_data = reordered_data
+        else:  # not filtering all modes
+            filtered_data = reordered_data
+        processed_dataset[locomotion_type] = [array.astype(np.float32) for array in filtered_data]
+    return processed_dataset
 
