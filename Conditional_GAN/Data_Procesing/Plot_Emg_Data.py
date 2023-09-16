@@ -153,7 +153,8 @@ def plotMultipleRepetitionValues(fake_data, real_data, reference, modes, ylim=(0
     plotAverageValue(real_data['emg_repetition_list'][grid], modes[2], num_columns=num_columns, title=f'real_repeat_{modes[2]}', ylim=ylim)
     plotAverageValue(fake_data['emg_repetition_list'][grid], modes[0], num_columns=num_columns, title=f'real_repeat_{modes[0]}', ylim=ylim)
     # plotAverageValue(fake_data['emg_repetition_list'][grid], modes[1], num_columns=num_columns, title=f'real_repeat_{modes[1]}', ylim=ylim)
-    plotAverageValue(reference['emg_repetition_list'][grid], modes[2], num_columns=num_columns, title=f'reference_repeat_{modes[2]}', ylim=ylim)
+    if reference is not None:
+        plotAverageValue(reference['emg_repetition_list'][grid], modes[2], num_columns=num_columns, title=f'reference_repeat_{modes[2]}', ylim=ylim)
 
 
 ## plot multiple repetition values of each locomotion mode in subplots for comparison
@@ -162,7 +163,8 @@ def plotMultipleChannelValues(fake_data, real_data, reference, modes, ylim=(0, 1
     plotAverageValue(real_data['emg_channel_list'][grid], modes[2], num_columns=num_columns, title=f'real_channel_{modes[2]}', ylim=ylim)
     plotAverageValue(fake_data['emg_channel_list'][grid], modes[0], num_columns=num_columns, title=f'real_channel_{modes[0]}', ylim=ylim)
     # plotAverageValue(fake_data['emg_channel_list'][grid], modes[1], num_columns=num_columns, title=f'real_channel_{modes[1]}', ylim=ylim)
-    plotAverageValue(reference['emg_channel_list'][grid], modes[2], num_columns=num_columns, title=f'reference_{modes[2]}', ylim=ylim)
+    if reference is not None:
+        plotAverageValue(reference['emg_channel_list'][grid], modes[2], num_columns=num_columns, title=f'reference_{modes[2]}', ylim=ylim)
 
 
 ## plot the average psd of each locomotion mode for comparison
@@ -171,4 +173,5 @@ def plotMutipleEventPsdMeanValues(fake_data, real_data, reference, modes, ylim=(
     plotPsd(real_data['emg_event_mean'][grid],  modes[2], title=f'real_{modes[2]}', ylim=ylim)
     plotPsd(fake_data['emg_event_mean'][grid],  modes[0], title=f'real_{modes[0]}', ylim=ylim)
     # plotPsd(fake_data['emg_event_mean'][grid],  modes[1], title=f'real_{modes[1]}', ylim=ylim)
-    plotPsd(reference['emg_event_mean'][grid],  modes[2], title=f'reference_{modes[2]}', ylim=ylim)
+    if reference is not None:
+        plotPsd(reference['emg_event_mean'][grid],  modes[2], title=f'reference_{modes[2]}', ylim=ylim)

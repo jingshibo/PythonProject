@@ -212,9 +212,10 @@ def replaceUsingFakeEmg(fake_data, real_emg_normalized):
 def replaceUsingRealEmg(mode, real_emg_normalized, train_dataset, test_ratio):
     test_dataset = copy.deepcopy(train_dataset)
     real_value = real_emg_normalized[mode]
-    random.Random(5).shuffle(real_value)
-    # random.shuffle(real_value)
-    test_dataset['group_0']['test_set'][mode] = real_value[0: int(len(real_value) * test_ratio)]
+    for number, (group_key, group_value) in enumerate(test_dataset.items()):
+        random.Random(number).shuffle(real_value)
+        # random.shuffle(real_value)
+        test_dataset[group_key]['test_set'][mode] = real_value[0: int(len(real_value) * test_ratio)]
     return test_dataset
 
 

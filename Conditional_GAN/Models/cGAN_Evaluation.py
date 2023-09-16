@@ -60,8 +60,13 @@ class cGAN_Evaluation:
 
 
     # divide classifier training set
-    def classifierTrainSet(self, generated_data, training_percent=0.8):
-        train_dataset = Data_Preparation.leaveOutDataSet(training_percent, generated_data, shuffle=True)
+    def classifierTrainSet(self, generated_data, dataset='leave_one_set', fold=5, training_percent=0.8):
+        if dataset == 'leave_one_set':
+            train_dataset = Data_Preparation.leaveOutDataSet(training_percent, generated_data, shuffle=True)
+        elif dataset == 'cross_validation_set':
+            train_dataset = Data_Preparation.crossValidationSet(fold, generated_data, shuffle=True)
+        else:
+            raise Exception("wrong keywords")
         sliding_window_dataset, self.feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(train_dataset,
             self.feature_window_size, increment=self.feature_window_increment_ms * self.sample_rate)
         normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)

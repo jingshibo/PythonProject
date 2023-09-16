@@ -79,6 +79,16 @@ class Dtw_Distance:
         selected_reference_index = []  # for consistence with the pickFakeData() function.
         return fake_data, selected_fake_indices, selected_reference_index
 
+    # randomly select given number of fake data without using any references
+    def selectRandomData(self, synthetic_data):
+        fake_data = copy.deepcopy(synthetic_data)
+        for transition_type, transition_data in synthetic_data.items():
+            if transition_type in self.modes_generation.keys():
+                fake_data[transition_type] = random.sample(transition_data, self.num_sample)
+        selected_fake_indices = []
+        selected_reference_index = []
+        return fake_data, selected_fake_indices, selected_reference_index
+
     # when selecting fake data based on references, there may be same data from different reference. Then we would get the next one instead.
     def avoidReplicatedData(self, dtw_results, selected_reference_index, transition_type):
         select_fake_index = []
@@ -122,6 +132,10 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
                 random_reference=random_reference)
         elif method == 'best':
             selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.bestFakeData(dtw_results, synthetic_data)
+        elif method == 'random':
+            selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectRandomData(synthetic_data)
+        else:
+            raise Exception('Wrong Method!')
         # Store the results for the current part in the extracted_data dict
         extracted_data[f'dtw_results_based_on_{grid_key}'] = dtw_results
         extracted_data[f'fake_data_based_on_{grid_key}'] = selected_fake_data
