@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime
+import copy
+
 
 ## insert missing insole data
 def insertInsoleMissingRow(raw_insole_data, sampling_period):
@@ -17,9 +20,8 @@ def insertInsoleMissingRow(raw_insole_data, sampling_period):
     inserted_insole_data = raw_insole_data.sort_index().reset_index(drop=True)  # Reorder DataFrame
     return inserted_insole_data, raw_insole_data
 
-
-## find lost emg data according to the value in sample counter
-def findLostEmgData(raw_emg_data):
+## find lost sync data according to the value in sample counter
+def findLostSyncData(raw_emg_data):
     sample_counter = raw_emg_data.iloc[:, -1].to_frame()  # this column is the sample counter (timestamp) for SyncStation
     sample_counter.columns = ["sample_count"]
     counter_diff = sample_counter["sample_count"].diff().to_frame()
@@ -37,7 +39,20 @@ def findLostEmgData(raw_emg_data):
     wrong_timestamp2 = counter_diff.query('count_difference != 1 & count_difference != -65535')  # exclude 65535 as it is when the counter restarts
     return wrong_timestamp, wrong_timestamp1, wrong_timestamp2  # return the index of wrong timestamps
 
-## find missing emg data index to indicator where the emg data is lost during wifi transimission
+## find lost emg data according to the value in sample counter
+def findLostEmgData(raw_emg_data):
+    sample_counter = raw_emg_data.iloc[:, -1].to_frame()  # this column is the sample counter (timestamp) for SyncStation
+    sample_counter.columns = ["sample_count"]
+    counter_diff = sample_counter["sample_count"].diff().to_frame()
+    counter_diff.columns = ["count_difference"]
+    # wrong_timestamp = counter_diff.query('count_difference != 1 & count_difference != -65535')  # exclude 65535 as it is when the counter restarts
+    counter_diff = (counter_diff[1:] / 0.0005).round().astype(int)
+    new_row = pd.DataFrame({'count_difference': [np.nan]}) # Create a new DataFrame with one row
+    counter_diff = pd.concat([new_row, counter_diff]).reset_index(drop=True)
+    wrong_timestamp = counter_diff.query('count_difference != 1')
+    return wrong_timestamp
+
+## find missing emg data index to indicate where the emg data is lost during wifi transimission
 def findMissingEngIndex(wrong_timestamp_emg1, wrong_timestamp_emg2, data_length):
     emg1_wrong_index = wrong_timestamp_emg1.index[wrong_timestamp_emg1['count_difference'] == 0].tolist()
     emg1_missing_indicator = pd.Series(np.zeros(data_length))
@@ -76,3 +91,32 @@ def changeColumnOrder(raw_emg_data, start_index):
     dropped_emg_data = raw_emg_data.drop(raw_emg_data.index[range(start_index, end_index)])  # delete the rows after the index
     reordered_emg_data = pd.concat([dropped_emg_data, column_to_reorder], ignore_index=True)  # combine the two parts together
     return reordered_emg_data
+
+#£ insert columns to OT software output emg signals for uniform data structure as the custom software output
+def insertEmgMissingColumns(raw_emg_data):
+    raw_emg = copy.deepcopy(raw_emg_data)
+    # Replicate the last column twice. this is the force sync signal
+    last_column = raw_emg.iloc[:, -1]
+    replicated_columns = pd.DataFrame({'replicated_1': last_column, 'replicated_2': last_column})
+    # Concatenate the replicated columns with the original DataFrame
+    raw_emg = pd.concat([raw_emg, replicated_columns], axis=1)
+
+    # Move the first column to the end. this is the timestamp
+    cols = list(raw_emg.columns)
+    cols = cols[1:] + [cols[0]]
+    raw_emg = raw_emg[cols]
+
+    # Generate current time string for all rows in the DataFrame. this is time information
+    current_time_str = datetime.now().strftime(format='%Y-%m-%d_%H:%M:%S.%f')
+    # Insert 3 new columns in front of the DataFrame to conform the standard form
+    inserted_new_columns = pd.DataFrame({'placeholder_0': [current_time_str] * raw_emg.shape[0], 'placeholder_1': ['0'] * raw_emg.shape[0],
+        'placeholder_2': ['emg'] * raw_emg.shape[0]})
+
+    # Concatenate the new columns with the original DataFrame
+    raw_emg = pd.concat([inserted_new_columns, raw_emg], axis=1)
+    # Generate new column names
+    new_column_names = [i for i in range(raw_emg.shape[1])]
+    # Assign new column names to the DataFrame
+    raw_emg.columns = new_column_names
+
+    return raw_emg

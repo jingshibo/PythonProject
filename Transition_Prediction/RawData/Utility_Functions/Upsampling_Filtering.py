@@ -33,8 +33,8 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
 
     # check if there are emg data lost
     emg_timestamp = pd.to_datetime(emg_aligned.iloc[:, 0])
-    expected_number = (emg_timestamp.iloc[-1] - emg_timestamp.iloc[0]).total_seconds() * 1000 * 2 # the number of emg value expected within the period
-    real_number = len(emg_timestamp)
+    expected_number = (emg_timestamp.iloc[-2000] - emg_timestamp.iloc[2000]).total_seconds() * 1000 * 2 # ignore the first and last 2000 data
+    real_number = len(emg_timestamp) - 4000
     print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
 
     # upsample insole data to 2000Hz same to EMG data
@@ -111,6 +111,8 @@ def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned,
         emg1_envelope = getEmgRectEnvelope(emg1_reordered, cutoff=envelope_cutoff)
         emg2_envelope = getEmgRectEnvelope(emg2_reordered, cutoff=envelope_cutoff)
         emg_envelope = pd.concat([emg1_envelope, emg2_envelope], axis=1, ignore_index=True)
+    else:
+        raise Exception('the number of EMG columns is wrong')
     return left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_reordered, emg_envelope
 
 

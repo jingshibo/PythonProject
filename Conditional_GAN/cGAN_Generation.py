@@ -48,8 +48,8 @@ new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_p
 
 ## normalize and extract emg data for gan model training
 range_limit = 2000
-# old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
-#     new_emg_data_classify, range_limit, normalize='(0,1)')
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
+    new_emg_data_classify, range_limit, normalize='(0,1)')
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
@@ -58,8 +58,8 @@ modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD'
 # modes_generation = {'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD']}
 time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
-# extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
-#     length, output_list=True)
+extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
+    length, output_list=True)
 
 
 ## hyperparameters
@@ -75,7 +75,7 @@ blending_factor_dim = 2
 
 # GAN data storage information
 subject = 'Test'
-version = 3  # the data from which experiment version to process
+version = 2  # the data from which experiment version to process
 checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\models\check_points'
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
@@ -89,13 +89,13 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
     'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'result_set': result_set,
     'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-# now = datetime.datetime.now()
-# results = {}
-# for transition_type in modes_generation.keys():
-#     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
-#     results[transition_type] = blending_factors
-# print(datetime.datetime.now() - now)
-
+now = datetime.datetime.now()
+results = {}
+for transition_type in modes_generation.keys():
+    gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
+    results[transition_type] = blending_factors
+print(datetime.datetime.now() - now)
+del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
 
 
 
@@ -151,7 +151,7 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 
 
 ## plotting fake and real emg data for comparison
-transition_type = 'emg_LWSA'
+transition_type = 'emg_SALW'
 modes = modes_generation[transition_type]
 # calculate average values
 # reference_old_data = {transition_type: [sliced_old_real_data[transition_type][index] for index in
@@ -173,11 +173,11 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_old_2, real_old, modes, title='ol
 
 
 ## save results
-# model_type = 'classify_old'
-# Model_Storage.saveClassifyAccuracy(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
-# acc_old, cm_old = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
-# Model_Storage.saveClassifyModel(models_old[0], subject, version, model_type, project='cGAN_Model')
-# model_old = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+model_type = 'classify_old'
+Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
+acc_old, cm_old = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModel(models_old[0], subject, version, model_type, project='cGAN_Model')
+model_old = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -203,7 +203,7 @@ sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_d
 
 ## screen representative fake data for classification model training
 selected_new_fake_data = Dtw_Similarity.extractFakeData(sliced_new_fake_data, sliced_new_real_data, modes_generation, envelope_frequency=50,
-    num_sample=60, num_reference=1, method='random', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
+    num_sample=60, num_reference=1, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
 # median filtering
 filtered_new_fake_data = Post_Process_Data.medianFiltering(selected_new_fake_data['fake_data_based_on_grid_1'], size=3)
 filtered_new_real_data = Post_Process_Data.medianFiltering(sliced_new_real_data, size=5)
@@ -222,7 +222,7 @@ accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_result
 
 
 ## plotting fake and real emg data for comparison
-transition_type = 'emg_LWSA'
+transition_type = 'emg_SDLW'
 modes = modes_generation[transition_type]
 # calculate average values
 # reference_new_data = {transition_type: [sliced_new_real_data[transition_type][index] for index in
@@ -244,11 +244,11 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_new_2, real_new, modes, title='ne
 
 
 ## save results
-# model_type = 'classify_new'
-# Model_Storage.saveClassifyAccuracy(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
-# acc_new, cm_new = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
-# Model_Storage.saveClassifyModel(models_new[0], subject, version, model_type, project='cGAN_Model')
-# model_new = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+model_type = 'classify_new'
+Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
+acc_new, cm_new = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModel(models_new[0], subject, version, model_type, project='cGAN_Model')
+model_new = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -300,11 +300,11 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_mix_2, real_new, modes, title='mi
 
 
 ## save results
-# model_type = 'classify_compare'
-# Model_Storage.saveClassifyAccuracy(subject, accuracy_compare, cm_recall_compare, version, result_set, model_type, project='cGAN_Model')
-# acc_compare, cm_compare = Model_Storage.loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model')
-# Model_Storage.saveClassifyModel(models_compare[0], subject, version, model_type, project='cGAN_Model')
-# model_compare = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+model_type = 'classify_compare'
+Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, result_set, model_type, project='cGAN_Model')
+acc_compare, cm_compare = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModel(models_compare[0], subject, version, model_type, project='cGAN_Model')
+model_compare = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 

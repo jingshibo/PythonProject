@@ -14,25 +14,30 @@ import numpy as np
 
 
 ## read and preprocess aligned data
-subject = 'Number2'
+project = 'cGAN_Model'
+subject = 'Number1'
 version = 0
-mode = 'down_up'
-session = 20
+mode = 'up_down'
+time = 't0'  # t0 or t1， this is only for cGAN_Model project
+session = 0
 
 # read and plot aligned data
-left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version)
+left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version, time='t0', project=project)
 # upsampling and filtering aligned data
 left_insole_upsampled, right_insole_upsampled, emg_filtered, emg_reordered, emg_envelope = Upsampling_Filtering.preprocessSensorData(
     left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=True, quality_factor=30)
 # plot sync force and insole force data
 Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, right_insole_upsampled, 0, -1, sync_force=True)
 # find missing emg index
-wrong_timestamp_sync, wrong_timestamp_emg1, wrong_timestamp_emg2 = Insole_Emg_Recovery.findLostEmgData(emg_aligned)
-emg1_missing_indicator, emg2_missing_indicator = Insole_Emg_Recovery.findMissingEngIndex(wrong_timestamp_emg1, wrong_timestamp_emg2,
-    len(emg_aligned))
+if project == 'Insole_Emg':
+    wrong_timestamp_sync, wrong_timestamp_emg1, wrong_timestamp_emg2 = Insole_Emg_Recovery.findLostSyncData(emg_aligned)
+    emg1_missing_indicator, emg2_missing_indicator = Insole_Emg_Recovery.findMissingEngIndex(wrong_timestamp_emg1, wrong_timestamp_emg2,
+        len(emg_aligned))
+elif project == 'cGAN_Model':
+    wrong_timestamp_emg = Insole_Emg_Recovery.findLostEmgData(emg_aligned)
 
 
-## insert estimated missing emg data at a given position
+## insert estimated missing sync station emg data at a given position
 row_number = 0  # the number of rows to insert
 insert_position = 0  # the position to insert rows
 zeros_emg = pd.DataFrame(np.zeros((row_number, emg_filtered.shape[1])), index=np.linspace(insert_position, insert_position + 1, row_number).tolist())

@@ -51,7 +51,7 @@ recovered_right_data = Insole_Emg_Recovery.insertInsoleMissingRow(raw_right_data
 
 # emg
 raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16', converters={0: str, 1: str, 2: str})  # change data type for faster reading
-wrong_timestamp = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)  # check each row to see if there are lost data or duplicated data
+wrong_timestamp = Insole_Emg_Recovery.findLostSyncData(raw_emg_data)  # check each row to see if there are lost data or duplicated data
 print(datetime.datetime.now() - now)
 
 ## recover emg signal (both deleting duplicated data and add missing data)

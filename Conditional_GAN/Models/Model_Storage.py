@@ -110,7 +110,7 @@ def loadCheckPointCGanResults(checkpoint_result_path, transition_type=None, epoc
 
 
 ## save classification accuracy and cm recall values
-def saveClassifyAccuracy(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model'):
+def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model'):
     data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
@@ -126,7 +126,7 @@ def saveClassifyAccuracy(subject, accuracy, cm_recall, version, result_set, mode
 
 
 ## read classification accuracy and cm recall values
-def loadClassifyAccuracy(subject, version, result_set, model_type, project='cGAN_Model'):
+def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model'):
     data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)

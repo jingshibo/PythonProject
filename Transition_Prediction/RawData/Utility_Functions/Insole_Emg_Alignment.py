@@ -182,13 +182,19 @@ def readAlignParameters(subject, session, mode, version, project='Insole_Emg'):
 
 
 ## save all sensor data after alignment into a csc file
-def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, project='Insole_Emg'):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}'
-    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
+def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, time=None, project='Insole_Emg'):
+    if project == 'Insole_Emg':
+        data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\\aligned_{mode}'
+        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
+    elif project == 'cGAN_Model':
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\aligned_data\\aligned_{mode}_{time}'
+        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
+    else:
+        raise Exception("wrong project name!")
 
-    left_insole_file = f'aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
-    right_insole_file = f'aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
-    emg_file = f'aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
+    left_insole_file = f'left_insole\left_{data_file_name}_aligned.csv'
+    right_insole_file = f'right_insole\\right_{data_file_name}_aligned.csv'
+    emg_file = f'emg\emg_{data_file_name}_aligned.csv'
 
     left_insole_path = os.path.join(data_dir, left_insole_file)
     right_insole_path = os.path.join(data_dir, right_insole_file)
@@ -200,13 +206,19 @@ def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_
 
 
 ## read all sensor data after alignment from a csc file
-def readAlignedData(subject, session, mode, version, project='Insole_Emg'):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}'
-    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
+def readAlignedData(subject, session, mode, version, time=None, project='Insole_Emg'):
+    if project == 'Insole_Emg':
+        data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\\aligned_{mode}'
+        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
+    elif project == 'cGAN_Model':
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\aligned_data\\aligned_{mode}_{time}'
+        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
+    else:
+        raise Exception("wrong project name!")
 
-    left_insole_file = f'aligned_{mode}\left_insole\left_{data_file_name}_aligned.csv'
-    right_insole_file = f'aligned_{mode}\\right_insole\\right_{data_file_name}_aligned.csv'
-    emg_file = f'aligned_{mode}\emg\emg_{data_file_name}_aligned.csv'
+    left_insole_file = f'left_insole\left_{data_file_name}_aligned.csv'
+    right_insole_file = f'right_insole\\right_{data_file_name}_aligned.csv'
+    emg_file = f'emg\emg_{data_file_name}_aligned.csv'
 
     left_insole_path = os.path.join(data_dir, left_insole_file)
     right_insole_path = os.path.join(data_dir, right_insole_file)
