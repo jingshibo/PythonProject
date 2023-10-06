@@ -22,7 +22,7 @@ time = 't0'  # t0 or t1， this is only for cGAN_Model project
 session = 0
 
 # read and plot aligned data
-left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version, time='t0', project=project)
+left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version, time=time, project=project)
 # upsampling and filtering aligned data
 left_insole_upsampled, right_insole_upsampled, emg_filtered, emg_reordered, emg_envelope = Upsampling_Filtering.preprocessSensorData(
     left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=True, quality_factor=30)

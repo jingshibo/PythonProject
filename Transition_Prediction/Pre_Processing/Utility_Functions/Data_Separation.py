@@ -37,7 +37,6 @@ def seperateGait(split_data, start_position=-512, end_position=512):
             "SASA": SASA, "SALW": SALW, "LWSS": LWSS, "SSSS": SSSS}
     else:
         raise Exception("gait event wrong")
-
     # set column names for the table
     for key, gait in gait_event_timestamp.items():
         gait.columns = ["first_sample", "last_sample"]

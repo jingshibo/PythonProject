@@ -15,39 +15,35 @@ from Transition_Prediction.RawData.Utility_Functions import Insole_Emg_Alignment
 
 ## initialization
 project = 'cGAN_Model'
-subject = 'Number1'
+subject = 'Number5'
 version = 0
-mode = 'up_down'
-time = 't0'  # t0 or t1， this is only for cGAN_Model project
-session = 0
+mode = 'down_up'
+time = 't1'  # t0 or t1， this is only for cGAN_Model project
+session = 5
 
-# subject = 'Zehao'
-# version = 0
-# mode = 'up_down'
-# session = 7
 if project == 'Insole_Emg':
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\raw_{mode}'
+    data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\raw_{mode}'
     data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 elif project == 'cGAN_Model':
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\raw_data\\raw_{mode}_{time}'
+    data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\raw_data\\raw_{mode}_{time}'
     data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
 else:
     raise Exception('Wrong Project!')
 
-left_insole_file = f'left_insole\left_{data_file_name}.csv'
+left_insole_file = f'left_insole\\left_{data_file_name}.csv'
 right_insole_file = f'right_insole\\right_{data_file_name}.csv'
-emg_file = f'emg\emg_{data_file_name}.csv'
+emg_file = f'emg\\emg_{data_file_name}.csv'
 
 left_insole_path = os.path.join(data_dir, left_insole_file)
 right_insole_path = os.path.join(data_dir, right_insole_file)
 emg_path = os.path.join(data_dir, emg_file)
 
+
+## read and impute sensor data
 raw_left_data = []
 raw_right_data = []
 raw_emg_data = []
 
-
-## read and impute sensor data
 insole_sampling_period = 25  # insole sampling period
 now = datetime.datetime.now()
 
@@ -69,19 +65,18 @@ if project == 'Insole_Emg':
 elif project == 'cGAN_Model':
     raw_emg_data = pd.read_csv(emg_path, sep=';', header=None)
     inserted_emg_data = Insole_Emg_Recovery.insertEmgMissingColumns(raw_emg_data)
-    wrong_timestamp_emg = Insole_Emg_Recovery.findLostEmgData(inserted_emg_data)
     recovered_emg_data = inserted_emg_data
-
     # raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16', converters={0: str, 1: str, 2: str})  # change data type for faster reading
     # wrong_timestamp = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)
     # recovered_emg_data = raw_emg_data
-
 print(datetime.datetime.now() - now)
 
 
 ## view raw emg and insole data
 # plot emg and insole data
 Insole_Emg_Alignment.plotAllSensorData(recovered_emg_data, recovered_left_data, recovered_right_data, 0, -1)
+# check the number of emg data
+Upsampling_Filtering.checkEmgNumber(recovered_emg_data)
 # check missing channels (all values are zeros)
 for column in recovered_emg_data:
     if (recovered_emg_data[column] == 0).all() and column != 69 and column != 70 and column != 139 and column != 140:
@@ -101,8 +96,8 @@ Two_Insoles_Alignment.plotBothInsoles(recovered_left_data, recovered_right_data,
 # view the insole force plotted above to find an appropriate start index that matches most force pulses
 # usually use the first pulse as the referenece. if the result is undesired, just add or minus one on the index to adjust, instead of selecting anather pulse
 # Note: it is the alignment later with emg data that will decide whether add one or minus one is better. But here to align only two insoles, you can do it arbitrarily.
-right_start_index = 353
-left_start_index = 374
+right_start_index = 338
+left_start_index = 359
 combine_begin_cropped, left_begin_cropped, right_begin_cropped = Two_Insoles_Alignment.alignInsoleBeginIndex(left_start_index,
     right_start_index, recovered_left_data, recovered_right_data)
 # check the following timestamps in combined_insole_data table when necessary
@@ -118,8 +113,8 @@ Two_Insoles_Alignment.plotBothInsoles(left_begin_cropped, right_begin_cropped, s
 # view the insole force plotted above to find an appropriate end index that matches most force pulses. usually use the last pulse as the referenece.
 # Note: scale the figure up to large enough in order to look into the alignment result more clearly.
 # it is the alignment later with emg data that will decide whether the end_index here should add or minus one to match the end of emg index better.
-right_end_index = 7641
-left_end_index = 7641
+right_end_index = 6313
+left_end_index = 6313
 left_insole_aligned, right_insole_aligned = Two_Insoles_Alignment.alignInsoleEndIndex(left_end_index, right_end_index,
     left_begin_cropped, right_begin_cropped)
 # display the eng_index before data cropping. this can be used to obtain the pulse number for insole/emg alignment
@@ -135,11 +130,11 @@ Insole_Emg_Alignment.plotInsoleSyncForce(recovered_emg_data, recovered_left_data
 # view the sync force plotted above to find an appropriate start and end index for alignment of emg and insoles
 # Note:  you may need to adjust the start and end index of insoles (treat two insoles as one) in order to match the corresponding emg index.
 # Usually use the position of sync force as the true value, which is more accurate. The start index and end index of the insole pair should be decided separately.
-emg_start_index = 55060  # select the index belonging to the pulse number where the insole start_index is
-emg_end_index = 437047  # select the index belonging to the pulse number where the insole end_index is
+emg_start_index = 8761  # select the index belonging to the pulse number where the insole start_index is
+emg_end_index = 324324  # select the index belonging to the pulse number where the insole end_index is
 emg_aligned = recovered_emg_data.iloc[emg_start_index:emg_end_index+1, :].reset_index(drop=True)
 # convert the timestamp column to datetime type
-emg_aligned[0] = pd.to_datetime(emg_aligned[0], format='%Y-%m-%d_%H:%M:%S.%f')
+emg_aligned.iloc[:, 0] = pd.to_datetime(emg_aligned.iloc[:, 0], format='%Y-%m-%d_%H:%M:%S.%f')
 
 # plot the insole and emg alignment results
 start_index = 0
@@ -152,11 +147,12 @@ Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, ri
 ## save the aligned results (parameters and data)
 Insole_Emg_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
     right_end_index, emg_start_index, emg_end_index, project=project)
-Insole_Emg_Alignment.saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, time='t0', project=project)
+Insole_Emg_Alignment.saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, time=time, project=project)
 
 
 ## read alignment parameters
-right_start, left_start, right_end, left_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode, version, project=project)
+right_start, left_start, right_end, left_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode, version,
+    time=time, project=project)
 print(right_start, left_start, right_end, left_end, emg_start, emg_end)
 
 

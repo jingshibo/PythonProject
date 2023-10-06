@@ -1,6 +1,5 @@
 ## import
 from Channel_Number.Functions import Results_Organization, Result_Plotting, Statistic_Calculation
-import copy
 
 ## save all subject results
 all_subjects = {}
@@ -131,6 +130,23 @@ legend = ['CNN features + GRU Output', 'CNN features + Majority Vote', 'Manual F
 title = 'Comparing Prediction Accuracy of Different Classification Methods'
 Result_Plotting.plotAdjacentTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1)
 
+##
+dataset_1 = 'lose_corner_dataset'
+dataset_2 = 'lose_corner_recovered'
+legend_1 = ['Original Data', '5 Corner Loss', '10 Corner Loss', '15 Corner Loss', '20 Corner Loss']
+legend_2 = ['Original Data', '5 Corner Recovery', '10 Corner Recovery', '15 Corner Recovery', '20 Corner Recovery']
+title = '(b) Effect of Corner Channel Loss on Prediction Accuracy Across Different Delay Times before and after recovery'
+# Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', bonferroni_coeff=1)
+Result_Plotting.plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='')
+
+##
+dataset_1 = 'lose_random_dataset'
+dataset_2 = 'lose_random_recovered'
+legend_1 = ['Original Data', '5 Random Loss', '10 Random Loss', '15 Random Loss', '20 Random Loss']
+legend_2 = ['Original Data', '5 Random Recovery', '10 Random Recovery', '15 Random Recovery', '20 Random Recovery']
+title = '(b) Effect of Corner Channel Loss on Prediction Accuracy Across Different Delay Times before and after recovery'
+# Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', bonferroni_coeff=1)
+Result_Plotting.plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='')
 
 
 # ##
@@ -146,4 +162,7 @@ Result_Plotting.plotAdjacentTtest(reorganized_results, dataset, legend, title=''
 # title = 'Effect of Channel Density and Delay Time on Prediction Accuracy'
 # adjusted_results = copy.deepcopy(reorganized_results)
 # Result_Plotting.plotCompareToFirstTtest(adjusted_results, dataset, legend, title, bonferroni_coeff=1)
+
+
+##
 

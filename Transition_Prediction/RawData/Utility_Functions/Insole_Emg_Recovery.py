@@ -45,11 +45,11 @@ def findLostEmgData(raw_emg_data):
     sample_counter.columns = ["sample_count"]
     counter_diff = sample_counter["sample_count"].diff().to_frame()
     counter_diff.columns = ["count_difference"]
-    # wrong_timestamp = counter_diff.query('count_difference != 1 & count_difference != -65535')  # exclude 65535 as it is when the counter restarts
-    counter_diff = (counter_diff[1:] / 0.0005).round().astype(int)
-    new_row = pd.DataFrame({'count_difference': [np.nan]}) # Create a new DataFrame with one row
-    counter_diff = pd.concat([new_row, counter_diff]).reset_index(drop=True)
-    wrong_timestamp = counter_diff.query('count_difference != 1')
+    wrong_timestamp = counter_diff.query('count_difference != 1 & count_difference != -65535')  # exclude 65535 as it is when the counter restarts
+    # counter_diff = (counter_diff[1:] / 0.0005).round().astype(int)
+    # new_row = pd.DataFrame({'count_difference': [np.nan]}) # Create a new DataFrame with one row
+    # counter_diff = pd.concat([new_row, counter_diff]).reset_index(drop=True)
+    # wrong_timestamp = counter_diff.query('count_difference != 1')
     return wrong_timestamp
 
 ## find missing emg data index to indicate where the emg data is lost during wifi transimission

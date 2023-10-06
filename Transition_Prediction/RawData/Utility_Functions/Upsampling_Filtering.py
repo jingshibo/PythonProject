@@ -30,10 +30,10 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
     # upsample insole data to every 5ms (abandoned)
     # upsampled_left_insole = upsampleInsoleData(left_insole_aligned).reset_index()
     # upsampled_right_insole = upsampleInsoleData(right_insole_aligned).reset_index()
-
     # check if there are emg data lost
     emg_timestamp = pd.to_datetime(emg_aligned.iloc[:, 0])
-    expected_number = (emg_timestamp.iloc[-2000] - emg_timestamp.iloc[2000]).total_seconds() * 1000 * 2 # ignore the first and last 2000 data
+    expected_number = (emg_timestamp.iloc[-2000] - emg_timestamp.iloc[
+        2000]).total_seconds() * 1000 * 2  # ignore the first and last 2000 data
     real_number = len(emg_timestamp) - 4000
     print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
 
@@ -43,6 +43,12 @@ def upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned):
 
     return upsampled_left_insole, upsampled_right_insole
 
+## check the number of emg data recorded during the given time period
+def checkEmgNumber(emg_data):
+    emg_timestamp = pd.to_datetime(emg_data.iloc[:, 0], format='%Y-%m-%d_%H:%M:%S.%f')
+    expected_number = (emg_timestamp.iloc[-2000] - emg_timestamp.iloc[2000]).total_seconds() * 1000 * 2  # ignore the first and last 2000 data
+    real_number = len(emg_timestamp) - 4000
+    print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
 
 ## filtering insole data
 def filterInsole(upsampled_left_insole, upsampled_right_insole):

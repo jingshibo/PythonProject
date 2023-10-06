@@ -80,7 +80,7 @@ checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{versi
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
 model_name = ['gen', 'disc']
-result_set = 0
+result_set = 1
 
 
 ## train and save gan models for multiple transitions

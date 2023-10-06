@@ -1,9 +1,3 @@
-## check the number of emg data
-emg_timestamp = pd.to_datetime(recovered_emg_data[0], format='%Y-%m-%d_%H:%M:%S.%f')
-expected_number = (emg_timestamp.iloc[-2000] - emg_timestamp.iloc[2000]).total_seconds() * 1000 * 2  # ignore the first and last 2000 data
-real_number = len(emg_timestamp) - 4000
-print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
-
 
 ## recover emg signal (both deleting duplicated data and add missing data)
 # how to deal with duplicated data: delete all these data and use the first data and the last data as reference to count the number of
@@ -120,17 +114,3 @@ def identify_and_remove_all_duplicates(raw_emg_data, duplicate_start_points):
 
 df_cleaned, rows_duplicated = identify_and_remove_all_duplicates(raw_emg_data, duplicate_start_points)
 
-
-
-## view raw emg and insole data
-# plot emg and insole data
-Insole_Emg_Alignment.plotAllSensorData(recovered_emg_data, recovered_left_data, recovered_right_data, 0, -1)
-# check the number of emg data
-emg_timestamp = pd.to_datetime(recovered_emg_data[0], format='%Y-%m-%d_%H:%M:%S.%f')
-expected_number = (emg_timestamp.iloc[-2000] - emg_timestamp.iloc[2000]).total_seconds() * 1000 * 2  # ignore the first and last 2000 data
-real_number = len(emg_timestamp) - 4000
-print("expected emg number:", expected_number, "real emg number:", real_number, "missing emg number:", expected_number - real_number)
-# check missing channels (all values are zeros)
-for column in recovered_emg_data:
-    if (recovered_emg_data[column] == 0).all() and column != 69 and column != 70 and column != 139 and column != 140:
-        print("missing channels:", column)

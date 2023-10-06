@@ -11,27 +11,42 @@ import concurrent.futures
 
 
 ## read split parameters from json files
-def readSplitParameters(subject, version):
+def readSplitParameters(subject, version, project='Insole_Emg'):
     split_parameters = Insole_Data_Splition.readSplitParameters(subject)
-    # convert split results to dataframe
-    split_up_down_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_to_down"].items()}
-    split_down_up_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_to_up"].items()}
-    # put split results into a dict
-    split_parameters = {"up_down": split_up_down_list, "down_up": split_down_up_list}
+    if project == 'Insole_Emg':
+        # convert split results to dataframe
+        split_up_down_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_to_down"].items()}
+        split_down_up_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_to_up"].items()}
+        # put split results into a dict
+        split_parameters = {"up_down": split_up_down_list, "down_up": split_down_up_list}
+    elif project == 'cGan_Model':
+        # convert split results to dataframe
+        split_up_down_t0_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_down_t0"].items()}
+        split_down_up_t0_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_up_t0"].items()}
+        split_up_down_t1_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_down_t1"].items()}
+        split_down_up_t1_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_up_t1"].items()}
+        # put split results into a dict
+        split_parameters = {"up_down_t0": split_up_down_t0_list, "down_up_t0": split_down_up_t0_list, "up_down_t1": split_up_down_t1_list,
+            "down_up_t1": split_down_up_t1_list}
     return split_parameters
 
 
 ## read, preprocess and label aligned sensor data
-def labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1024, end_position=1024, lower_limit=20,
-        higher_limit=400, envelope_cutoff=10, notchEMG=False, median_filtering=True, reordering=True, envelope=False):
+def labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1024, end_position=1024, project='Insole_Emg',
+        lower_limit=20, higher_limit=400, envelope_cutoff=10, notchEMG=False, median_filtering=True, reordering=True, envelope=False):
     now = datetime.datetime.now()
     combined_emg_labelled = {}
 
     mode_session = zip(modes, sessions)
     for mode, sessions_in_mode in mode_session:
+        if project == 'Insole_Emg':
+            time = None
+        elif project == 'cGAN_Model':
+            time = mode.split('_')[-1]
         for session in sessions_in_mode:
             # read aligned data
-            left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version)
+            left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version,
+                time, project=project)
             # upsampling, filtering and reordering data
             left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_reordered, emg_envelope = \
                 Upsampling_Filtering.preprocessSensorData(
@@ -55,6 +70,7 @@ def labelFilteredData(subject, modes, sessions, version, split_parameters, start
                     combined_emg_labelled[gait_event_label] = gait_event_emg
     print(datetime.datetime.now() - now)
     return combined_emg_labelled
+
 
 
 ## calculate and label emg features
@@ -89,10 +105,12 @@ if __name__ == '__main__':
 
     subject = 'Number2'
     version = 0  # the data from which experiment version to process
-    modes = ['up_down', 'down_up']
-    up_down_session = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]
-    down_up_session = [10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
-    sessions = [up_down_session, down_up_session]
+    modes = ['up_down_t0', 'down_up_t0', 'up_down_t1', 'down_up_t1']
+    up_down_t0 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]
+    down_up_t0 = [10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+    up_down_t1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]
+    down_up_t1 = [10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+    sessions = [up_down_t0, down_up_t0, up_down_t1, down_up_t1]
 
     # Feature extraction
     split_parameters = readSplitParameters(subject, version)
@@ -103,21 +121,6 @@ if __name__ == '__main__':
     feature_set = 0  # there may be multiple sets of features to be calculated for comparison
     Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
 
-    subject = 'Number1'
-    version = 0  # the data from which experiment version to process
-    modes = ['up_down', 'down_up']
-    up_down_session = [0, 1, 4, 5, 6, 7, 8, 9, 10]
-    down_up_session = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
-    sessions = [up_down_session, down_up_session]
-
-    # Feature extraction
-    split_parameters = readSplitParameters(subject, version)
-    combined_emg_labelled = labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-900, end_position=800)
-    emg_features = extractEmgFeatures(combined_emg_labelled, window_size=700, increment=40)
-
-    # store features
-    feature_set = 0  # there may be multiple sets of features to be calculated for comparison
-    Feature_Storage.saveEmgFeatures(subject, emg_features, version, feature_set)
 
 
 ## balance emg data

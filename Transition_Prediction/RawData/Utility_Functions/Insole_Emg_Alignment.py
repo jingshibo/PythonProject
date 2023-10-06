@@ -158,11 +158,11 @@ def saveAlignParameters(subject, data_file_name, left_start_index, right_start_i
             write.writerow(save_parameters)
 
 ## read the alignment parameters from a csv file
-def readAlignParameters(subject, session, mode, version, project='Insole_Emg'):
+def readAlignParameters(subject, session, mode, version, time='t0', project='Insole_Emg'):
     data_dir = f'D:\Data\{project}'
     alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
     alignment_file_path = os.path.join(data_dir, alignment_file)
-    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
+    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
 
     alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
     file_parameter = alignment_data.query('data_file_name == @data_file_name') # use @ to cite variable values
@@ -227,5 +227,6 @@ def readAlignedData(subject, session, mode, version, time=None, project='Insole_
     left_insole_aligned = pd.read_csv(left_insole_path)
     right_insole_aligned = pd.read_csv(right_insole_path)
     emg_aligned = pd.read_csv(emg_path)
+    emg_aligned.columns = emg_aligned.columns.astype(int)
 
     return left_insole_aligned, right_insole_aligned, emg_aligned

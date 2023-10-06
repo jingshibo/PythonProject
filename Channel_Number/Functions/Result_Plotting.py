@@ -1,14 +1,17 @@
 ## import
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+import copy
 
 
-##  plot the bars with all columns compared to the first column
+##  plot the bars with all columns compared to the first column for the significance level annotation
 def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1):
     # Create sample data
-    df_mean = reorganized_results[dataset]['mean']
-    df_std = reorganized_results[dataset]['std']
-    df_pval = reorganized_results[dataset]['ttest']
+    data = copy.deepcopy(reorganized_results)
+    df_mean = data[dataset]['mean']
+    df_std = data[dataset]['std']
+    df_pval = data[dataset]['ttest']
     df_mean.columns = legend
     df_std.columns = legend
     df_pval.columns = legend
@@ -77,6 +80,9 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonf
     ymin, ymax = ax.get_ylim()  # get the current limits of the y-axis
     yticks = range(int(ymin), int(ymax+1), 5)  # set the space between y-axis ticks to 5
     ax.set_yticks(yticks)
+    # Adjust the y-tick labels to hide values greater than 100
+    new_ytick_labels = [label if label <= 100 else '' for label in ax.get_yticks()]
+    ax.set_yticklabels(new_ytick_labels)
     ax.set_ylabel('Prediction Accuracy(%)', fontsize=font_size)  # Set y-axis label
 
     # Set figure display
@@ -91,12 +97,13 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonf
     plt.show()
 
 
-##  plot the bars with all columns compared to the previous column
+##  plot the bars with all columns compared to the previous column for the significance level annotation
 def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_coeff=1):
     # Create sample data
-    df_mean = reorganized_results[dataset]['mean']
-    df_std = reorganized_results[dataset]['std']
-    df_pval = reorganized_results[dataset]['ttest']
+    data = copy.deepcopy(reorganized_results)
+    df_mean = data[dataset]['mean']
+    df_std = data[dataset]['std']
+    df_pval = data[dataset]['ttest']
     df_mean.columns = legend
     df_std.columns = legend
     df_pval.columns = legend
@@ -153,6 +160,9 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_co
     ymin, ymax = ax.get_ylim()  # get the current limits of the y-axis
     yticks = range(int(ymin), int(ymax+1), 5)  # set the space between y-axis ticks to 5
     ax.set_yticks(yticks)
+    # Adjust the y-tick labels to hide values greater than 100
+    new_ytick_labels = [label if label <= 100 else '' for label in ax.get_yticks()]
+    ax.set_yticklabels(new_ytick_labels)
     ax.set_ylabel('Prediction Accuracy(%)', fontsize=font_size)  # Set y-axis label
 
     # set figure display
@@ -161,4 +171,70 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_co
     ax.set_title(title)  # Set plot title
     # Show plot
     plt.show()
+
+
+## plot the accuracy of channel loss before and after recovery via stacked bar visualization
+def plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title=''):
+    font_size = 20
+    data = copy.deepcopy(reorganized_results)
+
+    # Extract data for both datasets
+    df_mean_1 = data[dataset_1]['mean']
+    df_mean_1.columns = legend_1
+    df_mean_2 = data[dataset_2]['mean']
+    df_mean_2.columns = legend_1
+    enhancement = df_mean_2 - df_mean_1
+    enhancement.columns = legend_2
+    df_mean_2.columns = legend_2
+    df_std_1 = data[dataset_1]['std']
+    df_std_2 = data[dataset_2]['std']
+
+    # Create color list for both datasets
+    color_list_1 = ['darkgray', 'wheat', 'darkorange', 'yellowgreen', 'pink']
+    color_list_2 = ['steelblue', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
+
+    # Set up the figure and axis
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Create stacked bars
+    n_groups = df_mean_1.shape[0]
+    bar_width = 0.1
+    group_spacing = 0.25 + bar_width * (df_mean_1.shape[1] - 1)  # spacing between groups of bars for each x-tick
+    index = np.arange(0, n_groups * group_spacing, group_spacing)
+
+    # plot each bar
+    for col in range(df_mean_1.shape[1]):
+        bar_position = index + col * bar_width
+        ax.bar(bar_position, df_mean_1.iloc[:, col], bar_width, label=legend_1[col], color=color_list_1[col], yerr=df_std_1.iloc[:, col],
+            capsize=5)
+        if not np.all(enhancement.iloc[:, col] == 0):  # Only plot if not all values in enhancement are zero
+            ax.bar(bar_position, enhancement.iloc[:, col], bar_width, bottom=df_mean_1.iloc[:, col], label=legend_2[col],
+                color=color_list_2[col], yerr=df_std_2.iloc[:, col], capsize=5)
+
+    # Set x-axis
+    ax.set_xlabel('Prediction Delay Relative to Toe-off Moment(ms)', fontsize=font_size)
+    ax.set_xticks(index + bar_width * (df_mean_1.shape[1] - 1) / 2)  # center the x-ticks among the bars
+    ax.set_xticklabels(df_mean_1.index)
+    # Adjust the x-tick labels
+    x_tick_labels = [label.get_text() for label in ax.get_xticklabels()]
+    x_tick_ms = [string[string.find('_')+1: string.find('_', string.find('_')+1)] for string in x_tick_labels]  # extract only the delay value
+    ax.set_xticklabels(x_tick_ms, rotation=0)  # set x-tick value
+
+    # Set y-axis
+    ax.set_ylim(30, 105)
+    ymin, ymax = ax.get_ylim()
+    yticks = range(int(ymin), int(ymax + 1), 5)
+    ax.set_yticks(yticks)
+    # Adjust the y-tick labels to hide values greater than 100
+    new_ytick_labels = [label if label <= 100 else '' for label in ax.get_yticks()]
+    ax.set_yticklabels(new_ytick_labels)
+    ax.set_ylabel('Prediction Accuracy(%)', fontsize=font_size)
+
+    # set figure display
+    ax.tick_params(axis='both', labelsize=font_size)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3, fontsize=font_size - 2)
+    ax.set_title(title)
+
+    plt.show()
+
 
