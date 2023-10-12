@@ -11,11 +11,11 @@ import numpy as np
 
 ## training
 class ModelTesting():
-    def __init__(self, model, batch_size):
+    def __init__(self, models, batch_size):
         #  initialize member variables
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = batch_size
-        self.model = model.to(self.device)
+        self.models = models
         self.test_loader = None
 
     #  train the model
@@ -37,7 +37,9 @@ class ModelTesting():
 
     #  classify test set
     def predictTestResults(self, group_number):
-        self.model.train(False)
+        number = int(group_number.split('_')[-1])
+        model = self.models[number].to(self.device)
+        model.train(False)
 
         # predict result statistics
         test_true_labels = []
@@ -52,7 +54,7 @@ class ModelTesting():
             # loop over each batch
             for i, test_data in enumerate(self.test_loader):
                 test_inputs, test_labels = test_data[0].to(self.device), test_data[1].to(self.device)
-                test_outputs = self.model(test_inputs)
+                test_outputs = model(test_inputs)
                 test_softmax = F.softmax(test_outputs, dim=1)
 
                 # calculate test accurate value summation from all previous batches

@@ -3,8 +3,8 @@
 from Transition_Prediction.Pre_Processing import Preprocessing
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Cycle_GAN.Functions import Data_Processing, Classify_Testing
-from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, Model_Storage
+from Cycle_GAN.Functions import Data_Processing
+from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, Model_Storage, Classify_Testing
 from Conditional_GAN.Data_Procesing import Process_Fake_Data
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 import numpy as np

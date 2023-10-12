@@ -147,6 +147,8 @@ class WGANloss():
                     var_first_5_columns = torch.var(class_blending_factor[:, :, :, :5], dim=[0, 2, 3]).sum()
                     var_second_5_columns = torch.var(class_blending_factor[:, :, :, 5:], dim=[0, 2, 3]).sum()
                     class_variance = var_first_5_columns + var_second_5_columns
+                else:
+                    raise Exception('wrong data shape!')
                 class_specific_variances.append(class_variance)
 
         # Calculate the mean variance, or return 0 if the list is empty

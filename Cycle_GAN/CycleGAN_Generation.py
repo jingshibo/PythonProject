@@ -3,8 +3,8 @@ from Transition_Prediction.Pre_Processing import Preprocessing
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Cycle_GAN.Functions import Classify_Testing, Data_Processing, CycleGAN_Training
-from Conditional_GAN.Models import Model_Storage
+from Cycle_GAN.Functions import Data_Processing, CycleGAN_Training
+from Conditional_GAN.Models import Model_Storage, Classify_Testing
 import numpy as np
 import datetime
 
@@ -106,7 +106,7 @@ print(datetime.datetime.now() - now)
 ##  save trained gan models
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
-Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='CycleGAN_Model')
+Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, result_set, project='CycleGAN_Model')
 
 
 # ## generate new data

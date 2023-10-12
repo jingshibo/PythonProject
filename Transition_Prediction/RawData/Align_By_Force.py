@@ -15,18 +15,17 @@ from Transition_Prediction.RawData.Utility_Functions import Insole_Emg_Alignment
 
 ## initialization
 project = 'cGAN_Model'
-subject = 'Number5'
+subject = 'Number7'
 version = 0
-mode = 'down_up'
-time = 't1'  # t0 or t1， this is only for cGAN_Model project
-session = 5
+mode = 'down_up_t1'
+session = 3
 
 if project == 'Insole_Emg':
     data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\raw_{mode}'
     data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 elif project == 'cGAN_Model':
-    data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\raw_data\\raw_{mode}_{time}'
-    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
+    data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\raw_data\\raw_{mode}'
+    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 else:
     raise Exception('Wrong Project!')
 
@@ -147,12 +146,12 @@ Insole_Emg_Alignment.plotInsoleAlignedEmg(emg_aligned, left_insole_upsampled, ri
 ## save the aligned results (parameters and data)
 Insole_Emg_Alignment.saveAlignParameters(subject, data_file_name, left_start_index, right_start_index, left_end_index,
     right_end_index, emg_start_index, emg_end_index, project=project)
-Insole_Emg_Alignment.saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, time=time, project=project)
+Insole_Emg_Alignment.saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, project=project)
 
 
 ## read alignment parameters
 right_start, left_start, right_end, left_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode, version,
-    time=time, project=project)
+    project=project)
 print(right_start, left_start, right_end, left_end, emg_start, emg_end)
 
 

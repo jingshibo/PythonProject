@@ -127,12 +127,12 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
         # calculate the dtw distance based on each EMG grid
         dtw_results = dtw_distance.calcuDtwDistance(fake_average['emg_repetition_list'][grid_key],
             real_average['emg_repetition_list'][grid_key])
-        if method == 'select':
+        if method == 'select':  # select fake data closet to a selected reference
             selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data,
                 random_reference=random_reference)
-        elif method == 'best':
+        elif method == 'best':  # select fake data closet to all references
             selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.bestFakeData(dtw_results, synthetic_data)
-        elif method == 'random':
+        elif method == 'random':  # randomly selected fake data
             selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectRandomData(synthetic_data)
         else:
             raise Exception('Wrong Method!')

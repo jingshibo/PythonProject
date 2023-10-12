@@ -158,14 +158,14 @@ def saveAlignParameters(subject, data_file_name, left_start_index, right_start_i
             write.writerow(save_parameters)
 
 ## read the alignment parameters from a csv file
-def readAlignParameters(subject, session, mode, version, time='t0', project='Insole_Emg'):
-    data_dir = f'D:\Data\{project}'
-    alignment_file = f'subject_{subject}\subject_{subject}_align_parameters.csv'
+def readAlignParameters(subject, session, mode, version, project='Insole_Emg'):
+    data_dir = f'D:\\Data\\{project}'
+    alignment_file = f'subject_{subject}\\subject_{subject}_align_parameters.csv'
     alignment_file_path = os.path.join(data_dir, alignment_file)
-    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
+    data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
 
     alignment_data = pd.read_csv(alignment_file_path, sep=',')  # header exists
-    file_parameter = alignment_data.query('data_file_name == @data_file_name') # use @ to cite variable values
+    file_parameter = alignment_data.query('data_file_name == @data_file_name')  # use @ to cite variable values
     if file_parameter.empty:  # if no alignment parameter found
         raise Exception(f"No alignment parameter found for data file: {data_file_name}")
     else:
@@ -182,13 +182,13 @@ def readAlignParameters(subject, session, mode, version, time='t0', project='Ins
 
 
 ## save all sensor data after alignment into a csc file
-def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, time=None, project='Insole_Emg'):
+def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_insole_aligned, emg_aligned, project='Insole_Emg'):
     if project == 'Insole_Emg':
         data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\\aligned_{mode}'
         data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
     elif project == 'cGAN_Model':
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\aligned_data\\aligned_{mode}_{time}'
-        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\aligned_data\\aligned_{mode}'
+        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
     else:
         raise Exception("wrong project name!")
 
@@ -206,13 +206,13 @@ def saveAlignedData(subject, session, mode, version, left_insole_aligned, right_
 
 
 ## read all sensor data after alignment from a csc file
-def readAlignedData(subject, session, mode, version, time=None, project='Insole_Emg'):
+def readAlignedData(subject, session, mode, version, project='Insole_Emg'):
     if project == 'Insole_Emg':
         data_dir = f'D:\Data\\{project}\subject_{subject}\Experiment_{version}\\aligned_{mode}'
         data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
     elif project == 'cGAN_Model':
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\aligned_data\\aligned_{mode}_{time}'
-        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}_{time}'
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\aligned_data\\aligned_{mode}'
+        data_file_name = f'subject_{subject}_Experiment_{version}_session_{session}_{mode}'
     else:
         raise Exception("wrong project name!")
 

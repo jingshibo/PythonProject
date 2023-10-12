@@ -4,6 +4,7 @@ import copy
 import json
 import numpy as np
 
+##
 def saveModels(models, subject, version, model_type, model_name, transition_type=None, project='cGAN_Model'):
     for name in model_name:
         # model path
@@ -13,7 +14,7 @@ def saveModels(models, subject, version, model_type, model_name, transition_type
         # save model
         torch.save(models[name].to("cpu"), model_path)
 
-
+##
 def loadModels(subject, version, model_type, model_name, transition_type=None, project='cGAN_Model'):
     models = {}
     # model path

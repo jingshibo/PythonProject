@@ -142,8 +142,8 @@ def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
 def plotMultipleEventMeanValues(fake_data, real_data, modes, title=None, ylim=(0, 0.5), grid='grid_1'):
     mean_emg_to_plot = {f'fake_{modes[2]}': fake_data['emg_event_mean'][grid][modes[2]],
         f'real_{modes[2]}': real_data['emg_event_mean'][grid][modes[2]],
-        f'fake_{modes[0]}': fake_data['emg_event_mean'][grid][modes[0]],
-        f'fake_{modes[1]}': fake_data['emg_event_mean'][grid][modes[1]]}
+        f'real_{modes[0]}': fake_data['emg_event_mean'][grid][modes[0]],
+        f'real_{modes[1]}': fake_data['emg_event_mean'][grid][modes[1]]}
     plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
 
 

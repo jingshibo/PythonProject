@@ -14,12 +14,12 @@ import numpy as np
 
 
 ## read and preprocess aligned data
-project = 'cGAN_Model'
+project = 'Insole_Emg'
 subject = 'Number1'
 version = 0
 mode = 'up_down'
 time = 't0'  # t0 or t1， this is only for cGAN_Model project
-session = 0
+session = 8
 
 # read and plot aligned data
 left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version, time=time, project=project)

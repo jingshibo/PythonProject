@@ -83,11 +83,11 @@ class ModelTraining():
         # criterion = nn.MSELoss()
         # self.loss_fn = cGAN_Loss.LossFunction(criterion)
         c_lambda = 10  # the weight of the gradient penalty
-        var_weight = 0.003  # the weight of blending factor variance
-        construct_weight = 0.7  # the weight of constructed critic value
+        var_weight = 0.01  # the weight of blending factor variance
+        construct_weight = 5  # the weight of constructed critic value
         factor_1_weight = 0  # the weight of blending factor 1
         factor_2_weight = 0  # the weight of blending factor 2
-        factor_3_weight = 0.001  # the weight of blending factor 2
+        factor_3_weight = 0  # the weight of blending factor 3
         self.loss_fn = cGAN_Loss.WGANloss(c_lambda, var_weight, construct_weight, factor_1_weight, factor_2_weight, factor_3_weight)
 
         # train the model

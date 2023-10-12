@@ -9,7 +9,7 @@
 import copy
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Cycle_GAN.Functions import Classify_Testing
+from Conditional_GAN.Models import Classify_Testing
 from Conditional_GAN.Data_Procesing import Process_Fake_Data
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 
@@ -87,15 +87,15 @@ class cGAN_Evaluation:
 
 
     # train classify models
-    def trainClassifier(self, shuffled_groups, num_epochs=50, batch_size=1024, decay_epochs=20, report_period=10):
+    def trainClassifier(self, shuffled_groups, num_epochs=50, batch_size=2048, decay_epochs=20, report_period=10):
         train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=report_period)
         models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)
         return models, model_results
 
 
     # test classify models
-    def testClassifier(self, model, shuffled_test_set, batch_size=1024):
-        test_model = Classify_Testing.ModelTesting(model, batch_size)
+    def testClassifier(self, models, shuffled_test_set, batch_size=2048):
+        test_model = Classify_Testing.ModelTesting(models, batch_size)
         test_result = test_model.testModel(shuffled_test_set)
         return test_result
 

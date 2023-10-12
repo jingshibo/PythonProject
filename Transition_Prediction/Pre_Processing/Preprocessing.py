@@ -12,14 +12,14 @@ import concurrent.futures
 
 ## read split parameters from json files
 def readSplitParameters(subject, version, project='Insole_Emg'):
-    split_parameters = Insole_Data_Splition.readSplitParameters(subject)
+    split_parameters = Insole_Data_Splition.readSplitParameters(subject, project=project)
     if project == 'Insole_Emg':
         # convert split results to dataframe
         split_up_down_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_to_down"].items()}
         split_down_up_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_to_up"].items()}
         # put split results into a dict
         split_parameters = {"up_down": split_up_down_list, "down_up": split_down_up_list}
-    elif project == 'cGan_Model':
+    elif project == 'cGAN_Model':
         # convert split results to dataframe
         split_up_down_t0_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["up_down_t0"].items()}
         split_down_up_t0_list = {session: pd.DataFrame(value) for session, value in split_parameters[f"experiment_{version}"]["down_up_t0"].items()}
@@ -39,14 +39,10 @@ def labelFilteredData(subject, modes, sessions, version, split_parameters, start
 
     mode_session = zip(modes, sessions)
     for mode, sessions_in_mode in mode_session:
-        if project == 'Insole_Emg':
-            time = None
-        elif project == 'cGAN_Model':
-            time = mode.split('_')[-1]
         for session in sessions_in_mode:
             # read aligned data
             left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version,
-                time, project=project)
+                project=project)
             # upsampling, filtering and reordering data
             left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_reordered, emg_envelope = \
                 Upsampling_Filtering.preprocessSensorData(

@@ -63,7 +63,7 @@ all_subjects[subject] = subject_results
 
 
 ##  average accuracy across subjects
-delay_groups = list(all_subjects['Test']['accuracy'].keys())  # list all transition types
+delay_groups = list(all_subjects['Shibo']['accuracy'].keys())  # list all transition types
 average_accuracy = {delay_time: 0 for delay_time in delay_groups}  # initialize average accuracy list
 average_cm = {delay_time: 0 for delay_time in delay_groups}  # initialize average cm list
 
