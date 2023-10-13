@@ -76,7 +76,7 @@ checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{versi
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
 model_name = ['gen', 'disc']
-result_set = 1
+result_set = 0
 
 
 ## train and save gan models for multiple transitions
@@ -154,7 +154,7 @@ train_set, shuffled_train_set = old_evaluation.classifierTrainSet(filtered_old_f
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
 acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
 # test classifier
-shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, filtered_old_real_data, train_set, test_ratio=0.5)
+test_set, shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, filtered_old_real_data, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models_old, shuffled_test_set)
 accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
 
@@ -225,7 +225,7 @@ train_set, shuffled_train_set = new_evaluation.classifierTrainSet(filtered_new_f
 models_new, model_results_new = new_evaluation.trainClassifier(shuffled_train_set)
 acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
 # test classifier
-shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, filtered_new_real_data, train_set, test_ratio=0.5)
+test_set, shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, filtered_new_real_data, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_new, shuffled_test_set)
 accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
 
@@ -289,7 +289,7 @@ train_set, shuffled_train_set = mix_evaluation.classifierTrainSet(filtered_mix_d
 models_compare, model_results_compare = mix_evaluation.trainClassifier(shuffled_train_set)
 acc_compare, cm_compare = mix_evaluation.evaluateClassifyResults(model_results_compare)
 # test classifier
-shuffled_test_set = mix_evaluation.classifierTestSet(modes_generation, filtered_new_real_data, train_set, test_ratio=0.5)
+test_set, shuffled_test_set = mix_evaluation.classifierTestSet(modes_generation, filtered_new_real_data, train_set, test_ratio=0.5)
 test_results = mix_evaluation.testClassifier(models_compare, shuffled_test_set)
 accuracy_compare, cm_recall_compare = mix_evaluation.evaluateClassifyResults(test_results)
 

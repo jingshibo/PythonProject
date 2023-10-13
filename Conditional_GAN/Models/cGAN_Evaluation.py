@@ -59,6 +59,48 @@ class cGAN_Evaluation:
         return synthetic_data
 
 
+    # extract reference real emg data from the real dataset and remove them from the real dataset
+    def addressReferenceData(self, selected_fake_data, filtered_real_data):
+        reference_indices = selected_fake_data['reference_index_based_on_grid_1']
+        # Filtering the data based on reference_indices
+        reference_new_real_data = {}
+        adjusted_new_real_data = copy.deepcopy(filtered_real_data)
+        for key, indices in reference_indices.items():
+            reference_new_real_data[key] = [filtered_real_data[key][i] for i in indices]
+            # Update filtered_new_real_data by excluding the selected data
+            adjusted_new_real_data[key] = [filtered_real_data[key][i] for i in range(len(filtered_real_data[key])) if
+                i not in indices]
+        return reference_new_real_data, adjusted_new_real_data
+
+
+    # divide classifier training set for transfer learning
+    def classifierTlTrainSet(self, generated_data, reference_data, dataset='leave_one_set', fold=5, training_percent=0.8, minimum_train_number=8):
+        if dataset == 'leave_one_set':
+            train_dataset = Data_Preparation.leaveOutDataSet(training_percent, generated_data, shuffle=True)
+        elif dataset == 'cross_validation_set':
+            train_dataset = Data_Preparation.crossValidationSet(fold, generated_data, shuffle=True)
+        else:
+            raise Exception("wrong keywords")
+        # adjust the train dataset to meet the requirement of transfer learning
+        for group_number, group_value in train_dataset.items():
+            # exchange the training set and test set
+            group_value['train_set'], group_value['test_set'] = group_value['test_set'], group_value['train_set']
+            # add reference data into the train_set as they are available new transition data for model training
+            for key, data_list in reference_data.items():
+                if key in group_value['train_set']:
+                    group_value['train_set'][key].extend(data_list)
+            # move data from test set to train set to keep a minimum sample number of 8 for each mode
+            for key in group_value['train_set']:
+                while len(group_value['train_set'][key]) < minimum_train_number and group_value['test_set'][key]:
+                    group_value['train_set'][key].append(group_value['test_set'][key].pop(0))
+        # shuffle training set
+        sliding_window_dataset, self.feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(train_dataset,
+            self.feature_window_size, increment=self.feature_window_increment_ms * self.sample_rate)
+        normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
+        shuffled_train_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
+        return train_dataset, shuffled_train_set
+
+
     # divide classifier training set
     def classifierTrainSet(self, generated_data, dataset='leave_one_set', fold=5, training_percent=0.8):
         if dataset == 'leave_one_set':
@@ -83,7 +125,7 @@ class cGAN_Evaluation:
             self.feature_window_size, increment=self.feature_window_increment_ms * self.sample_rate)
         normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
         shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-        return shuffled_test_set
+        return test_dataset, shuffled_test_set
 
 
     # train classify models
