@@ -117,9 +117,9 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
 
 
 
-# '''
-#     train classifier (basic scenarios), training and testing data from the same and different time
-# '''
+'''
+    train classifier (basic scenarios), training and testing data from the same and different time
+'''
 # ## original dataset
 # old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normalized, separate=True)
 # new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normalized, separate=True)
@@ -145,7 +145,7 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
 #
 #
 # ## save results
-# model_type = 'classify_baseline'
+# model_type = 'classify_best'
 # Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, result_set, model_type, project='cGAN_Model')
 # accuracy_best, cm_recall_best = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
 # model_type = 'classify_worst'
@@ -153,12 +153,12 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
 # accuracy_worst, cm_recall_worst = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
 # Model_Storage.saveClassifyModel(models_basis[0], subject, version, model_type, project='cGAN_Model')
 # model_basis = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
-#
-#
-#
-# '''
-#     train classifier (on old data), for testing gan generation performance
-# '''
+
+
+
+'''
+    train classifier (on old data), for testing gan generation performance
+'''
 # ## generate fake data
 # window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450, endtime_after_toeoff_ms=400, feature_window_ms=450)
 # old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
@@ -248,7 +248,8 @@ del new_fake_emg_grids, new_real_emg_grids, processed_new_fake_data, processed_n
 
 ## classification
 new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-reference_new_real_data, adjusted_new_real_data = new_evaluation.addressReferenceData(selected_new_fake_data, filtered_new_real_data)
+reference_indices = selected_new_fake_data['reference_index_based_on_grid_1']
+reference_new_real_data, adjusted_new_real_data = new_evaluation.addressReferenceData(reference_indices, filtered_new_real_data)
 train_set, shuffled_train_set = new_evaluation.classifierTlTrainSet(filtered_new_fake_data, reference_new_real_data, dataset='cross_validation_set')
 models_new, model_results_new = new_evaluation.trainClassifier(shuffled_train_set)
 acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
@@ -288,28 +289,24 @@ model_new = Model_Storage.loadClassifyModel(subject, version, model_type, projec
 
 
 '''
-    train classifier (on new data), for comparison purpose
+    train classifier (on old and new data), for comparison purpose
 '''
-## build training data
+# ## build training data
 old_emg_for_replacement = {modes[2]: old_emg_classify_normalized[modes[2]] for transition_type, modes in modes_generation.items()}
 mix_old_new_data = Process_Fake_Data.replaceUsingFakeEmg(old_emg_for_replacement, new_emg_classify_normalized)
 # separate and store grids in a list if only use one grid later
-mix_old_emg_grids = Post_Process_Data.separateEmgGrids(mix_old_new_data, separate=True)
-new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normalized, separate=True)
+mix_old_new_grids = Post_Process_Data.separateEmgGrids(mix_old_new_data, separate=True)
 
 ## only preprocess selected grid and define time range of data
-processed_mix_data = Process_Fake_Data.reorderSmoothDataSet(mix_old_emg_grids['grid_1'], filtering=False, modes=modes_generation)
-processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_1'], filtering=False, modes=None)
+processed_mix_data = Process_Fake_Data.reorderSmoothDataSet(mix_old_new_grids['grid_1'], filtering=False, modes=modes_generation)
 sliced_mix_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_mix_data, start=50, end=750)
-sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=50, end=750)
 # median filtering
 filtered_mix_data = Post_Process_Data.medianFiltering(sliced_mix_data, size=3)
-filtered_new_real_data = Post_Process_Data.medianFiltering(sliced_new_real_data, size=5)
-del mix_old_emg_grids, new_real_emg_grids, processed_mix_data, processed_new_real_data, sliced_mix_data, sliced_new_real_data
+del mix_old_new_grids, processed_mix_data, sliced_mix_data
 
 ## classification
 mix_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-# use the same reference new data above as the available new data for the mix dataset to adjust the train_set and test_set
+# use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
 train_set, shuffled_train_set = mix_evaluation.classifierTlTrainSet(filtered_mix_data, reference_new_real_data, dataset='cross_validation_set')
 models_compare, model_results_compare = mix_evaluation.trainClassifier(shuffled_train_set)
 acc_compare, cm_compare = mix_evaluation.evaluateClassifyResults(model_results_compare)
@@ -337,6 +334,32 @@ accuracy_compare, cm_recall_compare = Model_Storage.loadClassifyResult(subject, 
 Model_Storage.saveClassifyModel(models_compare[0], subject, version, model_type, project='cGAN_Model')
 model_compare = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
+
+
+'''
+    train classifier (on noisy new data), select some reference new data and augment them with noise for training comparison
+'''
+## generate noise data
+noise_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)  # window_parameters are in line with the above
+noise_new_data = noise_evaluation.generateNoiseData(filtered_new_real_data, reference_new_real_data, num_sample=60, snr=0.05)
+
+## classification
+noise_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+# use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
+train_set, shuffled_train_set = noise_evaluation.classifierTlTrainSet(noise_new_data, reference_new_real_data, dataset='cross_validation_set')
+models_noise, model_results_noise = noise_evaluation.trainClassifier(shuffled_train_set)
+acc_noise, cm_noise = noise_evaluation.evaluateClassifyResults(model_results_noise)
+# test classifier
+test_set, shuffled_test_set = noise_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=0.8)
+test_results = noise_evaluation.testClassifier(models_noise, shuffled_test_set)
+accuracy_noise, cm_recall_noise = noise_evaluation.evaluateClassifyResults(test_results)
+
+## save results
+model_type = 'classify_noise'
+Model_Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, result_set, model_type, project='cGAN_Model')
+accuracy_noise, cm_recall_noise = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModel(models_noise[0], subject, version, model_type, project='cGAN_Model')
+model_noise = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
 
 
 ## load check point models

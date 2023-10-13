@@ -7,6 +7,7 @@
 
 ##
 import copy
+import numpy as np
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Conditional_GAN.Models import Classify_Testing
@@ -34,7 +35,8 @@ class cGAN_Evaluation:
             :param data_source: selected from 'old' and 'new'
             :param modes_generation: such as  {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}.
             The order in the list is important, corresponding to gen_data_1 and gen_data_2.
-            :param repetition and random_pairing are two unnecessary parameter, used for compatibility with the generateFakeDataRandomMatch() function.
+            :param repetition and random_pairing are two unnecessary parameter, used for compatibility with the
+            Process_Fake_Data.generateFakeDataRandomMatch() function.
 
         '''
         length = self.start_before_toeoff_ms + self.endtime_after_toeoff_ms
@@ -59,9 +61,39 @@ class cGAN_Evaluation:
         return synthetic_data
 
 
+    # generate fake data by adding noise to reference real emg data and substitute original emg dataset using this data
+    def generateNoiseData(self, real_emg_normalized, reference_data, num_sample=60, snr=25):
+        '''
+        :param real_emg_normalized: real emg data dict
+        :param reference_data: selected real data used for noisy sample generation
+        :param num_sample:  the number of noisy samples to generate for each locomotion mode
+        :param snr_db:  the amplitude of noise to add based on signal-to-noise ratio
+        :return: real emg data with certain modes replaced by generated noisy data
+        '''
+
+        # add noise to reference data
+        def generate_noisy_sample(real_data, snr_db):  # add Gaussian Noise with signal-to-noise ratio (SNR) of 25
+            # Calculate the variance of the signal
+            signal_var = np.var(real_data)
+            # Convert SNR from dB scale to linear scale
+            snr_linear = 10 ** (snr_db / 10)
+            # Calculate the required noise variance
+            noise_variance = signal_var / snr_linear
+            # Generate the noise with the calculated standard deviation
+            noise = np.random.normal(0, np.sqrt(noise_variance), real_data.shape)
+            return real_data + noise
+
+        synthetic_data = copy.deepcopy(real_emg_normalized)
+        # Generate noisy samples for each numpy array in reference_data
+        reference_data_with_noise = {locomotion_mode: [generate_noisy_sample(array, snr) for array in array_list for _ in
+            range(int(num_sample / len(array_list)))] for locomotion_mode, array_list in reference_data.items()}
+        synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(reference_data_with_noise, synthetic_data)
+
+        return synthetic_data
+
+
     # extract reference real emg data from the real dataset and remove them from the real dataset
-    def addressReferenceData(self, selected_fake_data, filtered_real_data):
-        reference_indices = selected_fake_data['reference_index_based_on_grid_1']
+    def addressReferenceData(self, reference_indices, filtered_real_data):
         # Filtering the data based on reference_indices
         reference_new_real_data = {}
         adjusted_new_real_data = copy.deepcopy(filtered_real_data)

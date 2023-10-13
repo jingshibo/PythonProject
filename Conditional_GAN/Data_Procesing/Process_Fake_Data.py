@@ -257,7 +257,7 @@ def reorderSmoothDataSet(dataset, filtering=True, modes=None, lowpass_frequency=
         reordered_data = [reorderColumns(data) for data in locomotion_data]
         # lowposs filter emg data
         if filtering:
-            if modes is None or locomotion_type in modes:  # filtering all modes or only selected modes
+            if modes is None or locomotion_type in modes:  # filtering all modes or selected modes
                 filtered_data = clipSmoothEmgData(reordered_data, lowpass_frequency, clip_range=clip_range)
             else:  # not filtering other modes
                 filtered_data = reordered_data
