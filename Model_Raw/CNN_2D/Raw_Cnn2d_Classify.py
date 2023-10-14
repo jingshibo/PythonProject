@@ -1,9 +1,8 @@
 ##
 from Transition_Prediction.Pre_Processing import Preprocessing
-from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
+from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model, Model_Storage
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Conditional_GAN.Models import Model_Storage
 import datetime
 
 
@@ -82,7 +81,7 @@ Sliding_Ann_Results.saveModelResults(subject, model_results, version, result_set
 
 
 ## save models
-model_name = list(range(5))
+model_name = list(range(fold))
 Model_Storage.saveModels(models, subject, version, model_type, model_name, project='Insole_Emg')
 
 

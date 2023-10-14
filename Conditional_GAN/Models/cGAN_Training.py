@@ -242,7 +242,7 @@ def trainCGan(train_gan_data, transition_type, training_parameters, storage_para
     print(datetime.datetime.now() - now)
 
     # save trained gan models and results
-    Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, transition_type=transition_type, project='cGAN_Model')
+    Model_Storage.saveGanModels(gan_models, subject, version, model_type, model_name, transition_type=transition_type, project='cGAN_Model')
     # save model results
     Model_Storage.saveCGanResults(subject, blending_factors, version, result_set, training_parameters, model_type,
         transition_type=transition_type, project='cGAN_Model')

@@ -68,7 +68,7 @@ sampling_repetition = 100  # the number of samples for each time point
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
 noise_dim = 64
-blending_factor_dim = 2
+blending_factor_dim = 0
 
 
 # GAN data storage information
@@ -85,13 +85,13 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
     'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'result_set': result_set,
     'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-# now = datetime.datetime.now()
-# results = {}
-# for transition_type in modes_generation.keys():
-#     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
-#     results[transition_type] = blending_factors
-# print(datetime.datetime.now() - now)
-# del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
+now = datetime.datetime.now()
+results = {}
+for transition_type in modes_generation.keys():
+    gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
+    results[transition_type] = blending_factors
+print(datetime.datetime.now() - now)
+del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
 
 
 
@@ -185,8 +185,8 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_old, real_old, modes, title='old_
 model_type = 'classify_old'
 Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
 accuracy_old, cm_recall_old = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models_old[0], subject, version, model_type, project='cGAN_Model')  # only save one model as an example here
-model_old = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models_old[0], subject, version, model_type, project='cGAN_Model')  # only save one model as an example here
+model_old = Model_Storage.loadClassifyModels(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -256,8 +256,8 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_new, real_new, modes, title='new_
 model_type = 'classify_new'
 Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
 accuracy_new, cm_recall_new = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models_new[0], subject, version, model_type, project='cGAN_Model')
-model_new = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models_new[0], subject, version, model_type, project='cGAN_Model')
+model_new = Model_Storage.loadClassifyModels(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -311,8 +311,8 @@ Plot_Emg_Data.plotMultipleEventMeanValues(real_mix, real_new, modes, title='mix_
 model_type = 'classify_compare'
 Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, result_set, model_type, project='cGAN_Model')
 accuracy_compare, cm_recall_compare = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models_compare[0], subject, version, model_type, project='cGAN_Model')
-model_compare = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models_compare[0], subject, version, model_type, project='cGAN_Model')
+model_compare = Model_Storage.loadClassifyModels(subject, version, model_type, project='cGAN_Model')
 
 
 

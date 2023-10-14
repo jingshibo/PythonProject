@@ -138,7 +138,7 @@ print(datetime.datetime.now() - now)
 
 
 ## save trained gan models
-Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='cGAN_Model')
+Model_Storage.saveGanModels(gan_models, subject, version, model_type, model_name, project='cGAN_Model')
 
 
 ## save model results

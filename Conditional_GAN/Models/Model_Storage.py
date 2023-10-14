@@ -5,7 +5,7 @@ import json
 import numpy as np
 
 ##
-def saveModels(models, subject, version, model_type, model_name, transition_type=None, project='cGAN_Model'):
+def saveGanModels(models, subject, version, model_type, model_name, transition_type=None, project='cGAN_Model'):
     for name in model_name:
         # model path
         data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
@@ -15,7 +15,7 @@ def saveModels(models, subject, version, model_type, model_name, transition_type
         torch.save(models[name].to("cpu"), model_path)
 
 ##
-def loadModels(subject, version, model_type, model_name, transition_type=None, project='cGAN_Model'):
+def loadGanModels(subject, version, model_type, model_name, transition_type=None, project='cGAN_Model'):
     models = {}
     # model path
     for name in model_name:
@@ -142,23 +142,29 @@ def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_M
 
 
 ##
-def saveClassifyModel(model, subject, version, model_type, project='cGAN_Model'):
+def saveClassifyModels(models, subject, version, model_type, model_number=None, project='cGAN_Model'):
     # model path
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
-    model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}.json'
-    model_path = os.path.join(data_dir, model_file)
-    # save model
-    torch.save(model.to("cpu"), model_path)
+    for number in model_number:
+        # model path
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
+        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{number}.json'
+        model_path = os.path.join(data_dir, model_file)
+        # save model
+        torch.save(models[number].to("cpu"), model_path)
 
 
 ##
-def loadClassifyModel(subject, version, model_type, project='cGAN_Model'):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models'
-    model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}.json'
-    model_path = os.path.join(data_dir, model_file)
-    # load model
-    model = torch.load(model_path)
-    return model
+def loadClassifyModels(subject, version, model_type, model_number=None, project='cGAN_Model'):
+    models = []
+    # model path
+    for number in model_number:
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
+        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{number}.json'
+        model_path = os.path.join(data_dir, model_file)
+        # load model
+        model = torch.load(model_path)
+        models.append(model)
+    return models
 
 
 ## read blending factors for fake data generation

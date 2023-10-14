@@ -70,7 +70,7 @@ print(datetime.datetime.now() - now)
 
 
 ## save trained gan models and results
-Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, project='cGAN_Model')
+Model_Storage.saveGanModels(gan_models, subject, version, model_type, model_name, project='cGAN_Model')
 # save model results
 training_parameters = {'noise_dim': noise_dim, 'sampling_repetition': sampling_repetition, 'batch_size': batch_size,
     'num_epochs': num_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
@@ -109,8 +109,8 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 model_type = 'classify_old'
 Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, result_set, model_type, project='cGAN_Model')
 acc, cm = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models[0], subject, version, model_type, project='cGAN_Model')
-model = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models[0], subject, version, model_type, project='cGAN_Model')
+model = Model_Storage.loadClassifyModels(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -136,8 +136,8 @@ accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_result
 model_type = 'classify_new'
 Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, result_set, model_type, project='cGAN_Model')
 acc, cm = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models[0], subject, version, model_type, project='cGAN_Model')
-model = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models[0], subject, version, model_type, project='cGAN_Model')
+model = Model_Storage.loadClassifyModels(subject, version, model_type, project='cGAN_Model')
 
 
 
@@ -162,8 +162,8 @@ accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(tes
 model_type = 'classify_compare'
 Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, result_set, model_type, project='cGAN_Model')
 acc, cm = Model_Storage.loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModel(models[0], subject, version, model_type, project='cGAN_Model')
-model = Model_Storage.loadClassifyModel(subject, version, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models[0], subject, version, model_type, project='cGAN_Model')
+model = Model_Storage.loadClassifyModels(subject, version, model_type, project='cGAN_Model')
 
 
 

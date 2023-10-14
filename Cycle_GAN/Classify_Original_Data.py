@@ -12,7 +12,7 @@ subject = 'Number4'
 version = 0  # the data from which experiment version to process
 model_type = 'Raw_Cnn2d'
 model_name = list(range(5))
-classify_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Insole_Emg')
+classify_models = Model_Storage.loadGanModels(subject, version, model_type, model_name, project='Insole_Emg')
 
 
 ## define windows

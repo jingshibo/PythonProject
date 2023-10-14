@@ -106,7 +106,7 @@ print(datetime.datetime.now() - now)
 ##  save trained gan models
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
-Model_Storage.saveModels(gan_models, subject, version, model_type, model_name, result_set, project='CycleGAN_Model')
+Model_Storage.saveGanModels(gan_models, subject, version, model_type, model_name, result_set, project='CycleGAN_Model')
 
 
 # ## generate new data
@@ -133,7 +133,7 @@ subject = 'Number4'
 version = 0  # the data from which experiment version to process
 model_type = 'Raw_Cnn2d'  # Note: it requires reordering=True when train this model, in order to match the order of gan-generated data
 model_name = list(range(5))
-classify_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='Insole_Emg')
+classify_models = Model_Storage.loadGanModels(subject, version, model_type, model_name, project='Insole_Emg')
 
 
 ## generate fake data
@@ -143,7 +143,7 @@ version = 1  # the data from which experiment version to process
 model_type = 'CycleGAN'
 model_name = ['gen_AB', 'gen_BA', 'disc_A', 'disc_B']
 batch_size = 8192
-gan_models = Model_Storage.loadModels(subject, version, model_type, model_name, project='CycleGAN_Model')
+gan_models = Model_Storage.loadGanModels(subject, version, model_type, model_name, project='CycleGAN_Model')
 
 ## load gan models at certain checkpoints
 checkpoint_folder_path = f'D:\Data\Generative_Model\subject_{subject}\Experiment_{version}\models\check_points'

@@ -10,7 +10,7 @@ import copy
 import numpy as np
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
-from Conditional_GAN.Models import Classify_Testing
+from Conditional_GAN.Models import Classify_Testing, Classify_TL_Training
 from Conditional_GAN.Data_Procesing import Process_Fake_Data
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
 
@@ -163,6 +163,13 @@ class cGAN_Evaluation:
     # train classify models
     def trainClassifier(self, shuffled_groups, num_epochs=50, batch_size=2048, decay_epochs=20, report_period=10):
         train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=report_period)
+        models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)
+        return models, model_results
+
+
+    # train classify models based on transfer learning
+    def trainTlClassifier(self, pretrained_models, shuffled_groups, num_epochs=50, batch_size=2048, decay_epochs=20, report_period=5):
+        train_model = Classify_TL_Training.ModelTraining(pretrained_models, num_epochs, batch_size, report_period=report_period)
         models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)
         return models, model_results
 
