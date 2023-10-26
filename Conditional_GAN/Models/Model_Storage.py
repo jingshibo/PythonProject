@@ -147,7 +147,7 @@ def saveClassifyModels(models, subject, version, model_type, model_number=None, 
     for number in model_number:
         # model path
         data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
-        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{number}.json'
+        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_group_{number}.json'
         model_path = os.path.join(data_dir, model_file)
         # save model
         torch.save(models[number].to("cpu"), model_path)
@@ -159,7 +159,7 @@ def loadClassifyModels(subject, version, model_type, model_number=None, project=
     # model path
     for number in model_number:
         data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
-        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{number}.json'
+        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_group_{number}.json'
         model_path = os.path.join(data_dir, model_file)
         # load model
         model = torch.load(model_path)

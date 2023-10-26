@@ -13,7 +13,7 @@ import math
 
 
 ## calculate the mean value of emg data to get average value of all channels/all repetitions/all channel and repetitions.
-def averageEmgValues(emg_values, split=True):
+def calcuAverageEmgValues(emg_values, split=True):
     emg_repetition_list = {}
     emg_channel_list = {}
     emg_event_mean = {}
@@ -35,7 +35,7 @@ def averageEmgValues(emg_values, split=True):
                 if gait_event_label not in emg_repetition_list[part_key]:
                     result_shape = (array.shape[0], len(gait_event_emg))
                     emg_repetition_list[part_key][gait_event_label] = np.zeros(result_shape)
-                emg_repetition_list[part_key][gait_event_label][:, i] = np.mean(part, axis=1)
+                emg_repetition_list[part_key][gait_event_label][:, i] = np.mean(part, axis=1)  # average value of all channels
 
         # Update emg_channel_list and emg_event_mean
         average_array = np.mean(np.stack(gait_event_emg), axis=0)
@@ -45,17 +45,17 @@ def averageEmgValues(emg_values, split=True):
             part_key = f'grid_{i + 1}'
             if part_key not in emg_channel_list:
                 emg_channel_list[part_key] = {}
-            emg_channel_list[part_key][gait_event_label] = part
+            emg_channel_list[part_key][gait_event_label] = part  # average value of all repetitions
             if part_key not in emg_event_mean:
                 emg_event_mean[part_key] = {}
-            emg_event_mean[part_key][gait_event_label] = np.mean(part, axis=1)
+            emg_event_mean[part_key][gait_event_label] = np.mean(part, axis=1)  # average value of all channels and all repetitions
 
     emg_mean_values = {'emg_repetition_list': emg_repetition_list, 'emg_channel_list': emg_channel_list, 'emg_event_mean': emg_event_mean}
 
     return emg_mean_values
 
 
-## plot the time series value of muliple columns from a locomotion mode
+## plot the time series value of muliple columns in subplots
 def plotAverageValue(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
     # Define the plotting parameters
     if layout is None:
@@ -144,6 +144,25 @@ def plotMultipleEventMeanValues(fake_data, real_data, modes, title=None, ylim=(0
         f'real_{modes[2]}': real_data['emg_event_mean'][grid][modes[2]],
         f'real_{modes[0]}': fake_data['emg_event_mean'][grid][modes[0]],
         f'real_{modes[1]}': fake_data['emg_event_mean'][grid][modes[1]]}
+    plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
+
+
+##  plot average emg values from main (all dynamic) locomotion modes
+def plotMainEventMeanValues(fake_data, real_data, title=None, ylim=(0, 0.5), grid='grid_1'):
+    mean_emg_to_plot = {f'fake_LWSA': fake_data['emg_event_mean'][grid]['emg_LWSA'],
+        f'real_LWSA': real_data['emg_event_mean'][grid]['emg_LWSA'],
+        f'fake_LWSD': fake_data['emg_event_mean'][grid]['emg_LWSD'],
+        f'real_LWSD': real_data['emg_event_mean'][grid]['emg_LWSD'],
+
+        f'fake_SALW': fake_data['emg_event_mean'][grid]['emg_SALW'],
+        f'real_SALW': real_data['emg_event_mean'][grid]['emg_SALW'],
+        f'fake_SDLW': fake_data['emg_event_mean'][grid]['emg_SDLW'],
+        f'real_SDLW': real_data['emg_event_mean'][grid]['emg_SDLW'],
+
+        f'real_LWLW': fake_data['emg_event_mean'][grid]['emg_LWLW'],
+        f'real_SASA': fake_data['emg_event_mean'][grid]['emg_SASA'],
+        f'real_SDSD': fake_data['emg_event_mean'][grid]['emg_SDSD']}
+
     plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
 
 

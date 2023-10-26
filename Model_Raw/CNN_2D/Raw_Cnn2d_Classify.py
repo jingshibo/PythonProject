@@ -51,7 +51,7 @@ now = datetime.datetime.now()
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups, feature_window_size,
     increment=feature_window_increment_ms * sample_rate)
 del cross_validation_groups
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize='scaling', limit=1500)
+normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize='z-score', limit=1500)
 del sliding_window_dataset
 shuffled_groups = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
 del normalized_groups

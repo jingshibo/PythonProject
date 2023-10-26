@@ -7,7 +7,9 @@ from Transition_Prediction.Pre_Processing import Preprocessing
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Cycle_GAN.Functions import Data_Processing
 from Conditional_GAN.Data_Procesing import Process_Fake_Data
+from scipy.ndimage import gaussian_filter
 import numpy as np
+import copy
 
 
 ## load raw data and filter them
@@ -28,7 +30,7 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
         emg_grid_selected = emg_preprocessed
     elif selected_grid == 'grid_1':
         emg_grid_selected = {key: [arr[:, :65] for arr in value] for key, value in emg_preprocessed.items()}
-    elif selected_grid == 'grid_2':
+    elif selected_grid == 'grid_2' and emg_preprocessed['emg_LWLW'][0].shape[1] > 65:
         emg_grid_selected = {key: [arr[:, 65:130] for arr in value] for key, value in emg_preprocessed.items()}
     else:
         raise Exception('selected wrong grids!')
@@ -37,16 +39,43 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
 
 
 ## normalize filtered data and reshape them to be images
-def normalizeReshapeEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)'):
+def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4):
     old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit, normalize=normalize)
     new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, range_limit=limit, normalize=normalize)
     num_samples = old_emg_normalized['emg_LWLW'][0].shape[0]
-    old_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(num_samples, 13, -1, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v]
-        for k, v in old_emg_normalized.items()}
-    new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(num_samples, 13, -1, 1), order='F'), (0, 3, 1, 2)).astype(np.float32) for arr in v]
-        for k, v in new_emg_normalized.items()}
-
+    old_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(num_samples, 13, -1, 1), order='F'), (0, 3, 1, 2)).
+        astype(np.float32) for arr in v] for k, v in old_emg_normalized.items()}
+    new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(num_samples, 13, -1, 1), order='F'), (0, 3, 1, 2)).
+        astype(np.float32) for arr in v] for k, v in new_emg_normalized.items()}
+    if spatial_filter:
+        old_emg_reshaped = spatialFilterEmgData(old_emg_reshaped, sigma=sigma, axes=axes, radius=radius)
+        new_emg_reshaped = spatialFilterEmgData(new_emg_reshaped, sigma=sigma, axes=axes, radius=radius)
+        old_emg_normalized = {k: [np.reshape(np.transpose(arr, (0, 2, 3, 1)), newshape=(num_samples, -1), order='F') for arr in v]
+        for k, v in old_emg_reshaped.items()}
+        new_emg_normalized = {k: [np.reshape(np.transpose(arr, (0, 2, 3, 1)), newshape=(num_samples, -1), order='F') for arr in v]
+        for k, v in new_emg_reshaped.items()}
     return old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped
+
+
+## spatial filtering images
+def spatialFilterEmgData(emg_reshaped, sigma=1, axes=(2, 3), radius=4):
+    '''
+    Performs Gaussian spatial filtering on EMG data.
+    emg_reshaped (numpy.array): The EMG data reshaped for spatial filtering. Shape should be (num_samples, num_channels, height, width).
+    sigma (int or float, default=1): The standard deviation of the Gaussian kernel. Defines the filter's spread.
+    axes (tuple, default=(2, 3)): The dimensions along which filtering will occur, typically the spatial dimensions.
+    radius (int, default=4): The truncation radius for the filter.
+    '''
+    filtered_emg_reshaped = copy.deepcopy(emg_reshaped)
+    for locomotion_mode, locomotion_data in emg_reshaped.items():
+        # Stack together all images in the list of the given locomotion mode
+        combined_image = np.vstack(locomotion_data)
+        # Apply gaussian filter (kernel size = sigma * truncate(default:4))
+        filtered_images = gaussian_filter(combined_image, sigma=sigma, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
+        # Splitting the combined image array back into a list of 60 images
+        split_images_list = [img for img in np.array_split(filtered_images, len(locomotion_data), axis=0)]
+        filtered_emg_reshaped[locomotion_mode] = split_images_list
+    return filtered_emg_reshaped
 
 
 ## extract the relevent modes for data generation and separate them by timepoint_interval

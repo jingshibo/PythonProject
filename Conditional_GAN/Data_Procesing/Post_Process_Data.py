@@ -2,7 +2,7 @@ import numpy as np
 from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data, Plot_Emg_Data, Dtw_Similarity
 import pandas as pd
 from scipy import ndimage
-
+from scipy import signal
 
 ## slice a piece of emg data from a given time period
 def sliceTimePeriod(emg_data, start, end):
@@ -48,8 +48,8 @@ def separateEmgGrids(emg_dict, separate=False):
     return emg_grids
 
 
-# median filtering each emg grid separately and then combine them into one again
-def medianFiltering(emg_data, size):
+## median filtering each emg grid separately and then combine them into one again
+def spatialFilterModelInput(emg_data, kernel):
     filtered_emg = {}
     # Loop through each key-value pair in the original dictionary
     for key, array_list in emg_data.items():
@@ -63,7 +63,8 @@ def medianFiltering(emg_data, size):
                 start_col = i * 65
                 end_col = (i + 1) * 65
                 sub_arr = arr[:, start_col:end_col]
-                filtered_sub_arr = pd.DataFrame(ndimage.median_filter(sub_arr, mode='nearest', size=size)).to_numpy()
+                # filtered_sub_arr = pd.DataFrame(ndimage.median_filter(sub_arr, mode='nearest', size=size)).to_numpy()
+                filtered_sub_arr = pd.DataFrame(ndimage.gaussian_filter(sub_arr, mode='reflect', sigma=kernel, axes=[0, 1])).to_numpy()
                 filtered_arr_parts.append(filtered_sub_arr)
             # Concatenate along columns to form the final filtered array
             filtered_arr = np.concatenate(filtered_arr_parts, axis=1)

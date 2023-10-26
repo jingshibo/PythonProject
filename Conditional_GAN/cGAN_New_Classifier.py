@@ -1,3 +1,7 @@
+'''
+    using conditional gan to generate transitional data and train the classifier from scratch based on sufficient new data
+'''
+
 ##
 import copy
 import datetime
@@ -15,39 +19,43 @@ envelope = True  # the output will always be rectified if set True
 
 
 ## read and filter old data
-subject = 'Number8'
+subject = 'Number1'
 version = 0  # the data from which experiment version to process
 modes = ['up_down_t0', 'down_up_t0']
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 5, 6]
-up_down_session = [5, 6, 7, 8, 9]
-down_up_session = [7, 8, 9, 10]
+# up_down_session = [5, 6, 7, 8, 9]
+# down_up_session = [7, 8, 9, 10]
+up_down_session = [0, 1, 2, 3, 4]
+down_up_session = [1, 2, 3, 4, 5]
 sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 # old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
 #     envelope_cutoff=envelope_cutoff, envelope=envelope)
 old_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_2')
+    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_1')
 
 
 # read and filter new data
 modes = ['up_down_t1', 'down_up_t1']
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [4, 5, 6, 8, 9]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [0, 1, 2, 3]
 up_down_session = [0, 1, 2, 3, 4]
-down_up_session = [0, 1, 2, 3]
+down_up_session = [1, 2, 3, 4, 5]
 sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 # new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
 #     envelope_cutoff=envelope_cutoff, envelope=envelope)
 new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_2')
+    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_1')
 
 
 ## normalize and extract emg data for gan model training
 range_limit = 2000
-old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify,
-    new_emg_data_classify, range_limit, normalize='(0,1)')
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify,
+    new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
@@ -85,12 +93,12 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
     'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'result_set': result_set,
     'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-now = datetime.datetime.now()
-results = {}
-for transition_type in modes_generation.keys():
-    gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
-    results[transition_type] = blending_factors
-print(datetime.datetime.now() - now)
+# now = datetime.datetime.now()
+# results = {}
+# for transition_type in modes_generation.keys():
+#     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
+#     results[transition_type] = blending_factors
+# print(datetime.datetime.now() - now)
 del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
 
 
@@ -115,7 +123,8 @@ gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, mo
 
 # normalize and extract emg data for classification model training
 old_emg_classify_normalized, new_emg_classify_normalized, old_emg_classify_reshaped, new_emg_classify_reshaped = \
-    Process_Raw_Data.normalizeReshapeEmgData(old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)')
+    Process_Raw_Data.normalizeFilterEmgData(
+    old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
 extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_classify_reshaped, new_emg_classify_reshaped,
     time_interval, length, output_list=False)
 
@@ -126,7 +135,8 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
 ## generate fake data
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450, endtime_after_toeoff_ms=400, feature_window_ms=450)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-synthetic_old_data = old_evaluation.generateFakeData(extracted_emg_classify, 'old', modes_generation, old_emg_classify_normalized)
+synthetic_old_data, fake_old_images = old_evaluation.generateFakeData(extracted_emg_classify, 'old', modes_generation, old_emg_classify_normalized,
+    spatial_filtering=True, sigma=1, axes=(2, 3), radius=4)
 # separate and store grids in a list if only use one grid later
 old_fake_emg_grids = Post_Process_Data.separateEmgGrids(synthetic_old_data, separate=True)
 old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normalized, separate=True)
@@ -143,8 +153,8 @@ sliced_old_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_old_real_d
 selected_old_fake_data = Dtw_Similarity.extractFakeData(sliced_old_fake_data, sliced_old_real_data, modes_generation, envelope_frequency=50,
     num_sample=60, num_reference=1, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
 # median filtering
-filtered_old_fake_data = Post_Process_Data.medianFiltering(selected_old_fake_data['fake_data_based_on_grid_1'], size=3)
-filtered_old_real_data = Post_Process_Data.medianFiltering(sliced_old_real_data, size=5)
+filtered_old_fake_data = Post_Process_Data.spatialFilterModelInput(selected_old_fake_data['fake_data_based_on_grid_1'], kernel=3)
+filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(sliced_old_real_data, kernel=5)
 del old_fake_emg_grids, old_real_emg_grids, processed_old_fake_data, processed_old_real_data, sliced_old_fake_data, sliced_old_real_data
 
 
@@ -165,8 +175,8 @@ modes = modes_generation[transition_type]
 # calculate average values
 # reference_old_data = {transition_type: [sliced_old_real_data[transition_type][index] for index in
 #     selected_old_fake_data['reference_index_based_on_grid_1'][transition_type]]}
-fake_old = Plot_Emg_Data.averageEmgValues(filtered_old_fake_data)
-real_old = Plot_Emg_Data.averageEmgValues(filtered_old_real_data)
+fake_old = Plot_Emg_Data.calcuAverageEmgValues(filtered_old_fake_data)
+real_old = Plot_Emg_Data.calcuAverageEmgValues(filtered_old_real_data)
 # reference_old = Plot_Emg_Data.averageEmgValues(reference_old_data)
 # plot values of certain transition type
 Plot_Emg_Data.plotMultipleEventMeanValues(fake_old, real_old, modes, title='old_emg_2_on_2', ylim=(0, 0.5))
@@ -197,7 +207,8 @@ model_old = Model_Storage.loadClassifyModels(subject, version, model_type, proje
 ## generate fake data
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450, endtime_after_toeoff_ms=400, feature_window_ms=450)
 new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-synthetic_new_data = new_evaluation.generateFakeData(extracted_emg_classify, 'new', modes_generation, new_emg_classify_normalized)
+synthetic_new_data, fake_new_images = new_evaluation.generateFakeData(extracted_emg_classify, 'new', modes_generation, new_emg_classify_normalized,
+    spatial_filtering=True, sigma=1, axes=(2, 3), radius=4)
 # separate and store grids in a list if only use one grid later
 new_fake_emg_grids = Post_Process_Data.separateEmgGrids(synthetic_new_data, separate=True)
 new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normalized, separate=True)
@@ -214,8 +225,8 @@ sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_d
 selected_new_fake_data = Dtw_Similarity.extractFakeData(sliced_new_fake_data, sliced_new_real_data, modes_generation, envelope_frequency=50,
     num_sample=60, num_reference=1, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
 # median filtering
-filtered_new_fake_data = Post_Process_Data.medianFiltering(selected_new_fake_data['fake_data_based_on_grid_1'], size=3)
-filtered_new_real_data = Post_Process_Data.medianFiltering(sliced_new_real_data, size=5)
+filtered_new_fake_data = Post_Process_Data.spatialFilterModelInput(selected_new_fake_data['fake_data_based_on_grid_1'], kernel=3)
+filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(sliced_new_real_data, kernel=5)
 del new_fake_emg_grids, new_real_emg_grids, processed_new_fake_data, processed_new_real_data, sliced_new_fake_data, sliced_new_real_data
 
 
@@ -236,8 +247,8 @@ modes = modes_generation[transition_type]
 # calculate average values
 # reference_new_data = {transition_type: [sliced_new_real_data[transition_type][index] for index in
 #     selected_new_fake_data['reference_index_based_on_grid_1'][transition_type]]}
-fake_new = Plot_Emg_Data.averageEmgValues(filtered_new_fake_data)
-real_new = Plot_Emg_Data.averageEmgValues(filtered_new_real_data)
+fake_new = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_fake_data)
+real_new = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_real_data)
 # reference_new = Plot_Emg_Data.averageEmgValues(reference_new_data)
 # plot values of certain transition type
 Plot_Emg_Data.plotMultipleEventMeanValues(fake_new, real_new, modes, title='new_emg_2_on_2', ylim=(0, 0.5))
@@ -278,8 +289,8 @@ processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_gr
 sliced_mix_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_mix_data, start=50, end=750)
 sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=50, end=750)
 # median filtering
-filtered_mix_data = Post_Process_Data.medianFiltering(sliced_mix_data, size=3)
-filtered_new_real_data = Post_Process_Data.medianFiltering(sliced_new_real_data, size=5)
+filtered_mix_data = Post_Process_Data.spatialFilterModelInput(sliced_mix_data, kernel=3)
+filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(sliced_new_real_data, kernel=5)
 del mix_old_emg_grids, new_real_emg_grids, processed_mix_data, processed_new_real_data, sliced_mix_data, sliced_new_real_data
 
 
@@ -298,8 +309,8 @@ accuracy_compare, cm_recall_compare = mix_evaluation.evaluateClassifyResults(tes
 transition_type = 'emg_LWSA'
 modes = modes_generation[transition_type]
 # calculate average values
-real_mix = Plot_Emg_Data.averageEmgValues(filtered_mix_data)
-real_new = Plot_Emg_Data.averageEmgValues(filtered_new_real_data)
+real_mix = Plot_Emg_Data.calcuAverageEmgValues(filtered_mix_data)
+real_new = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_real_data)
 # plot values of certain transition type
 Plot_Emg_Data.plotMultipleEventMeanValues(real_mix, real_new, modes, title='mix_emg_2', ylim=(0, 0.5))
 # Plot_Emg_Data.plotMultipleRepetitionValues(real_mix, real_new, None, modes, ylim=(0, 1))

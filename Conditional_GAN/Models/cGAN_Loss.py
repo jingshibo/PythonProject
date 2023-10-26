@@ -1,3 +1,8 @@
+'''
+    two different loss function for cGAN model training. The second one is more advanced and preferred
+'''
+
+##
 import torch
 
 

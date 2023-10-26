@@ -1,3 +1,7 @@
+'''
+    using a few newly available data at time1 to fine-train the model pretrained on old data at time0
+'''
+
 ##  import
 import torch
 import torch.nn as nn

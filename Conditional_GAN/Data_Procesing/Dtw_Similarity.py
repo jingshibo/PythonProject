@@ -117,8 +117,8 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
     synthetic_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, envelope_frequency) for key, value in synthetic_data.items()}
     old_emg_envelope = {key: Process_Fake_Data.clipSmoothEmgData(value, envelope_frequency) for key, value in real_data.items()}
     # calculate mean value across all channels for each repetition
-    fake_average = Plot_Emg_Data.averageEmgValues(synthetic_envelope, split=split_grids)
-    real_average = Plot_Emg_Data.averageEmgValues(old_emg_envelope, split=split_grids)
+    fake_average = Plot_Emg_Data.calcuAverageEmgValues(synthetic_envelope, split=split_grids)
+    real_average = Plot_Emg_Data.calcuAverageEmgValues(old_emg_envelope, split=split_grids)
 
     # create dtw distance object for calculation
     dtw_distance = Dtw_Distance(modes_generation, num_sample=num_sample, num_reference=num_reference)
@@ -127,7 +127,7 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
         # calculate the dtw distance based on each EMG grid
         dtw_results = dtw_distance.calcuDtwDistance(fake_average['emg_repetition_list'][grid_key],
             real_average['emg_repetition_list'][grid_key])
-        if method == 'select':  # select fake data closet to a selected reference
+        if method == 'select':  # select fake data closet to selected references
             selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data,
                 random_reference=random_reference)
         elif method == 'best':  # select fake data closet to all references

@@ -36,7 +36,7 @@ new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters
 
 ## normalize and extract emg data for gan model training
 range_limit = 1500
-old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeReshapeEmgData(old_emg_data, new_emg_data, range_limit)
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeFilterEmgData(old_emg_data, new_emg_data, range_limit)
 modes_generation = ['emg_LWLW', 'emg_SASA', 'emg_LWSA']
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
 time_interval = 50

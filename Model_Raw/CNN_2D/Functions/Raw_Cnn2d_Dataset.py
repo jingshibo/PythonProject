@@ -75,6 +75,8 @@ def combineNormalizedDataset(sliding_window_dataset, normalize='z-score', limit=
         elif normalize is None:  # no normalization
             train_feature_x = np.concatenate(train_feature_x, axis=-1)
             test_feature_x = np.concatenate(test_feature_x, axis=-1)
+        else:
+            raise Exception("wrong normalization method!")
 
         # one-hot encode categories (according to the alphabetical order)
         train_int_y = LabelEncoder().fit_transform(train_feature_y)

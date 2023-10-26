@@ -1,3 +1,7 @@
+'''
+    cGAN model where the generator is a Unet shape
+'''
+
 ##
 import torch
 from torch import nn

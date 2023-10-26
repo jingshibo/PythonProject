@@ -14,11 +14,11 @@ import copy
 
 
 ## input emg labelled series data
-subject = 'Number4'
+subject = 'Number1'
 version = 0  # the data from which experiment version to process
-modes = ['up_down', 'down_up']
+modes = ['up_down_t0', 'down_up_t0']
 up_down_session = [0, 1, 2, 3, 4]
-down_up_session = [0, 1, 2, 5, 6]
+down_up_session = [1, 2, 3, 4, 5]
 sessions = [up_down_session, down_up_session]
 
 lower_limit = 20
@@ -27,49 +27,49 @@ envelope_cutoff = 100
 envelope = True  # the output will always be rectified if set True
 
 # labelled emg series data
-split_parameters = Preprocessing.readSplitParameters(subject, version)
+split_parameters = Preprocessing.readSplitParameters(subject, version, project='cGAN_Model')
 # combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-700,
 #     end_position=800, lower_limit=20, higher_limit=400, envelope_cutoff=400, notchEMG=False, median_filtering=True, reordering=True,
 #     envelope=True)
 # old_emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-900,
     end_position=800, lower_limit=lower_limit, higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, notchEMG=False,
-    median_filtering=True, reordering=True, envelope=envelope)
+    median_filtering=True, reordering=True, envelope=envelope, project='cGAN_Model')
 old_emg_envelope = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
 ## read and filter new data
-subject = 'Number5'
+subject = 'Number1'
 version = 0  # the data from which experiment version to process
-modes = ['up_down', 'down_up']
-up_down_session = [5, 6, 7, 8, 9]
-down_up_session = [4, 5, 6, 8, 9]
+modes = ['up_down_t1', 'down_up_t1']
+up_down_session = [0, 1, 2, 3, 4]
+down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [0]
 # down_up_session = [0]
 sessions = [up_down_session, down_up_session]
 
 # labelled emg series data
-split_parameters = Preprocessing.readSplitParameters(subject, version)
+split_parameters = Preprocessing.readSplitParameters(subject, version, project='cGAN_Model')
 # combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-1000,
 #     end_position=800, lower_limit=20, higher_limit=400, envelope_cutoff=400, notchEMG=False, median_filtering=True, reordering=True,
 #     envelope=True)
 # new_emg_preprocessed = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 combined_emg_labelled = Preprocessing.labelFilteredData(subject, modes, sessions, version, split_parameters, start_position=-900,
     end_position=800, lower_limit=lower_limit, higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, notchEMG=False,
-    median_filtering=True, reordering=True, envelope=envelope)
+    median_filtering=True, reordering=True, envelope=envelope, project='cGAN_Model')
 new_emg_envelope = Data_Preparation.removeSomeSamples(combined_emg_labelled)
 
 
 ## calculate average values
-old_emg_value = Plot_Emg_Data.averageEmgValues(old_emg_envelope)
-new_emg_value = Plot_Emg_Data.averageEmgValues(new_emg_envelope)
+old_emg_value = Plot_Emg_Data.calcuAverageEmgValues(old_emg_envelope)
+new_emg_value = Plot_Emg_Data.calcuAverageEmgValues(new_emg_envelope)
 # Plot using a single line of code
-Plot_Emg_Data.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWLW", title='old_emg_LWLW', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_SASA", title='old_emg_SASA', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageValue(old_emg_value['emg_1_repetition_list'], "emg_LWSA", title='old_emg_LWSA', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWLW", title='new_emg_LWLW', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_SASA", title='new_emg_SASA', ylim=(0, 1000))
-Plot_Emg_Data.plotAverageValue(new_emg_value['emg_1_repetition_list'], "emg_LWSA", title='new_emg_LWSA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(old_emg_value['emg_repetition_list']['grid_1']['emg_LWLW'], title='old_emg_LWLW', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(old_emg_value['emg_repetition_list']['grid_1']['emg_SASA'], title='old_emg_SASA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(old_emg_value['emg_repetition_list']['grid_1']['emg_LWSA'], title='old_emg_LWSA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(new_emg_value['emg_repetition_list']['grid_1']['emg_LWLW'], title='new_emg_LWLW', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(new_emg_value['emg_repetition_list']['grid_1']['emg_SASA'], title='new_emg_SASA', ylim=(0, 1000))
+Plot_Emg_Data.plotAverageValue(new_emg_value['emg_repetition_list']['grid_1']['emg_LWSA'], title='new_emg_LWSA', ylim=(0, 1000))
 
 
 ## plot average channel value in a single plot

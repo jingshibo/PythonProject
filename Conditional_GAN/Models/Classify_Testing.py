@@ -1,5 +1,5 @@
 '''
-This is a complete code including the use of Tensorboard. The training and test results are reported every 10 epoches,
+    using trained model to classify the test set
 '''
 
 ##  import

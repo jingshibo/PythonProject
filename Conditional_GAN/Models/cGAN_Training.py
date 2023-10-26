@@ -1,3 +1,8 @@
+'''
+    cGAN model training program
+'''
+
+##
 import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
@@ -83,8 +88,8 @@ class ModelTraining():
         # criterion = nn.MSELoss()
         # self.loss_fn = cGAN_Loss.LossFunction(criterion)
         c_lambda = 10  # the weight of the gradient penalty
-        var_weight = 0.01  # the weight of blending factor variance
-        construct_weight = 5  # the weight of constructed critic value
+        var_weight = 0.02  # the weight of blending factor variance
+        construct_weight = 0.5  # the weight of constructed critic value
         factor_1_weight = 0  # the weight of blending factor 1
         factor_2_weight = 0  # the weight of blending factor 2
         factor_3_weight = 0  # the weight of blending factor 3
