@@ -11,8 +11,9 @@ import numpy as np
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
 from Conditional_GAN.Models import Classify_Testing, Classify_TL_Training
-from Conditional_GAN.Data_Procesing import Process_Fake_Data
+from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data
 from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset, Raw_Cnn2d_Model
+from Cycle_GAN.Functions import Data_Processing
 
 
 ##
@@ -30,7 +31,8 @@ class cGAN_Evaluation:
 
 
     # generate fake emg data and substitute original emg dataset using this data
-    def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, repetition=1, random_pairing=True):
+    def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, repetition=1, random_pairing=True,
+            spatial_filtering=True, sigma=1, axes=(2, 3), radius=4):
         '''
             :param data_source: selected from 'old' and 'new'
             :param modes_generation: such as  {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}.
@@ -43,6 +45,8 @@ class cGAN_Evaluation:
         synthetic_data = copy.deepcopy(real_emg_normalized)
         data_for_generation = {'gen_data_1': None, 'gen_data_2': None, 'blending_factors': None}
 
+        fake_emg_images = {}
+        fake_emg_reorganized = {}
         for transition_type, modes in modes_generation.items():
             # create data_for_generation dict
             data_for_generation['gen_data_1'] = Process_Fake_Data.separateByInterval(
@@ -54,11 +58,23 @@ class cGAN_Evaluation:
             fake_data = Process_Fake_Data.generateFakeDataByCurve(data_for_generation,  # only the first parameter is useful
                 self.gen_results[transition_type]['training_parameters']['interval'], repetition=repetition, random_pairing=random_pairing)
             reorganized_fake_data = Process_Fake_Data.reorganizeFakeData(fake_data)
-            # create synthetic training data
-            fake_emg_data = {transition_type: reorganized_fake_data}
-            synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_data, synthetic_data)
+            emg_reshaped = [np.transpose(np.reshape(arr, newshape=(arr.shape[0], 13, -1, 1), order='F'), (0, 3, 1, 2)) for arr in
+                reorganized_fake_data]  # convert emg to images
 
-        return synthetic_data
+            # spatial filter fake data
+            if spatial_filtering:
+                filtered_fake_emg_images = Process_Raw_Data.spatialFilterEmgData({transition_type: emg_reshaped},
+                    sigma=sigma, axes=axes, radius=radius)
+                fake_emg_reorganized[transition_type] = [np.reshape(np.transpose(arr, (0, 2, 3, 1)), newshape=(arr.shape[0], -1), order='F')
+                    for arr in filtered_fake_emg_images[transition_type]]
+                fake_emg_images[transition_type] = filtered_fake_emg_images[transition_type]
+            else:
+                fake_emg_reorganized[transition_type] = reorganized_fake_data
+                fake_emg_images[transition_type] = emg_reshaped
+
+
+        synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_reorganized, synthetic_data)
+        return synthetic_data, fake_emg_images
 
 
     # generate fake data by adding noise to reference real emg data and substitute original emg dataset using this data
@@ -94,7 +110,7 @@ class cGAN_Evaluation:
 
     # extract reference real emg data from the real dataset and remove them from the real dataset
     def addressReferenceData(self, reference_indices, filtered_real_data):
-        # Filtering the data based on reference_indices
+        # selecting the data based on reference_indices
         reference_new_real_data = {}
         adjusted_new_real_data = copy.deepcopy(filtered_real_data)
         for key, indices in reference_indices.items():
@@ -161,14 +177,14 @@ class cGAN_Evaluation:
 
 
     # train classify models
-    def trainClassifier(self, shuffled_groups, num_epochs=50, batch_size=2048, decay_epochs=20, report_period=10):
+    def trainClassifier(self, shuffled_groups, num_epochs=50, batch_size=1800, decay_epochs=20, report_period=10):
         train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size, report_period=report_period)
         models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)
         return models, model_results
 
 
     # train classify models based on transfer learning
-    def trainTlClassifier(self, pretrained_models, shuffled_groups, num_epochs=50, batch_size=2048, decay_epochs=20, report_period=5):
+    def trainTlClassifier(self, pretrained_models, shuffled_groups, num_epochs=50, batch_size=1800, decay_epochs=20, report_period=10):
         train_model = Classify_TL_Training.ModelTraining(pretrained_models, num_epochs, batch_size, report_period=report_period)
         models, model_results = train_model.trainModel(shuffled_groups, decay_epochs)
         return models, model_results
@@ -180,6 +196,13 @@ class cGAN_Evaluation:
         test_result = test_model.testModel(shuffled_test_set)
         return test_result
 
+    # def evaluateClassifyResults(self, model_results):
+    #     sliding_majority_vote = Sliding_Ann_Results.majorityVoteResults(model_results, self.feature_window_per_repetition,
+    #         self.predict_window_shift_unit, self.predict_using_window_number, initial_start=0)
+    #     accuracy_allgroup, cm_allgroup = Data_Processing.slidingMvResults(sliding_majority_vote)
+    #     average_accuracy_with_delay, average_cm_recall_with_delay = Data_Processing.averageAccuracyCm(accuracy_allgroup, cm_allgroup,
+    #         self.feature_window_increment_ms, self.predict_window_shift_unit)
+    #     return average_accuracy_with_delay, average_cm_recall_with_delay
 
     # calculate classification accuracy
     def evaluateClassifyResults(self, model_results):
@@ -192,6 +215,7 @@ class cGAN_Evaluation:
         accuracy, cm_recall = Sliding_Ann_Results.getAccuracyCm(overall_accuracy_with_delay, sum_cm_with_delay,
             self.feature_window_increment_ms, self.predict_window_shift_unit)
         return accuracy, cm_recall
+
 
 
 

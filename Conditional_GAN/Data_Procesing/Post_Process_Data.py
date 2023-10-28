@@ -3,20 +3,27 @@ from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data, 
 import pandas as pd
 from scipy import ndimage
 from scipy import signal
+import cv2
 
 ## slice a piece of emg data from a given time period
-def sliceTimePeriod(emg_data, start, end):
-    if start == 0 and end == 850:
-        sliced_emg_data = emg_data  # return the original data (without copying) to save memory space
-    else:
-        sliced_emg_data = {}
-        # Loop through each key-value pair in the original dictionary
-        for key, array_list in emg_data.items():
-            # Loop through each array in the list and select only the first 65 columns
-            sliced_emg_data[key] = [np.copy(arr[start:end, :]) for arr in array_list]  # the slices are views into the original data,
-            # not copies.
-    window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450 - start, endtime_after_toeoff_ms=end - 450,
-        feature_window_ms=450 - start)
+def sliceTimePeriod(emg_data, start, end, toeoff):
+    '''
+
+    :param emg_data:
+    :param start:
+    :param end:
+    :param toeoff: the toeoff
+    :return:
+    '''
+    sliced_emg_data = {}
+    # Loop through each key-value pair in the original dictionary
+    for key, array_list in emg_data.items():
+        # Loop through each array in the list and select only the first 65 columns
+        sliced_emg_data[key] = [np.copy(arr[start:end, :]) for arr in array_list]  # the slices are views into the original data,
+        # not copies.
+    window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start, endtime_after_toeoff_ms=end - toeoff,
+        feature_window_ms=toeoff - start, predict_window_ms=toeoff - start)
+
     return sliced_emg_data, window_parameters
 
 

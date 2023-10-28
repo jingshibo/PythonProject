@@ -29,7 +29,7 @@ def loadEmgFeature(subject, version, feature_set):
 
 
 ## abandon samples from some modes
-def removeSomeSamples(emg_all_data, start_index=0, end_index=-1, is_down_sampling=False):
+def removeSomeSamples(emg_all_data, start_index=0, end_index=-1, is_down_sampling=False, standing=True):
     emg_selected_data = copy.deepcopy(emg_all_data)
 
     # check if emg_features is raw data or feature data
@@ -45,6 +45,14 @@ def removeSomeSamples(emg_all_data, start_index=0, end_index=-1, is_down_samplin
     emg_selected_data.pop(f'emg_SD{string}', None)
     emg_selected_data.pop(f'emg_SA{string}', None)
     emg_selected_data.pop(f'emg_SSSS{string}', None)
+
+    if standing is False:  # not including the standing related modes
+        emg_selected_data.pop(f'emg_LWSS{string}', None)
+        emg_selected_data.pop(f'emg_SDSS{string}', None)
+        emg_selected_data.pop(f'emg_SASS{string}', None)
+        emg_selected_data.pop(f'emg_SSLW{string}', None)
+        emg_selected_data.pop(f'emg_SSSD{string}', None)
+        emg_selected_data.pop(f'emg_SSSA{string}', None)
 
     # remove some feature data from each repetition
     if end_index != -1:  # no sample is removed if end_index != -1'

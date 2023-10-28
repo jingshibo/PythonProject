@@ -1,3 +1,9 @@
+'''
+    four different methods to build dataset for cGAN model training
+'''
+
+
+##
 import random
 import torch
 from torch.utils.data import Dataset
@@ -237,7 +243,7 @@ class FixedMixEmgDataSet(Dataset):
 
 class RandomMixEmgDataSet(Dataset):
     """
-       Custom Dataset class for GAN training. Each poach has different samples as new data are resampled randomly for every epoch.
+       Custom Dataset class for GAN training. Each epoch has different samples as new data are resampled randomly for every epoch.
        'Mix' means all data in a single batch come from different time point.
        Notes:
        - Each key in the datasets corresponds to a unique 4D tensor.
@@ -301,15 +307,15 @@ class RandomMixEmgDataSet(Dataset):
         tensor_idx_1 = random.randint(0, len(gen_tensor_1_list) - 1)
         tensor_1 = gen_tensor_1_list[tensor_idx_1]
         # Sample a data slice from the selected tensor
-        sample_idx = random.randint(0, tensor_1.shape[0] - 1)  # Randomly pick a sample index
+        sample_idx = random.randint(0, tensor_1.shape[0] - 1)  # Randomly pick a sample index(time point)
         gen_sample_1 = tensor_1[sample_idx]
 
-        # For gen_data_2, we can pick any tensor but must use the same sample index
+        # For gen_data_2, we can pick any tensor but must use the same sample index(time point)
         tensor_idx_2 = random.randint(0, len(gen_tensor_2_list) - 1)
         tensor_2 = gen_tensor_2_list[tensor_idx_2]
         gen_sample_2 = tensor_2[sample_idx]
 
-        # For disc_data, we can pick any tensor but must use the same sample index
+        # For disc_data, we can pick any tensor but must use the same sample index(time point)
         tensor_idx_3 = random.randint(0, len(disc_tensor_list) - 1)
         tensor_3 = disc_tensor_list[tensor_idx_3]
         disc_sample = tensor_3[sample_idx]

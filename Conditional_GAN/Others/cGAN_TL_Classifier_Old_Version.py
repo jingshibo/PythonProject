@@ -71,7 +71,7 @@ new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_p
 
 
 ## normalize and extract emg data for gan model training
-range_limit = 1500
+range_limit = 2000
 old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify,
     new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
@@ -102,7 +102,7 @@ checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{versi
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
 model_name = ['gen', 'disc']
-gan_result_set = 1
+gan_result_set = 0
 
 
 ## train and save gan models for multiple transitions
@@ -111,12 +111,12 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
     'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name,
     'result_set': gan_result_set, 'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-now = datetime.datetime.now()
-results = {}
-for transition_type in modes_generation.keys():
-    gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
-    results[transition_type] = blending_factors
-print(datetime.datetime.now() - now)
+# now = datetime.datetime.now()
+# results = {}
+# for transition_type in modes_generation.keys():
+#     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
+#     results[transition_type] = blending_factors
+# print(datetime.datetime.now() - now)
 del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
 
 
@@ -148,8 +148,8 @@ gen_results = Model_Storage.loadBlendingFactors(subject, version, gan_result_set
     epoch_number=epoch_number)
 # normalize and extract emg data for classification model training
 old_emg_classify_normalized, new_emg_classify_normalized, old_emg_classify_reshaped, new_emg_classify_reshaped = \
-    Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)',
-        spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
+    Process_Raw_Data.normalizeFilterEmgData(
+    old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
 extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_classify_reshaped, new_emg_classify_reshaped,
     time_interval, length, output_list=False)
 del old_emg_classify_reshaped, new_emg_classify_reshaped
@@ -165,41 +165,41 @@ classifier_result_set = 0
 '''
     train classifier (basic scenarios), training and testing data from the same and different time
 '''
-# ## original dataset
-# old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normalized, separate=True)
-# new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normalized, separate=True)
-# processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_1'], filtering=False, modes=None)
-# processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_1'], filtering=False, modes=None)
-# sliced_old_real_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_old_real_data, start=start_index, end=end_index)
-# sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=start_index, end=end_index)
-# del old_real_emg_grids, new_real_emg_grids, processed_old_real_data, processed_new_real_data
-#
-# ## classification
-# basis_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-# train_set, shuffled_train_set = basis_evaluation.classifierTrainSet(sliced_old_real_data, dataset='cross_validation_set')
-# models_basis, model_result_best = basis_evaluation.trainClassifier(shuffled_train_set)
-# accuracy_best, cm_recall_best = basis_evaluation.evaluateClassifyResults(model_result_best)  # training and testing data from the same time
-# # test classifier
-# cross_validation_groups = Data_Preparation.crossValidationSet(5, sliced_new_real_data)
-# sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups,
-#     window_parameters['feature_window_size'], increment=window_parameters['feature_window_increment_ms'] * window_parameters['sample_rate'])
-# normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-# shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-# test_results = basis_evaluation.testClassifier(models_basis, shuffled_test_set)
-# accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
-# del sliced_old_real_data, sliced_new_real_data, train_set, shuffled_train_set, cross_validation_groups, sliding_window_dataset, \
-#     normalized_groups, shuffled_test_set
-#
-# ## save results
-# model_type = 'classify_best'
-# Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, classifier_result_set, model_type, project='cGAN_Model')
-# accuracy_best, cm_recall_best = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
-# model_type = 'classify_worst'
-# Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, classifier_result_set, model_type, project='cGAN_Model')
-# accuracy_worst, cm_recall_worst = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
-# model_type = 'classify_basis'
-# Model_Storage.saveClassifyModels(models_basis, subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
-# models_basis = Model_Storage.loadClassifyModels(subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
+## original dataset
+old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normalized, separate=True)
+new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normalized, separate=True)
+processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_1'], filtering=False, modes=None)
+processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_1'], filtering=False, modes=None)
+sliced_old_real_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_old_real_data, start=start_index, end=end_index)
+sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=start_index, end=end_index)
+del old_real_emg_grids, new_real_emg_grids, processed_old_real_data, processed_new_real_data
+
+## classification
+basis_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+train_set, shuffled_train_set = basis_evaluation.classifierTrainSet(sliced_old_real_data, dataset='cross_validation_set')
+models_basis, model_result_best = basis_evaluation.trainClassifier(shuffled_train_set)
+accuracy_best, cm_recall_best = basis_evaluation.evaluateClassifyResults(model_result_best)  # training and testing data from the same time
+# test classifier
+cross_validation_groups = Data_Preparation.crossValidationSet(5, sliced_new_real_data)
+sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups,
+    window_parameters['feature_window_size'], increment=window_parameters['feature_window_increment_ms'] * window_parameters['sample_rate'])
+normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
+shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
+test_results = basis_evaluation.testClassifier(models_basis, shuffled_test_set)
+accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
+del sliced_old_real_data, sliced_new_real_data, train_set, shuffled_train_set, cross_validation_groups, sliding_window_dataset, \
+    normalized_groups, shuffled_test_set
+
+## save results
+model_type = 'classify_best'
+Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, classifier_result_set, model_type, project='cGAN_Model')
+accuracy_best, cm_recall_best = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
+model_type = 'classify_worst'
+Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, classifier_result_set, model_type, project='cGAN_Model')
+accuracy_worst, cm_recall_worst = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
+model_type = 'classify_basis'
+Model_Storage.saveClassifyModels(models_basis, subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
+models_basis = Model_Storage.loadClassifyModels(subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
 
 
 
@@ -225,10 +225,10 @@ del old_fake_emg_grids, old_real_emg_grids, processed_old_fake_data, processed_o
 
 ## select representative fake data for classification model training
 selected_old_fake_data = Dtw_Similarity.extractFakeData(sliced_old_fake_data, sliced_old_real_data, modes_generation, envelope_frequency=50,
-    num_sample=60, num_reference=30, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
+    num_sample=60, num_reference=10, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
 # median filtering
-filtered_old_fake_data = Post_Process_Data.spatialFilterModelInput(selected_old_fake_data['fake_data_based_on_grid_1'], kernel=15)
-filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(sliced_old_real_data, kernel=15)
+filtered_old_fake_data = Post_Process_Data.spatialFilterModelInput(selected_old_fake_data['fake_data_based_on_grid_1'], kernel=5)
+filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(sliced_old_real_data, kernel=5)
 # del sliced_old_fake_data, sliced_old_real_data
 
 ## classification
@@ -243,7 +243,7 @@ accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_result
 del train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## plotting fake and real emg data for comparison
-transition_type = 'emg_SALW'
+transition_type = 'emg_SDLW'
 modes = modes_generation[transition_type]
 # calculate average values
 # reference_old_data = {transition_type: [sliced_old_real_data[transition_type][index] for index in
@@ -262,7 +262,6 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_old, real_old, modes, title='old_
 # old_fake_envelope_index = selected_old_fake_data['fake_index_based_on_grid_1']['emg_LWSA'][1]
 # old_real_envelope_index = selected_old_fake_data['reference_index_based_on_grid_1']['emg_LWSA'][0]
 # Dtw_Similarity.plotDtwPath(old_fake_envelopes, old_real_envelopes, old_fake_envelope_index, old_real_envelope_index)
-Plot_Emg_Data.plotMainEventMeanValues(fake_old, real_old, title='old_main_emg', ylim=(0, 0.5), grid='grid_1')
 
 ## save results
 model_type = 'classify_old'
@@ -295,10 +294,10 @@ del new_fake_emg_grids, new_real_emg_grids, processed_new_fake_data, processed_n
 
 ## select representative fake data for classification model training
 selected_new_fake_data = Dtw_Similarity.extractFakeData(sliced_new_fake_data, sliced_new_real_data, modes_generation, envelope_frequency=50,
-    num_sample=60, num_reference=30, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
+    num_sample=60, num_reference=1, method='select', random_reference=False, split_grids=True) # 50Hz remove huge oscillation while maintain some extent variance
 # median filtering
-filtered_new_fake_data = Post_Process_Data.spatialFilterModelInput(selected_new_fake_data['fake_data_based_on_grid_1'], kernel=15)
-filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(sliced_new_real_data, kernel=15)
+filtered_new_fake_data = Post_Process_Data.spatialFilterModelInput(selected_new_fake_data['fake_data_based_on_grid_1'], kernel=3)
+filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(sliced_new_real_data, kernel=5)
 del sliced_new_fake_data, sliced_new_real_data
 
 ## classification

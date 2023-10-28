@@ -14,14 +14,15 @@ import copy
 
 ## load raw data and filter them
 def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400, envelope_cutoff=10, envelope=False,
-        project='Insole_Emg', selected_grid='all'):
+        project='Insole_Emg', selected_grid='all', include_standing=True):
     split_parameters = Preprocessing.readSplitParameters(data_source['subject'], data_source['version'], project=project)
     emg_filtered_data = Preprocessing.labelFilteredData(data_source['subject'], data_source['modes'],
         data_source['sessions'], data_source['version'], split_parameters, project=project,
         start_position=-int(window_parameters['start_before_toeoff_ms'] * (2 / window_parameters['sample_rate'])),
         end_position=int(window_parameters['endtime_after_toeoff_ms'] * (2 / window_parameters['sample_rate'])), lower_limit=lower_limit,
         higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, envelope=envelope, notchEMG=False, median_filtering=True, reordering=True)
-    emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=window_parameters['down_sampling'])
+    emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=window_parameters['down_sampling'],
+        standing=include_standing)
     for key in emg_preprocessed.keys():    # Convert all float64 arrays to float32
         emg_preprocessed[key] = [arr.astype('float32') for arr in emg_preprocessed[key]]
 
@@ -38,8 +39,8 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
     return emg_grid_selected
 
 
-## normalize filtered data and reshape them to be images
-def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4):
+## normalize and reshape them to be images, then spatial filtering the images if needed
+def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=None):
     old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit, normalize=normalize)
     new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, range_limit=limit, normalize=normalize)
     num_samples = old_emg_normalized['emg_LWLW'][0].shape[0]
@@ -61,7 +62,7 @@ def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, no
 def spatialFilterEmgData(emg_reshaped, sigma=1, axes=(2, 3), radius=4):
     '''
     Performs Gaussian spatial filtering on EMG data.
-    emg_reshaped (numpy.array): The EMG data reshaped for spatial filtering. Shape should be (num_samples, num_channels, height, width).
+    emg_reshaped: The EMG data reshaped for spatial filtering. each array should be (num_samples, num_channels, height, width).
     sigma (int or float, default=1): The standard deviation of the Gaussian kernel. Defines the filter's spread.
     axes (tuple, default=(2, 3)): The dimensions along which filtering will occur, typically the spatial dimensions.
     radius (int, default=4): The truncation radius for the filter.
@@ -69,13 +70,37 @@ def spatialFilterEmgData(emg_reshaped, sigma=1, axes=(2, 3), radius=4):
     filtered_emg_reshaped = copy.deepcopy(emg_reshaped)
     for locomotion_mode, locomotion_data in emg_reshaped.items():
         # Stack together all images in the list of the given locomotion mode
-        combined_image = np.vstack(locomotion_data)
+        combined_images = np.vstack(locomotion_data)
         # Apply gaussian filter (kernel size = sigma * truncate(default:4))
-        filtered_images = gaussian_filter(combined_image, sigma=sigma, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
+        filtered_images = gaussian_filter(combined_images, sigma=sigma, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
         # Splitting the combined image array back into a list of 60 images
         split_images_list = [img for img in np.array_split(filtered_images, len(locomotion_data), axis=0)]
         filtered_emg_reshaped[locomotion_mode] = split_images_list
     return filtered_emg_reshaped
+
+
+## spatial filtering images
+def spatialFilterBlendingFactors(gen_results, sigma=1, axes=(2, 3), radius=4):
+    '''
+    Performs Gaussian spatial filtering on EMG data.
+    gen_results: The blending factors for spatial filtering. each array should be (num_samples, num_channels, height, width).
+    sigma (int or float, default=1): The standard deviation of the Gaussian kernel. Defines the filter's spread.
+    axes (tuple, default=(2, 3)): The dimensions along which filtering will occur, typically the spatial dimensions.
+    radius (int, default=4): The truncation radius for the filter.
+    '''
+    filtered_gen_results = copy.deepcopy(gen_results)
+    for locomotion_mode, locomotion_data in gen_results.items():
+        blending_factors = locomotion_data['model_results']
+        # Sort keys based on the timepoint value
+        sorted_keys = sorted(blending_factors.keys(), key=lambda x: int(x.split('_')[1]))
+        # Stack arrays from sorted keys
+        combined_images = np.vstack([blending_factors[key] for key in sorted_keys])
+        # Apply gaussian filter (kernel size = sigma * truncate(default:4))
+        filtered_images = gaussian_filter(combined_images, sigma=sigma, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
+        # Splitting the combined image array back into a list of 60 images
+        for idx, key in enumerate(sorted_keys):
+            filtered_gen_results[locomotion_mode]['model_results'][key] = filtered_images[idx, :, :, :].reshape(1, 2, 13, 5)
+    return filtered_gen_results
 
 
 ## extract the relevent modes for data generation and separate them by timepoint_interval
@@ -101,12 +126,12 @@ def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped,
 
 
 ## get window parameters for gan and classify model training
-def returnWindowParameters(start_before_toeoff_ms, endtime_after_toeoff_ms, feature_window_ms):
+def returnWindowParameters(start_before_toeoff_ms, endtime_after_toeoff_ms, feature_window_ms, predict_window_ms):
     down_sampling = True
     start_before_toeoff_ms = start_before_toeoff_ms
     endtime_after_toeoff_ms = endtime_after_toeoff_ms
     feature_window_ms = feature_window_ms
-    predict_window_ms = start_before_toeoff_ms
+    predict_window_ms = predict_window_ms
     sample_rate = 1 if down_sampling is True else 2
     predict_window_size = predict_window_ms * sample_rate
     feature_window_size = feature_window_ms * sample_rate

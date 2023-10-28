@@ -6,7 +6,6 @@ save the alignment results into disk for later use
 """
 
 ## import modules
-import copy
 import os
 import pandas as pd
 import datetime
@@ -15,10 +14,10 @@ from Transition_Prediction.RawData.Utility_Functions import Insole_Emg_Alignment
 
 ## initialization
 project = 'cGAN_Model'
-subject = 'Number7'
+subject = 'Number2'
 version = 0
 mode = 'down_up_t1'
-session = 3
+session = 10
 
 if project == 'Insole_Emg':
     data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\raw_{mode}'
@@ -68,6 +67,8 @@ elif project == 'cGAN_Model':
     # raw_emg_data = pd.read_csv(emg_path, sep=',', header=None, dtype='int16', converters={0: str, 1: str, 2: str})  # change data type for faster reading
     # wrong_timestamp = Insole_Emg_Recovery.findLostEmgData(raw_emg_data)
     # recovered_emg_data = raw_emg_data
+else:
+    raise Exception('Wrong Project!')
 print(datetime.datetime.now() - now)
 
 
@@ -150,9 +151,9 @@ Insole_Emg_Alignment.saveAlignedData(subject, session, mode, version, left_insol
 
 
 ## read alignment parameters
-right_start, left_start, right_end, left_end, emg_start, emg_end = Insole_Emg_Alignment.readAlignParameters(subject, session, mode, version,
-    project=project)
-print(right_start, left_start, right_end, left_end, emg_start, emg_end)
+right_start_index, left_start_index, right_end_index, left_end_index, emg_start_index, emg_end_index = \
+    Insole_Emg_Alignment.readAlignParameters(subject, session, mode, version, project=project)
+print(right_start_index, left_start_index, right_end_index, left_end_index, emg_start_index, emg_end_index)
 
 
 ## align insole and EMG based on timestamps (if there is no sync force to use)
