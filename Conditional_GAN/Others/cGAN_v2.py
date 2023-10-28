@@ -103,7 +103,7 @@ models, model_results = old_evaluation.trainClassifier(shuffled_train_set)
 ## test classifier
 shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, old_emg_normalized, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models[0], shuffled_test_set)
-accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
+accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResultsByGroup(test_results)
 
 ## save results
 model_type = 'classify_old'
@@ -130,7 +130,7 @@ models, model_results = new_evaluation.trainClassifier(shuffled_train_set)
 ## test classifier
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models[0], shuffled_test_set)
-accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
+accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResultsByGroup(test_results)
 
 ## save results
 model_type = 'classify_new'
@@ -156,7 +156,7 @@ models, model_results = new_evaluation.trainClassifier(shuffled_train_set)
 ## test classifier
 shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, new_emg_normalized, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models[0], shuffled_test_set)
-accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResults(test_results)
+accuracy_compare, cm_recall_compare = new_evaluation.evaluateClassifyResultsByGroup(test_results)
 
 ## save results
 model_type = 'classify_compare'

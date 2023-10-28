@@ -6,14 +6,11 @@ from scipy import signal
 import cv2
 
 ## slice a piece of emg data from a given time period
-def sliceTimePeriod(emg_data, start, end, toeoff):
+def sliceTimePeriod(emg_data, start, end, toeoff, sliding_results=True):
     '''
-
-    :param emg_data:
-    :param start:
-    :param end:
-    :param toeoff: the toeoff
-    :return:
+    :param start: the start index relative to the start of the original extracted data
+    :param end: the end index relative to the start of the original extracted data
+    :param toeoff: the time point of toe-off relative to the start of the original extracted data (not relative to the start parameter here)
     '''
     sliced_emg_data = {}
     # Loop through each key-value pair in the original dictionary
@@ -21,9 +18,12 @@ def sliceTimePeriod(emg_data, start, end, toeoff):
         # Loop through each array in the list and select only the first 65 columns
         sliced_emg_data[key] = [np.copy(arr[start:end, :]) for arr in array_list]  # the slices are views into the original data,
         # not copies.
-    window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start, endtime_after_toeoff_ms=end - toeoff,
-        feature_window_ms=toeoff - start, predict_window_ms=toeoff - start)
-
+    if sliding_results:  # calculate prediction results at different delay points
+        window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start, endtime_after_toeoff_ms=end - toeoff,
+            feature_window_ms=toeoff - start, predict_window_ms=toeoff - start)
+    else:
+        window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start,
+            endtime_after_toeoff_ms=end - toeoff, feature_window_ms=end - start, predict_window_ms=end - start)
     return sliced_emg_data, window_parameters
 
 

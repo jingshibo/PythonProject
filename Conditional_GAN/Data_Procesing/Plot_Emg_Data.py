@@ -159,9 +159,9 @@ def plotMainEventMeanValues(fake_data, real_data, title=None, ylim=(0, 0.5), gri
         f'fake_SDLW': fake_data['emg_event_mean'][grid]['emg_SDLW'],
         f'real_SDLW': real_data['emg_event_mean'][grid]['emg_SDLW'],
 
-        f'real_LWLW': fake_data['emg_event_mean'][grid]['emg_LWLW'],
-        f'real_SASA': fake_data['emg_event_mean'][grid]['emg_SASA'],
-        f'real_SDSD': fake_data['emg_event_mean'][grid]['emg_SDSD']}
+        f'real_LWLW': real_data['emg_event_mean'][grid]['emg_LWLW'],
+        f'real_SASA': real_data['emg_event_mean'][grid]['emg_SASA'],
+        f'real_SDSD': real_data['emg_event_mean'][grid]['emg_SDSD']}
 
     plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
 

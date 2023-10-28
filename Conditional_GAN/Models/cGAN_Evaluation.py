@@ -114,6 +114,8 @@ class cGAN_Evaluation:
         reference_new_real_data = {}
         adjusted_new_real_data = copy.deepcopy(filtered_real_data)
         for key, indices in reference_indices.items():
+            if len(indices) > 5:  # maximum reference data number is 5
+                raise Exception('too many reference data!')
             reference_new_real_data[key] = [filtered_real_data[key][i] for i in indices]
             # Update filtered_new_real_data by excluding the selected data
             adjusted_new_real_data[key] = [filtered_real_data[key][i] for i in range(len(filtered_real_data[key])) if
@@ -122,7 +124,7 @@ class cGAN_Evaluation:
 
 
     # divide classifier training set for transfer learning
-    def classifierTlTrainSet(self, generated_data, reference_data, dataset='leave_one_set', fold=5, training_percent=0.8, minimum_train_number=8):
+    def classifierTlTrainSet(self, generated_data, reference_data, dataset='leave_one_set', fold=5, training_percent=0.8, minimum_train_number=10):
         if dataset == 'leave_one_set':
             train_dataset = Data_Preparation.leaveOutDataSet(training_percent, generated_data, shuffle=True)
         elif dataset == 'cross_validation_set':
@@ -137,7 +139,7 @@ class cGAN_Evaluation:
             for key, data_list in reference_data.items():
                 if key in group_value['train_set']:
                     group_value['train_set'][key].extend(data_list)
-            # move data from test set to train set to keep a minimum sample number of 8 for each mode
+            # move data from test set to train set to keep a minimum sample number (default:10) for each mode
             for key in group_value['train_set']:
                 while len(group_value['train_set'][key]) < minimum_train_number and group_value['test_set'][key]:
                     group_value['train_set'][key].append(group_value['test_set'][key].pop(0))
@@ -196,16 +198,9 @@ class cGAN_Evaluation:
         test_result = test_model.testModel(shuffled_test_set)
         return test_result
 
-    # def evaluateClassifyResults(self, model_results):
-    #     sliding_majority_vote = Sliding_Ann_Results.majorityVoteResults(model_results, self.feature_window_per_repetition,
-    #         self.predict_window_shift_unit, self.predict_using_window_number, initial_start=0)
-    #     accuracy_allgroup, cm_allgroup = Data_Processing.slidingMvResults(sliding_majority_vote)
-    #     average_accuracy_with_delay, average_cm_recall_with_delay = Data_Processing.averageAccuracyCm(accuracy_allgroup, cm_allgroup,
-    #         self.feature_window_increment_ms, self.predict_window_shift_unit)
-    #     return average_accuracy_with_delay, average_cm_recall_with_delay
 
-    # calculate classification accuracy
-    def evaluateClassifyResults(self, model_results):
+    # calculate classification accuracy with prior knowledge
+    def evaluateClassifyResultsByGroup(self, model_results):
         reorganized_results = MV_Results_ByGroup.groupedModelResults(model_results)
         sliding_majority_vote_by_group = Sliding_Ann_Results.SlidingMvResultsByGroup(reorganized_results,
             self.feature_window_per_repetition, self.predict_window_shift_unit, self.predict_using_window_number, initial_start=0)
@@ -217,6 +212,14 @@ class cGAN_Evaluation:
         return accuracy, cm_recall
 
 
+    # calculate classification accuracy without prior knowledge
+    def evaluateClassifyResults(self, model_results):
+        sliding_majority_vote = Sliding_Ann_Results.majorityVoteResults(model_results, self.feature_window_per_repetition,
+            self.predict_window_shift_unit, self.predict_using_window_number, initial_start=0)
+        accuracy_allgroup, cm_allgroup = Data_Processing.slidingMvResults(sliding_majority_vote)
+        average_accuracy_with_delay, average_cm_recall_with_delay = Data_Processing.averageAccuracyCm(accuracy_allgroup, cm_allgroup,
+            self.feature_window_increment_ms, self.predict_window_shift_unit)
+        return average_accuracy_with_delay, average_cm_recall_with_delay
 
 
 

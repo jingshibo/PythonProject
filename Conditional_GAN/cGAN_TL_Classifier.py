@@ -161,10 +161,10 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
     time_interval, length, output_list=False)
 del old_emg_classify_reshaped, new_emg_classify_reshaped
 # classifier training parameters
-start_index = 50  # slice data
-end_index = 750  # slice data
-# start_index = 0  # slice data
-# end_index = 850  # slice data
+start_index = 50  # # start index relative to the start of the original extracted data
+end_index = 750  # end index relative to the start of the original extracted data
+# start_index = 0
+# end_index = 850
 classifier_result_set = 3
 
 
@@ -187,7 +187,7 @@ del old_real_emg_grids, new_real_emg_grids, processed_old_real_data, processed_n
 basis_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = basis_evaluation.classifierTrainSet(filtered_old_real_data, dataset='cross_validation_set')
 models_basis, model_result_best = basis_evaluation.trainClassifier(shuffled_train_set)
-accuracy_best, cm_recall_best = basis_evaluation.evaluateClassifyResults(model_result_best)  # training and testing data from the same time
+accuracy_best, cm_recall_best = basis_evaluation.evaluateClassifyResultsByGroup(model_result_best)  # training and testing data from the same time
 # test classifier
 cross_validation_groups = Data_Preparation.crossValidationSet(5, filtered_new_real_data)
 sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups,
@@ -195,7 +195,7 @@ sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separa
 normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
 shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
 test_results = basis_evaluation.testClassifier(models_basis, shuffled_test_set)
-accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
+accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResultsByGroup(test_results)  # training and testing data from different time
 del train_set, shuffled_train_set, cross_validation_groups, sliding_window_dataset, normalized_groups, shuffled_test_set
 
 ## save results
@@ -244,11 +244,11 @@ filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(sliced_old_re
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(filtered_old_fake_data, dataset='cross_validation_set')
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
-acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
+acc_old, cm_old = old_evaluation.evaluateClassifyResultsByGroup(model_result_old)
 # test classifier
 test_set, shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, filtered_old_real_data, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models_old, shuffled_test_set)
-accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
+accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResultsByGroup(test_results)
 del train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## plotting fake and real emg data for comparison
@@ -317,11 +317,11 @@ reference_indices = selected_new_fake_data['reference_index_based_on_grid_1']
 reference_new_real_data, adjusted_new_real_data = new_evaluation.addressReferenceData(reference_indices, filtered_new_real_data)
 train_set, shuffled_train_set = new_evaluation.classifierTlTrainSet(filtered_new_fake_data, reference_new_real_data, dataset='cross_validation_set')
 models_new, model_results_new = new_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=50, batch_size=1024, decay_epochs=20)
-acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
+acc_new, cm_new = new_evaluation.evaluateClassifyResultsByGroup(model_results_new)
 # test classifier
 test_set, shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=0.8)
 test_results = new_evaluation.testClassifier(models_new, shuffled_test_set)
-accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
+accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResultsByGroup(test_results)
 del train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## plotting fake and real emg data for comparison
@@ -375,11 +375,11 @@ mix_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 # use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
 train_set, shuffled_train_set = mix_evaluation.classifierTlTrainSet(filtered_mix_data, reference_new_real_data, dataset='cross_validation_set')
 models_compare, model_results_compare = mix_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=50, batch_size=1024, decay_epochs=20)
-acc_compare, cm_compare = mix_evaluation.evaluateClassifyResults(model_results_compare)
+acc_compare, cm_compare = mix_evaluation.evaluateClassifyResultsByGroup(model_results_compare)
 # test classifier
 test_set, shuffled_test_set = mix_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=0.8)
 test_results = mix_evaluation.testClassifier(models_compare, shuffled_test_set)
-accuracy_compare, cm_recall_compare = mix_evaluation.evaluateClassifyResults(test_results)
+accuracy_compare, cm_recall_compare = mix_evaluation.evaluateClassifyResultsByGroup(test_results)
 del train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## plotting fake and real emg data for comparison
@@ -415,11 +415,11 @@ noise_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameter
 # use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
 train_set, shuffled_train_set = noise_evaluation.classifierTlTrainSet(noise_new_data, reference_new_real_data, dataset='cross_validation_set')
 models_noise, model_results_noise = noise_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=50, batch_size=1024, decay_epochs=20)
-acc_noise, cm_noise = noise_evaluation.evaluateClassifyResults(model_results_noise)
+acc_noise, cm_noise = noise_evaluation.evaluateClassifyResultsByGroup(model_results_noise)
 # test classifier
 test_set, shuffled_test_set = noise_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=0.8)
 test_results = noise_evaluation.testClassifier(models_noise, shuffled_test_set)
-accuracy_noise, cm_recall_noise = noise_evaluation.evaluateClassifyResults(test_results)
+accuracy_noise, cm_recall_noise = noise_evaluation.evaluateClassifyResultsByGroup(test_results)
 del noise_new_data, train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## save results

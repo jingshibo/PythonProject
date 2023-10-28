@@ -162,11 +162,11 @@ del old_fake_emg_grids, old_real_emg_grids, processed_old_fake_data, processed_o
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(filtered_old_fake_data, dataset='cross_validation_set')
 models_old, model_result_old = old_evaluation.trainClassifier(shuffled_train_set)
-acc_old, cm_old = old_evaluation.evaluateClassifyResults(model_result_old)
+acc_old, cm_old = old_evaluation.evaluateClassifyResultsByGroup(model_result_old)
 # test classifier
 test_set, shuffled_test_set = old_evaluation.classifierTestSet(modes_generation, filtered_old_real_data, train_set, test_ratio=0.5)
 test_results = old_evaluation.testClassifier(models_old, shuffled_test_set)
-accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResults(test_results)
+accuracy_old, cm_recall_old = old_evaluation.evaluateClassifyResultsByGroup(test_results)
 
 
 ## plotting fake and real emg data for comparison
@@ -234,11 +234,11 @@ del new_fake_emg_grids, new_real_emg_grids, processed_new_fake_data, processed_n
 new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = new_evaluation.classifierTrainSet(filtered_new_fake_data, dataset='cross_validation_set')
 models_new, model_results_new = new_evaluation.trainClassifier(shuffled_train_set)
-acc_new, cm_new = new_evaluation.evaluateClassifyResults(model_results_new)
+acc_new, cm_new = new_evaluation.evaluateClassifyResultsByGroup(model_results_new)
 # test classifier
 test_set, shuffled_test_set = new_evaluation.classifierTestSet(modes_generation, filtered_new_real_data, train_set, test_ratio=0.5)
 test_results = new_evaluation.testClassifier(models_new, shuffled_test_set)
-accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
+accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResultsByGroup(test_results)
 
 
 ## plotting fake and real emg data for comparison
@@ -298,11 +298,11 @@ del mix_old_emg_grids, new_real_emg_grids, processed_mix_data, processed_new_rea
 mix_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 train_set, shuffled_train_set = mix_evaluation.classifierTrainSet(filtered_mix_data, dataset='cross_validation_set')
 models_compare, model_results_compare = mix_evaluation.trainClassifier(shuffled_train_set)
-acc_compare, cm_compare = mix_evaluation.evaluateClassifyResults(model_results_compare)
+acc_compare, cm_compare = mix_evaluation.evaluateClassifyResultsByGroup(model_results_compare)
 # test classifier
 test_set, shuffled_test_set = mix_evaluation.classifierTestSet(modes_generation, filtered_new_real_data, train_set, test_ratio=0.5)
 test_results = mix_evaluation.testClassifier(models_compare, shuffled_test_set)
-accuracy_compare, cm_recall_compare = mix_evaluation.evaluateClassifyResults(test_results)
+accuracy_compare, cm_recall_compare = mix_evaluation.evaluateClassifyResultsByGroup(test_results)
 
 
 ## plotting fake and real emg data for comparison
