@@ -10,6 +10,7 @@ from Conditional_GAN.Data_Procesing import Process_Fake_Data
 from scipy.ndimage import gaussian_filter
 import numpy as np
 import copy
+import cv2
 
 
 ## load raw data and filter them
@@ -40,7 +41,8 @@ def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_lim
 
 
 ## normalize and reshape them to be images, then spatial filtering the images if needed
-def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=None):
+def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, normalize='(0,1)', spatial_filter=True, kernel=(1, 1),
+        axes=(1, 2), radius=None):
     old_emg_normalized = Data_Processing.normalizeEmgData(old_emg_preprocessed, range_limit=limit, normalize=normalize)
     new_emg_normalized = Data_Processing.normalizeEmgData(new_emg_preprocessed, range_limit=limit, normalize=normalize)
     num_samples = old_emg_normalized['emg_LWLW'][0].shape[0]
@@ -49,8 +51,8 @@ def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, no
     new_emg_reshaped = {k: [np.transpose(np.reshape(arr, newshape=(num_samples, 13, -1, 1), order='F'), (0, 3, 1, 2)).
         astype(np.float32) for arr in v] for k, v in new_emg_normalized.items()}
     if spatial_filter:
-        old_emg_reshaped = spatialFilterEmgData(old_emg_reshaped, sigma=sigma, axes=axes, radius=radius)
-        new_emg_reshaped = spatialFilterEmgData(new_emg_reshaped, sigma=sigma, axes=axes, radius=radius)
+        old_emg_reshaped = spatialFilterEmgData(old_emg_reshaped, kernel=kernel, axes=axes, radius=radius)
+        new_emg_reshaped = spatialFilterEmgData(new_emg_reshaped, kernel=kernel, axes=axes, radius=radius)
         old_emg_normalized = {k: [np.reshape(np.transpose(arr, (0, 2, 3, 1)), newshape=(num_samples, -1), order='F') for arr in v]
         for k, v in old_emg_reshaped.items()}
         new_emg_normalized = {k: [np.reshape(np.transpose(arr, (0, 2, 3, 1)), newshape=(num_samples, -1), order='F') for arr in v]
@@ -59,7 +61,7 @@ def normalizeFilterEmgData(old_emg_preprocessed, new_emg_preprocessed, limit, no
 
 
 ## spatial filtering images
-def spatialFilterEmgData(emg_reshaped, sigma=1, axes=(2, 3), radius=4):
+def spatialFilterEmgData(emg_reshaped, kernel=(1, 1), axes=(1, 2), radius=None):
     '''
     Performs Gaussian spatial filtering on EMG data.
     emg_reshaped: The EMG data reshaped for spatial filtering. each array should be (num_samples, num_channels, height, width).
@@ -71,16 +73,21 @@ def spatialFilterEmgData(emg_reshaped, sigma=1, axes=(2, 3), radius=4):
     for locomotion_mode, locomotion_data in emg_reshaped.items():
         # Stack together all images in the list of the given locomotion mode
         combined_images = np.vstack(locomotion_data)
+        # Reshape images to (850,13,5)
+        squeezed_images = combined_images.squeeze(axis=1)
         # Apply gaussian filter (kernel size = sigma * truncate(default:4))
-        filtered_images = gaussian_filter(combined_images, sigma=sigma, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
+        filtered_images = gaussian_filter(squeezed_images, sigma=kernel, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
+        # filtered_images = cv2.blur(squeezed_images, kernel)
+        # Reshape the filtered images back to original shape
+        unsqueezed_images = filtered_images[:, np.newaxis, :, :]
         # Splitting the combined image array back into a list of 60 images
-        split_images_list = [img for img in np.array_split(filtered_images, len(locomotion_data), axis=0)]
+        split_images_list = [img for img in np.array_split(unsqueezed_images, len(locomotion_data), axis=0)]
         filtered_emg_reshaped[locomotion_mode] = split_images_list
     return filtered_emg_reshaped
 
 
 ## spatial filtering images
-def spatialFilterBlendingFactors(gen_results, sigma=1, axes=(2, 3), radius=4):
+def spatialFilterBlendingFactors(gen_results, kernel=(1, 1), axes=(2, 3), radius=None):
     '''
     Performs Gaussian spatial filtering on EMG data.
     gen_results: The blending factors for spatial filtering. each array should be (num_samples, num_channels, height, width).
@@ -96,7 +103,7 @@ def spatialFilterBlendingFactors(gen_results, sigma=1, axes=(2, 3), radius=4):
         # Stack arrays from sorted keys
         combined_images = np.vstack([blending_factors[key] for key in sorted_keys])
         # Apply gaussian filter (kernel size = sigma * truncate(default:4))
-        filtered_images = gaussian_filter(combined_images, sigma=sigma, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
+        filtered_images = gaussian_filter(combined_images, sigma=kernel, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
         # Splitting the combined image array back into a list of 60 images
         for idx, key in enumerate(sorted_keys):
             filtered_gen_results[locomotion_mode]['model_results'][key] = filtered_images[idx, :, :, :].reshape(1, 2, 13, 5)

@@ -36,7 +36,7 @@ class RandomPureEmgDataSet(Dataset):
         self.epoch_keys = self.keys * self.repetition  # preserve the order of keys in 4 batches of combination sampling
 
     def __len__(self):
-        # the number of samples obtained in an epoch for each key = self.repetition * self.batch_size
+        # the number of samples obtained in an epoch for each key：= self.repetition * self.batch_size
         return self.repetition * self.batch_size * len(self.keys)
 
     def extract_and_normalize(self, key):  # convert keys into numbers
@@ -271,7 +271,7 @@ class RandomMixEmgDataSet(Dataset):
         self.epoch_keys = temp_keys
 
     def __len__(self):
-        # the number of samples obtained in an epoch for each key = self.repetition * self.batch_size
+        # the number of samples obtained in an epoch for each key：= self.repetition * self.batch_size
         n = (self.length * self.repetition) // self.batch_size + 1
         return n * self.batch_size
 

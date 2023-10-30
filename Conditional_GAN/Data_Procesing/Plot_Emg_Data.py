@@ -149,18 +149,12 @@ def plotMultipleEventMeanValues(fake_data, real_data, modes, title=None, ylim=(0
 
 ##  plot average emg values from main (all dynamic) locomotion modes
 def plotMainEventMeanValues(fake_data, real_data, title=None, ylim=(0, 0.5), grid='grid_1'):
-    mean_emg_to_plot = {f'fake_LWSA': fake_data['emg_event_mean'][grid]['emg_LWSA'],
-        f'real_LWSA': real_data['emg_event_mean'][grid]['emg_LWSA'],
+    mean_emg_to_plot = {
         f'fake_LWSD': fake_data['emg_event_mean'][grid]['emg_LWSD'],
         f'real_LWSD': real_data['emg_event_mean'][grid]['emg_LWSD'],
-
-        f'fake_SALW': fake_data['emg_event_mean'][grid]['emg_SALW'],
-        f'real_SALW': real_data['emg_event_mean'][grid]['emg_SALW'],
         f'fake_SDLW': fake_data['emg_event_mean'][grid]['emg_SDLW'],
         f'real_SDLW': real_data['emg_event_mean'][grid]['emg_SDLW'],
-
         f'real_LWLW': real_data['emg_event_mean'][grid]['emg_LWLW'],
-        f'real_SASA': real_data['emg_event_mean'][grid]['emg_SASA'],
         f'real_SDSD': real_data['emg_event_mean'][grid]['emg_SDSD']}
 
     plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)

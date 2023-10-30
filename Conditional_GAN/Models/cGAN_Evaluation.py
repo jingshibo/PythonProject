@@ -32,7 +32,7 @@ class cGAN_Evaluation:
 
     # generate fake emg data and substitute original emg dataset using this data
     def generateFakeData(self, extracted_emg, data_source, modes_generation, real_emg_normalized, repetition=1, random_pairing=True,
-            spatial_filtering=True, sigma=1, axes=(2, 3), radius=4):
+            spatial_filtering=True, kernel=(1, 1), axes=(1, 2), radius=None):
         '''
             :param data_source: selected from 'old' and 'new'
             :param modes_generation: such as  {'LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA']}.
@@ -64,7 +64,7 @@ class cGAN_Evaluation:
             # spatial filter fake data
             if spatial_filtering:
                 filtered_fake_emg_images = Process_Raw_Data.spatialFilterEmgData({transition_type: emg_reshaped},
-                    sigma=sigma, axes=axes, radius=radius)
+                    kernel=kernel, axes=axes, radius=radius)
                 fake_emg_reorganized[transition_type] = [np.reshape(np.transpose(arr, (0, 2, 3, 1)), newshape=(arr.shape[0], -1), order='F')
                     for arr in filtered_fake_emg_images[transition_type]]
                 fake_emg_images[transition_type] = filtered_fake_emg_images[transition_type]
@@ -141,7 +141,7 @@ class cGAN_Evaluation:
                     group_value['train_set'][key].extend(data_list)
             # move data from test set to train set to keep a minimum sample number (default:10) for each mode
             for key in group_value['train_set']:
-                while len(group_value['train_set'][key]) < minimum_train_number and group_value['test_set'][key]:
+                while len(group_value['train_set'][key]) < minimum_train_number and len(group_value['test_set'][key]) > 1:
                     group_value['train_set'][key].append(group_value['test_set'][key].pop(0))
         # shuffle training set
         sliding_window_dataset, self.feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(train_dataset,

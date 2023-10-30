@@ -55,7 +55,7 @@ new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_p
 ## normalize and extract emg data for gan model training
 range_limit = 2000
 old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify,
-    new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
+    new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, kernel=1, axes=(2, 3), radius=4)
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
@@ -124,7 +124,7 @@ gen_results = Model_Storage.loadBlendingFactors(subject, version, result_set, mo
 # normalize and extract emg data for classification model training
 old_emg_classify_normalized, new_emg_classify_normalized, old_emg_classify_reshaped, new_emg_classify_reshaped = \
     Process_Raw_Data.normalizeFilterEmgData(
-    old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, sigma=1, axes=(2, 3), radius=4)
+    old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, kernel=1, axes=(2, 3), radius=4)
 extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_classify_reshaped, new_emg_classify_reshaped,
     time_interval, length, output_list=False)
 
@@ -136,7 +136,7 @@ extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_genera
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450, endtime_after_toeoff_ms=400, feature_window_ms=450)
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_old_data, fake_old_images = old_evaluation.generateFakeData(extracted_emg_classify, 'old', modes_generation, old_emg_classify_normalized,
-    spatial_filtering=True, sigma=1, axes=(2, 3), radius=4)
+    spatial_filtering=True, kernel=1, axes=(2, 3), radius=4)
 # separate and store grids in a list if only use one grid later
 old_fake_emg_grids = Post_Process_Data.separateEmgGrids(synthetic_old_data, separate=True)
 old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normalized, separate=True)
@@ -208,7 +208,7 @@ model_old = Model_Storage.loadClassifyModels(subject, version, model_type, proje
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=450, endtime_after_toeoff_ms=400, feature_window_ms=450)
 new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 synthetic_new_data, fake_new_images = new_evaluation.generateFakeData(extracted_emg_classify, 'new', modes_generation, new_emg_classify_normalized,
-    spatial_filtering=True, sigma=1, axes=(2, 3), radius=4)
+    spatial_filtering=True, kernel=1, axes=(2, 3), radius=4)
 # separate and store grids in a list if only use one grid later
 new_fake_emg_grids = Post_Process_Data.separateEmgGrids(synthetic_new_data, separate=True)
 new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normalized, separate=True)

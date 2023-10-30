@@ -137,7 +137,7 @@ class ModelTraining():
 
             # dataset of a group
             train_data = EmgDataSet(data_set, 'train')
-            self.train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=0)
+            self.train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=0, drop_last=True)
             test_data = EmgDataSet(data_set, 'test')
             self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=0)
 

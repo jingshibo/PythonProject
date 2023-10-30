@@ -72,6 +72,7 @@ def spatialFilterModelInput(emg_data, kernel):
                 sub_arr = arr[:, start_col:end_col]
                 # filtered_sub_arr = pd.DataFrame(ndimage.median_filter(sub_arr, mode='nearest', size=size)).to_numpy()
                 filtered_sub_arr = pd.DataFrame(ndimage.gaussian_filter(sub_arr, mode='reflect', sigma=kernel, axes=[0, 1])).to_numpy()
+                # filtered_sub_arr = pd.DataFrame(cv2.blur(sub_arr, kernel)).to_numpy()
                 filtered_arr_parts.append(filtered_sub_arr)
             # Concatenate along columns to form the final filtered array
             filtered_arr = np.concatenate(filtered_arr_parts, axis=1)
