@@ -77,10 +77,10 @@ def spatialFilterEmgData(emg_reshaped, kernel=(1, 1), axes=(1, 2), radius=None):
         squeezed_images = combined_images.squeeze(axis=1)
         # Apply gaussian filter (kernel size = sigma * truncate(default:4))
         filtered_images = gaussian_filter(squeezed_images, sigma=kernel, mode='reflect', axes=axes, radius=radius)  # filter two dims one by one
-        # filtered_images = cv2.blur(squeezed_images, kernel)
+        # filtered_images = cv2.blur(squeezed_images.transpose(1,2,0), kernel).transpose(2,0,1)
         # Reshape the filtered images back to original shape
         unsqueezed_images = filtered_images[:, np.newaxis, :, :]
-        # Splitting the combined image array back into a list of 60 images
+        # Splitting the combined image array back into a list of images
         split_images_list = [img for img in np.array_split(unsqueezed_images, len(locomotion_data), axis=0)]
         filtered_emg_reshaped[locomotion_mode] = split_images_list
     return filtered_emg_reshaped
@@ -130,6 +130,17 @@ def extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped,
                 extracted_emg[transition_type]['old'][mode], timepoint_interval=time_interval, length=length, output_list=output_list)
 
     return extracted_emg, train_gan_data
+
+
+## split the training set and test set for gan model training
+def splitGanDataset(old_emg_reshaped, new_emg_reshaped, training_percent):
+    leave_one_old = Data_Preparation.leaveOutDataSet(training_percent, old_emg_reshaped)
+    leave_one_new = Data_Preparation.leaveOutDataSet(training_percent, new_emg_reshaped)
+    training_set_old = leave_one_old[f"group_0"]['train_set']
+    training_set_new = leave_one_new[f"group_0"]['train_set']
+    test_set_old = leave_one_old[f"group_0"]['test_set']
+    test_set_new = leave_one_new[f"group_0"]['test_set']
+    return training_set_old, training_set_new, test_set_old, test_set_new
 
 
 ## get window parameters for gan and classify model training

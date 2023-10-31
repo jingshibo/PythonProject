@@ -72,7 +72,6 @@ class cGAN_Evaluation:
                 fake_emg_reorganized[transition_type] = reorganized_fake_data
                 fake_emg_images[transition_type] = emg_reshaped
 
-
         synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(fake_emg_reorganized, synthetic_data)
         return synthetic_data, fake_emg_images
 
@@ -113,13 +112,16 @@ class cGAN_Evaluation:
         # selecting the data based on reference_indices
         reference_new_real_data = {}
         adjusted_new_real_data = copy.deepcopy(filtered_real_data)
-        for key, indices in reference_indices.items():
-            if len(indices) > 5:  # maximum reference data number is 5
-                raise Exception('too many reference data!')
-            reference_new_real_data[key] = [filtered_real_data[key][i] for i in indices]
-            # Update filtered_new_real_data by excluding the selected data
-            adjusted_new_real_data[key] = [filtered_real_data[key][i] for i in range(len(filtered_real_data[key])) if
-                i not in indices]
+        if not reference_indices:
+            reference_new_real_data = []
+        else:
+            for key, indices in reference_indices.items():
+                if len(indices) > 5:  # maximum reference data number is 5
+                    raise Exception('too many reference data!')
+                reference_new_real_data[key] = [filtered_real_data[key][i] for i in indices]
+                # Update filtered_new_real_data by excluding the selected data
+                adjusted_new_real_data[key] = [filtered_real_data[key][i] for i in range(len(filtered_real_data[key])) if
+                    i not in indices]
         return reference_new_real_data, adjusted_new_real_data
 
 
@@ -136,9 +138,10 @@ class cGAN_Evaluation:
             # exchange the training set and test set
             group_value['train_set'], group_value['test_set'] = group_value['test_set'], group_value['train_set']
             # add reference data into the train_set as they are available new transition data for model training
-            for key, data_list in reference_data.items():
-                if key in group_value['train_set']:
-                    group_value['train_set'][key].extend(data_list)
+            if reference_data:  # if we used reference_data, include it into the training set
+                for key, data_list in reference_data.items():
+                    if key in group_value['train_set']:
+                        group_value['train_set'][key].extend(data_list)
             # move data from test set to train set to keep a minimum sample number (default:10) for each mode
             for key in group_value['train_set']:
                 while len(group_value['train_set'][key]) < minimum_train_number and len(group_value['test_set'][key]) > 1:

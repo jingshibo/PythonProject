@@ -77,11 +77,9 @@ new_emg_data_classify = Process_Raw_Data.readFilterEmgData(data_source, window_p
     envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_2', include_standing=False)
 
 
-## normalize and extract emg data for gan model training
+##  gan model training setup
 range_limit = 1500
 gan_filter_kernel = (2, 1)
-old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify,
-    new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, kernel=gan_filter_kernel)
 # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
@@ -90,8 +88,15 @@ modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD'
 # modes_generation = {'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']}
 time_interval = 5
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']
-extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_reshaped, new_emg_reshaped, time_interval,
-    length, output_list=True)
+
+
+## normalize and extract emg data for gan model training
+old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped = Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify,
+    new_emg_data_classify, range_limit, normalize='(0,1)', spatial_filter=True, kernel=gan_filter_kernel)
+gan_old_training_set, gan_new_training_set, _, _ = Process_Raw_Data.splitGanDataset(old_emg_reshaped,
+    new_emg_reshaped, training_percent=0.8)  # split data for training set and test set
+extracted_emg, train_gan_data = Process_Raw_Data.extractSeparateEmgData(modes_generation, gan_old_training_set, gan_new_training_set,
+    time_interval, length, output_list=True)
 
 
 ## hyperparameters
@@ -119,13 +124,13 @@ training_parameters = {'modes_generation': modes_generation, 'noise_dim': noise_
     'num_epochs': num_epochs, 'decay_epochs': decay_epochs, 'interval': time_interval, 'blending_factor_dim': blending_factor_dim}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name,
     'result_set': gan_result_set, 'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-# now = datetime.datetime.now()
-# results = {}
-# for transition_type in modes_generation.keys():
-#     gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
-#     results[transition_type] = blending_factors
-# print(datetime.datetime.now() - now)
-del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
+now = datetime.datetime.now()
+results = {}
+for transition_type in modes_generation.keys():
+    gan_models, blending_factors = cGAN_Training.trainCGan(train_gan_data[transition_type], transition_type, training_parameters, storage_parameters)
+    results[transition_type] = blending_factors
+print(datetime.datetime.now() - now)
+del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, gan_old_training_set, gan_new_training_set, extracted_emg, train_gan_data
 
 
 # ## plotting fake and real emg data for comparison
@@ -160,13 +165,15 @@ gen_results = Model_Storage.loadBlendingFactors(subject, version, gan_result_set
 old_emg_classify_normalized, new_emg_classify_normalized, old_emg_classify_reshaped, new_emg_classify_reshaped = \
     Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)',
         spatial_filter=True, kernel=gan_filter_kernel)
-extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_classify_reshaped, new_emg_classify_reshaped,
+_, _, gan_old_test_set, gan_new_test_set = Process_Raw_Data.splitGanDataset(old_emg_classify_reshaped,
+    new_emg_classify_reshaped, training_percent=0.8)  # split data for training set and test set
+extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, gan_old_test_set, gan_new_test_set,
     time_interval, length, output_list=False)
 # classifier training parameters
 # start_index = 50  # start index relative to the start of the original extracted data
 # end_index = 750  # end index relative to the start of the original extracted data
-start_index = 200
-end_index = 1800
+start_index = 0
+end_index = 2000
 classifier_filter_kernel = (10, 10)
 classifier_result_set = 3
 
@@ -253,8 +260,7 @@ filtered_old_fake_data = Post_Process_Data.spatialFilterModelInput(sliced_old_fa
 filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(sliced_old_real_data, kernel=classifier_filter_kernel)
 # select representative fake data for classification model training
 selected_old_fake_data = Dtw_Similarity.extractFakeData(filtered_old_fake_data, filtered_old_real_data, modes_generation,
-    envelope_frequency=None, num_sample=200, num_reference=1, method='select', random_reference=False, split_grids=True)
-
+    envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
 
 ## classification
 old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
@@ -329,7 +335,7 @@ filtered_new_fake_data = Post_Process_Data.spatialFilterModelInput(sliced_new_fa
 filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(sliced_new_real_data, kernel=classifier_filter_kernel)
 # select representative fake data for classification model training
 selected_new_fake_data = Dtw_Similarity.extractFakeData(filtered_new_fake_data, filtered_new_real_data, modes_generation,
-    envelope_frequency=None, num_sample=200, num_reference=1, method='select', random_reference=False, split_grids=True)
+    envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
 
 ## classification
 new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
