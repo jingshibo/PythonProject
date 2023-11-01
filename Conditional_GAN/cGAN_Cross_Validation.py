@@ -1,6 +1,7 @@
 '''
     using conditional gan to generate transitional data and fine-train the classifier based on transfer learning. For each locomotion
-    mode, only one prediction result is made, with no delay reported.
+    mode, only one prediction result is made, with no delay reported. This version introduces cross validation to the gan training data set,
+    splitting the dataset into training set and test set
 '''
 
 
@@ -279,7 +280,7 @@ modes = modes_generation[transition_type]
 # calculate average values
 # reference_old_data = {transition_type: [sliced_old_real_data[transition_type][index] for index in
 #     selected_old_fake_data['reference_index_based_on_grid_1'][transition_type]]}
-fake_old = Plot_Emg_Data.calcuAverageEmgValues(filtered_old_fake_data)
+fake_old = Plot_Emg_Data.calcuAverageEmgValues(selected_old_fake_data['fake_data_based_on_grid_1'])
 real_old = Plot_Emg_Data.calcuAverageEmgValues(filtered_old_real_data)
 # reference_old = Plot_Emg_Data.averageEmgValues(reference_old_data)
 # plot values of certain transition type
@@ -353,7 +354,7 @@ del train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## plotting fake and real emg data for comparison
 # calculate average values
-fake_new = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_fake_data)
+fake_new = Plot_Emg_Data.calcuAverageEmgValues(selected_new_fake_data['fake_data_based_on_grid_1'])
 real_new = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_real_data)
 # reference_new = Plot_Emg_Data.calcuAverageEmgValues(reference_new_real_data)
 # plot values of certain transition type

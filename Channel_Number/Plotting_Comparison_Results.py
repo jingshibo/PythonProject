@@ -70,7 +70,7 @@ all_subjects[subject] = get_results.getAllResults(result_set)
 # all_subjects[subject] = get_results.getAllResults(result_set)
 
 
-## reorgani e results
+## reorganize the results
 extract_delay = ['delay_0_ms', 'delay_100_ms', 'delay_200_ms', 'delay_300_ms', 'delay_400_ms']
 combined_results = Results_Organization.combinedSubjectResults(all_subjects, extract_delay)
 mean_std_value = Statistic_Calculation.calcuStatValues(combined_results)

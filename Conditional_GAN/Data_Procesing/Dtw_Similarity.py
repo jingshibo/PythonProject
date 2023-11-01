@@ -26,7 +26,7 @@ class Dtw_Distance:
             time_series_matrix = np.vstack([fake, reference]).astype(np.double)
             # compute the distance between each fake data and each reference data
             ds = dtw.distance_matrix_fast(time_series_matrix, block=((0, fake_sample_number), (fake_sample_number, len(time_series_matrix))),
-                window=500)  # a traditional Euclidean distance is obtained by setting window=1.
+                window=300)  # a traditional Euclidean distance is obtained by setting window=1.
             # compute the distance within reference data
             ds_reference = dtw.distance_matrix_fast(reference)
             # only retain valid distance values in the sparse matrix

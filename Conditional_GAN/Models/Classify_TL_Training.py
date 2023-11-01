@@ -48,11 +48,10 @@ class ModelTraining():
             # training parameters
             number = int(group_number.split('_')[-1])
             self.model = copy.deepcopy(self.pretrained_models[number]).to(self.device)  # move the model to GPU
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=0.0001)  # initial learning rate and regularization
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0005, weight_decay=0.00001)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
-            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.1)  # adjusted learning rate
-
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.3)  # adjusted learning rate
             # train and test the model of a group
             for epoch_number in range(self.num_epochs):  # loop over each epoch
                 self.trainOneEpoch(group_number, epoch_number)
