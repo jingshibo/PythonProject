@@ -249,13 +249,47 @@ def reorderColumns(emg_data):
     return reordered_data
 
 
+## combine a list of 2d ndarray into a 3d ndarray. then reorder all 2d ndarray inside simultanously.
+def reorderColumns3D(emg_data_3d):
+    # Assume emg_data_3d has shape (num_samples, num_rows, num_columns)
+    num_columns = emg_data_3d.shape[2]
+
+    # Check if the number of columns is a multiple of 65
+    if num_columns % 65 != 0:
+        raise ValueError("Array should have a number of columns that is a multiple of 65.")
+
+    num_grids = num_columns // 65  # Number of repetitions of the 65-column pattern
+    columns_per_group = 13  # Each group contains 13 columns
+
+    reordered_idx = []
+    for rep in range(num_grids):  # for each repetition of the 65-column pattern
+        for i in range(0, 65, columns_per_group):  # for each 13 columns
+            group_indices = list(range(rep * 65 + i, rep * 65 + i + columns_per_group))
+            # Reverse the order of every second group
+            if (i // columns_per_group) % 2 != 0:
+                group_indices = group_indices[::-1]
+            reordered_idx.extend(group_indices)
+
+    # Use advanced indexing to reorder all 2D arrays inside the 3D array
+    reordered_data_3d = emg_data_3d[:, :, reordered_idx]
+
+    return reordered_data_3d
+
+
 ## reorder, filter and clip data
 def reorderSmoothDataSet(dataset, filtering=True, modes=None, lowpass_frequency=400, clip_range=(0, 1)):
-    processed_dataset = copy.deepcopy(dataset)
+    processed_dataset = {}  # Initialize an empty dictionary instead of a deep copy
     for locomotion_type, locomotion_data in dataset.items():
-        # reorder emg electrode order
-        reordered_data = [reorderColumns(data) for data in locomotion_data]
-        # lowposs filter emg data
+        # Convert the list of 2D arrays to a 3D array
+        locomotion_data_3d = np.stack(locomotion_data)
+        # Reorder the columns of the 3D array
+        reordered_data_3d = reorderColumns3D(locomotion_data_3d)
+        # Convert the 3D array back to a list of 2D arrays for consistency with original data format
+        reordered_data = [reordered_data_3d[i] for i in range(reordered_data_3d.shape[0])]
+        # # reorder 2d array emg electrode order
+        # reordered_data = [reorderColumns(data) for data in locomotion_data]
+
+        # lowpass filter emg data
         if filtering:
             if modes is None or locomotion_type in modes:  # filtering all modes or selected modes
                 filtered_data = clipSmoothEmgData(reordered_data, lowpass_frequency, clip_range=clip_range)

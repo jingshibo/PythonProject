@@ -6,8 +6,8 @@ from scipy import signal
 import cv2
 import copy
 
-## slice a piece of emg data from a given time period
-def sliceTimePeriod(emg_data, start, end, toeoff, sliding_results=True):
+## slice a piece of emg data for selected time period
+def sliceEmgData(emg_data, start, end, toeoff, sliding_results=True):
     '''
     :param start: the start index relative to the start of the original extracted data
     :param end: the end index relative to the start of the original extracted data
@@ -20,41 +20,58 @@ def sliceTimePeriod(emg_data, start, end, toeoff, sliding_results=True):
         sliced_emg_data[key] = [np.copy(arr[start:end, :]) for arr in array_list]  # the slices are views into the original data,
         # not copies.
     if sliding_results:  # calculate prediction results at different delay points
-        window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start, endtime_after_toeoff_ms=end - toeoff,
-            feature_window_ms=toeoff - start, predict_window_ms=toeoff - start)
+        window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start,
+            endtime_after_toeoff_ms=end - toeoff, feature_window_ms=toeoff - start, predict_window_ms=toeoff - start)
     else:
         window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=toeoff - start,
             endtime_after_toeoff_ms=end - toeoff, feature_window_ms=end - start, predict_window_ms=end - start)
     return sliced_emg_data, window_parameters
 
 
+##  slice a piece of blending factors for selected time period and rename the key names
+def sliceBlendingFactors(gen_results, start_index, end_index):
+    # Initialize the new_data dictionary
+    sliced_blending_factors = {}
+    # Iterate through each outer key
+    for locomotion_mode, locomotion_value in gen_results.items():
+        # Extract the interval from the current outer key's 'training_parameters'
+        interval = locomotion_value['training_parameters']['interval']
+        # obtain the list of keys we want to retain from 'model_results'
+        keys_to_retain = [f'timepoint_{i}' for i in range(start_index, end_index, interval)]
+
+        # Initialize the dictionary for the current locomotion_mode key
+        sliced_blending_factors[locomotion_mode] = {}
+        sliced_blending_factors[locomotion_mode]['model_results'] = {}
+        sliced_blending_factors[locomotion_mode]['training_parameters'] = locomotion_value['training_parameters']
+        # Extract the desired keys from 'model_results' and rename them
+        for idx, key in enumerate(keys_to_retain):
+            sliced_blending_factors[locomotion_mode]['model_results'][f'timepoint_{idx * interval}'] = locomotion_value['model_results'][key]
+    return sliced_blending_factors
+
+
 ## split two emg grids into two
 def separateEmgGrids(emg_dict, separate=False):
-    # Initialize a list to store dictionaries for each grid
-    emg_grids = {}
-    if separate is False:  # treat all grids as a whole and thus return the original data
-        emg_grids['grid_1'] = [emg_dict]
-    elif separate is True:
-        num_columns = emg_dict[next(iter(emg_dict))][0].shape[1]  # next(iter(emg_dict)) is used to get the first key in the dict
-        num_grids = num_columns // 65  # Calculate the number of grids based on the number of columns
-        # Initialize dictionaries for each electrode grid
-        for grid_idx in range(num_grids):
-            emg_grids[f'grid_{grid_idx+1}'] = {}
-        # Loop through each key-value pair in the original dictionary
-        for key, array_list in emg_dict.items():
-            # Loop through each array in the list
-            for arr in array_list:
-                for grid_idx in range(num_grids):
-                    start_col = grid_idx * 65
-                    end_col = (grid_idx + 1) * 65
-                    # Extract the columns corresponding to the current grid
-                    sub_arr = arr[:, start_col:end_col]
-                    # Add the sub-array to the corresponding dictionary
-                    if key not in emg_grids[f'grid_{grid_idx+1}']:
-                        emg_grids[f'grid_{grid_idx+1}'][key] = []
-                    emg_grids[f'grid_{grid_idx+1}'][key].append(sub_arr)
-    return emg_grids
+    # If separate is False, just return the original data in a new dictionary
+    if not separate:
+        return {'grid_1': emg_dict}
 
+    # Calculate the number of grids based on the number of columns
+    num_columns = emg_dict[next(iter(emg_dict))][0].shape[1]
+    num_grids = num_columns // 65
+
+    # Create a dictionary to store the separated grids
+    emg_grids = {f'grid_{i+1}': {} for i in range(num_grids)}
+
+    # Iterate over each key-value pair in the original dictionary
+    for key, array_list in emg_dict.items():
+        for grid_idx in range(num_grids):
+            start_col = grid_idx * 65
+            end_col = (grid_idx + 1) * 65
+            # Use list comprehension to extract sub-arrays for the current grid
+            sub_arrays = [arr[:, start_col:end_col] for arr in array_list]
+            emg_grids[f'grid_{grid_idx+1}'][key] = sub_arrays
+
+    return emg_grids
 
 ## separate the emg_data into individual grids first, and then spatial filter each emg grid separately. finally combine them into one again
 def spatialFilterModelInput(emg_data, kernel):
@@ -96,8 +113,9 @@ def spatialFilterModelInput(emg_data, kernel):
         - radius: Optional radius for Gaussian filtering.
         Returns: - Dictionary with spatially filtered grid data.
         """
-        filtered_grid_data = copy.deepcopy(grid_data)
+        filtered_grid_data = {}
         for key, grids in grid_data.items():
+            filtered_grid_data[key] = {}
             for grid_key, sub_arr_list in grids.items():
                 # Stack together all sub-arrays in the current grid list
                 combined_sub_arrays = np.stack(sub_arr_list, axis=0)

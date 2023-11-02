@@ -145,8 +145,8 @@ old_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normali
 ## only preprocess selected grid and define time range of data
 processed_old_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_fake_emg_grids['grid_1'], filtering=False, modes=modes_generation)
 processed_old_real_data = Process_Fake_Data.reorderSmoothDataSet(old_real_emg_grids['grid_1'], filtering=False, modes=None)
-sliced_old_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_old_fake_data, start=50, end=750)
-sliced_old_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_old_real_data, start=50, end=750)
+sliced_old_fake_data, window_parameters = Post_Process_Data.sliceEmgData(processed_old_fake_data, start=50, end=750)
+sliced_old_real_data, _ = Post_Process_Data.sliceEmgData(processed_old_real_data, start=50, end=750)
 
 
 ## select representative fake data for classification model training
@@ -217,8 +217,8 @@ new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normali
 # only preprocess selected grid and define time range of data
 processed_new_fake_data = Process_Fake_Data.reorderSmoothDataSet(new_fake_emg_grids['grid_1'], filtering=False, modes=modes_generation)
 processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_1'], filtering=False, modes=None)
-sliced_new_fake_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_new_fake_data, start=50, end=750)
-sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=50, end=750)
+sliced_new_fake_data, window_parameters = Post_Process_Data.sliceEmgData(processed_new_fake_data, start=50, end=750)
+sliced_new_real_data, _ = Post_Process_Data.sliceEmgData(processed_new_real_data, start=50, end=750)
 
 
 ## select representative fake data for classification model training
@@ -273,7 +273,7 @@ model_new = Model_Storage.loadClassifyModels(subject, version, model_type, proje
 
 
 '''
-    train classifier (on new data), for comparison purpose
+    train classifier (on old and new data), for comparison purpose
 '''
 ## build training data
 old_emg_for_replacement = {modes[2]: old_emg_classify_normalized[modes[2]] for transition_type, modes in modes_generation.items()}
@@ -286,8 +286,8 @@ new_real_emg_grids = Post_Process_Data.separateEmgGrids(new_emg_classify_normali
 ## only preprocess selected grid and define time range of data
 processed_mix_data = Process_Fake_Data.reorderSmoothDataSet(mix_old_emg_grids['grid_1'], filtering=False, modes=modes_generation)
 processed_new_real_data = Process_Fake_Data.reorderSmoothDataSet(new_real_emg_grids['grid_1'], filtering=False, modes=None)
-sliced_mix_data, window_parameters = Post_Process_Data.sliceTimePeriod(processed_mix_data, start=50, end=750)
-sliced_new_real_data, _ = Post_Process_Data.sliceTimePeriod(processed_new_real_data, start=50, end=750)
+sliced_mix_data, window_parameters = Post_Process_Data.sliceEmgData(processed_mix_data, start=50, end=750)
+sliced_new_real_data, _ = Post_Process_Data.sliceEmgData(processed_new_real_data, start=50, end=750)
 # median filtering
 filtered_mix_data = Post_Process_Data.spatialFilterModelInput(sliced_mix_data, kernel=3)
 filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(sliced_new_real_data, kernel=5)
