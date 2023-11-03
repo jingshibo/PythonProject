@@ -225,4 +225,32 @@ class cGAN_Evaluation:
         return average_accuracy_with_delay, average_cm_recall_with_delay
 
 
+    # combine the dataset from new_fake_train_set and old_real_train_set. No data repeation in test set is allowed.
+    def combineTrainingSet(self, dataset_1, dataset_2):
+        combined_dataset = {}
+        for group_key in dataset_1.keys():  # Assuming dataset_1 and dataset_2 have the same group keys
+            combined_dataset[group_key] = {}
+
+            # Combine train sets without checking for repetition
+            combined_dataset[group_key]['train_set'] = {
+                category_key: dataset_1[group_key]['train_set'][category_key] + dataset_2[group_key]['train_set'][category_key] for
+                category_key in dataset_1[group_key]['train_set'].keys()}
+
+            # Combine test sets with checking for repetition. not allowing data repetition for test set
+            combined_dataset[group_key]['test_set'] = {}
+            for category_key in dataset_1[group_key]['test_set'].keys():
+                # Initialize the category list in the combined dataset
+                combined_dataset[group_key]['test_set'][category_key] = list(dataset_1[group_key]['test_set'][category_key])
+                # Iterate through dataset_2 arrays and add them if they're not already in the combined dataset
+                for array in dataset_2[group_key]['test_set'][category_key]:
+                    # execute the if block only if this array is not found in the list of combined_dataset arrays, ensuring no duplicates.
+                    if not any((array == x).all() for x in combined_dataset[group_key]['test_set'][category_key]):
+                        combined_dataset[group_key]['test_set'][category_key].append(array)
+
+        # shuffle training set
+        sliding_window_dataset, self.feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(combined_dataset,
+            self.feature_window_size, increment=self.feature_window_increment_ms * self.sample_rate)
+        normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
+        shuffled_dataset = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
+        return combined_dataset, shuffled_dataset
 

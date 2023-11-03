@@ -6,7 +6,6 @@
 
 ##
 import copy
-import numpy as np
 import datetime
 from Conditional_GAN.Models import cGAN_Training, cGAN_Testing, cGAN_Evaluation, Model_Storage
 from Conditional_GAN.Data_Procesing import Process_Fake_Data, Process_Raw_Data, Plot_Emg_Data, Dtw_Similarity, Post_Process_Data
@@ -36,8 +35,6 @@ modes = ['up_down_t0', 'down_up_t0']
 # down_up_session = [0, 1, 2, 5, 6]
 up_down_session = [5, 6, 7, 8, 9]
 down_up_session = [7, 8, 9, 10]
-# up_down_session = [5, 6, 7, 8, 9]
-# down_up_session = [6, 8, 9, 10]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [0, 1, 2, 3, 4]
@@ -66,8 +63,6 @@ modes = ['up_down_t1', 'down_up_t1']
 # down_up_session = [4, 5, 6, 8, 9]
 up_down_session = [0, 1, 2, 3, 4]
 down_up_session = [0, 1, 2, 3]
-# up_down_session = [5, 6, 7, 8, 9]
-# down_up_session = [6, 7, 8, 9, 10]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [0, 1, 2, 3, 4]
@@ -118,7 +113,7 @@ batch_size = 1024  # maximum value to prevent overflow during running
 sampling_repetition = 100  # the number of samples for each time point
 gen_update_interval = 3  # The frequency at which the generator is updated. if set to 2, the generator is updated every 2 batches.
 disc_update_interval = 1  # The frequency at which the discriminator is updated. if set to 2, the discriminator is updated every 2 batches.
-noise_dim = 100
+noise_dim = 64
 blending_factor_dim = 2
 
 
@@ -452,76 +447,6 @@ Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, v
 accuracy_compare, cm_recall_compare = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
 Model_Storage.saveClassifyModels(models_compare, subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
 models_compare = Model_Storage.loadClassifyModels(subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
-
-
-
-'''
-    train classifier (on old and fake new data), for improvement purpose
-'''
-## build training data
-new_fake_train_set, _ = new_evaluation.classifierTlTrainSet(selected_new_fake_data['fake_data_based_on_grid_1'],
-    reference_new_real_data, dataset='cross_validation_set')
-old_real_train_set, _ = mix_evaluation.classifierTlTrainSet(filtered_mix_data, reference_new_real_data,
-    dataset='cross_validation_set')
-# select 40% data from new_fake_data and combine these selected data with old_real_data for plotting purpose
-new_fake_data = selected_new_fake_data['fake_data_based_on_grid_1']
-selected_fake_data = {key: [new_fake_data[key][i] for i in np.random.choice(len(new_fake_data[key]), size=int(len(new_fake_data[key]) * 0.4),
-    replace=False)] for key in new_fake_data}
-filtered_combined_data = {key: selected_fake_data[key] + filtered_mix_data[key] for key in filtered_mix_data}
-
-## classification
-combine_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-train_set, shuffled_train_set = combine_evaluation.combineTrainingSet(new_fake_train_set, old_real_train_set)
-models_combine, model_results_combine = combine_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
-acc_combine, cm_combine = combine_evaluation.evaluateClassifyResults(model_results_combine)
-# test classifier
-test_set, shuffled_test_set = combine_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
-test_results = combine_evaluation.testClassifier(models_combine, shuffled_test_set)
-accuracy_combine, cm_recall_combine = combine_evaluation.evaluateClassifyResults(test_results)
-del new_fake_train_set, old_real_train_set, train_set, shuffled_train_set, test_set, shuffled_test_set
-
-## plotting fake and real emg data for comparison
-# calculate average values
-real_compare = Plot_Emg_Data.calcuAverageEmgValues(filtered_combined_data)
-real_new = Plot_Emg_Data.calcuAverageEmgValues(adjusted_new_real_data)
-# plot values of certain transition type
-transition_type = 'emg_LWSA'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_compare, real_new, modes, title='combine_emg_2', ylim=(0, plot_y_limit))
-transition_type = 'emg_SALW'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_compare, real_new, modes, title='combine_emg_2', ylim=(0, plot_y_limit))
-transition_type = 'emg_LWSD'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_compare, real_new, modes, title='combine_emg_2', ylim=(0, plot_y_limit))
-transition_type = 'emg_SDLW'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_compare, real_new, modes, title='combine_emg_2', ylim=(0, plot_y_limit))
-# Plot_Emg_Data.plotMultipleRepetitionValues(real_mix, real_new, None, modes, ylim=(0, 1))
-# Plot_Emg_Data.plotMultipleChannelValues(real_mix, real_new, None, modes, ylim=(0, 1))
-# Plot_Emg_Data.plotMutipleEventPsdMeanValues(real_mix, real_new, None, modes, ylim=(0, 0.1), grid='grid_1')
-
-## save results
-model_type = 'classify_combine'
-Model_Storage.saveClassifyResult(subject, accuracy_combine, cm_recall_combine, version, classifier_result_set, model_type, project='cGAN_Model')
-accuracy_combine, cm_recall_combine = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_combine, subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
-models_combine = Model_Storage.loadClassifyModels(subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
-
-
-
-'''
-    train classifier (average old and fake new data), for improvement purpose
-'''
-## build training data
-
-
-
-
-
-
-
-
 
 
 

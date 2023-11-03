@@ -78,6 +78,18 @@ def calcuStatValues(combined_results):
     # Calculate t-test values between two consecutive keys
     computeTtestValuse(mean_std_value)
 
+    # list accuracy values of all models from all subjects in a single dataframe
+    delay_0_df = pd.DataFrame()
+    # Iterate over each model in the accuracy dictionary
+    for model_name, model_data in mean_std_value["accuracy"].items():
+        if isinstance(model_data, pd.DataFrame) and 'delay_0_ms' in model_data.columns:
+            delay_0_df[model_name] = model_data['delay_0_ms']
+
+    delay_0_df.loc["mean"] = mean_std_value["accuracy"]["mean"].loc['delay_0_ms']
+    delay_0_df.loc["std"] = mean_std_value["accuracy"]["std"].loc['delay_0_ms']
+    # Embed the delay_0_df in the accuracy dictionary under the key 'all'
+    mean_std_value["accuracy"]["all"] = delay_0_df
+
     return mean_std_value
 
 
@@ -103,7 +115,6 @@ def computeTtestValuse(mean_std_value):
         # Select rows only with index names that start with "Number"
         df1 = mean_std_value["accuracy"][key1].loc[valid_rows]
         df2 = mean_std_value["accuracy"][key2].loc[valid_rows]
-        print(valid_rows)
 
         # Conduct paired t-test for each delay column and store p-values in ttest_df
         p_values = []

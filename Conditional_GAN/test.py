@@ -165,7 +165,7 @@ model_type = 'cGAN'
 # classifier training parameters
 start_index = 400  # start index relative to the start of the original extracted data
 end_index = 1600  # end index relative to the start of the original extracted data
-classifier_filter_kernel = (60, 60)
+classifier_filter_kernel = (40, 40)
 classifier_result_set = 1
 plot_y_limit = 0.2
 

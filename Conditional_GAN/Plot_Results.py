@@ -16,11 +16,11 @@ version = 0
 result_set = 0
 all_subjects[subject] = Result_Analysis.getSubjectResults(subject, version, result_set)
 
-# ##
-# subject = 'Number2'
-# version = 0
-# result_set = 0
-# all_subjects[subject] = Result_Analysis.getSubjectResults(subject, version, result_set)
+##
+subject = 'Number2'
+version = 0
+result_set = 0
+all_subjects[subject] = Result_Analysis.getSubjectResults(subject, version, result_set)
 
 ##
 subject = 'Number3'
