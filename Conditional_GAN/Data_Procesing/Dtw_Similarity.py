@@ -85,6 +85,7 @@ class Dtw_Distance:
         fake_data = copy.deepcopy(synthetic_data)
         for transition_type, transition_data in synthetic_data.items():
             if transition_type in self.modes_generation.keys():
+                random.seed(5)
                 fake_data[transition_type] = random.sample(transition_data, min(self.num_sample, len(transition_data)))
         selected_fake_data_indices = []
         selected_reference_index = []

@@ -7,6 +7,7 @@
 
 ##
 import copy
+import random
 import numpy as np
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation, MV_Results_ByGroup
 from Transition_Prediction.Model_Sliding.ANN.Functions import Sliding_Ann_Results
@@ -253,4 +254,34 @@ class cGAN_Evaluation:
         normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
         shuffled_dataset = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
         return combined_dataset, shuffled_dataset
+
+
+## randomly select certain number of data
+def selectRandomData(emg_data, modes_generation, num_samples=100):
+    selected_data = {}
+    for locomotion_mode, locomotion_data in emg_data.items():
+        if locomotion_mode in modes_generation.keys():
+            if len(locomotion_data) >= num_samples:
+                random.seed(5)  # Ensure the random selection is reproducible
+                # Randomly select 'num_samples' data points without replacement from the mode
+                selected_data[locomotion_mode] = random.sample(locomotion_data, num_samples)
+            else:
+                raise ValueError(f"Requested sample number ({num_samples}) exceeds the available data number in mode '{locomotion_mode}'.")
+        else:
+            # For keys not in modes or with not enough data, keep the original data
+            selected_data[locomotion_mode] = locomotion_data
+    return selected_data
+
+
+## calculate the average value of selected modes between two dataset
+def calculateAverageValues(new_data, mix_data, modes_generation):
+    averaged_data = {}
+    for mode in modes_generation:
+        # Calculate the averages for each pair from new_data and new_data (Cartesian product).
+        averaged_data[mode] = [(np.array(arr_new) + np.array(arr_mix)) / 2 for arr_new in new_data[mode] for arr_mix in mix_data[mode]]
+    # For modes not in modes_to_average, take the data from processed_mix_data
+    for mode in set(mix_data) - set(modes_generation):
+        averaged_data[mode] = mix_data[mode]
+    return averaged_data
+
 
