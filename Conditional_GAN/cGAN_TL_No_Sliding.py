@@ -29,67 +29,61 @@ envelope = True  # the output will always be rectified if set True
 
 
 ## read and filter old data
-subject = 'Number8'
+subject = 'Number7'
 version = 0  # the data from which experiment version to process
 modes = ['up_down_t0', 'down_up_t0']
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 5, 6]
-up_down_session = [5, 6, 7, 8, 9]
-down_up_session = [7, 8, 9, 10]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [6, 8, 9, 10]
 # up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [1, 2, 3, 4, 5]
-# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [0, 1, 2, 3, 4]
+# up_down_session = [0, 1, 2, 4, 5]
 # down_up_session = [0, 1, 2, 3, 4]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 3, 4]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [2, 3, 4, 5]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [5, 6, 7, 8, 9, 10]
-# down_up_session = [6, 8, 9, 10]
-# up_down_session = [0, 1, 2, 3, 4, 5]
-# down_up_session = [0, 1, 2, 3, 4, 5]
+up_down_session = [0, 1, 2, 3, 4]
+down_up_session = [0, 1, 2, 3, 4]
+# up_down_session = [5, 6, 7, 8, 9]
+# down_up_session = [7, 8, 9, 10]
 sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 # old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
 #     envelope_cutoff=envelope_cutoff, envelope=envelope)
 old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_2', include_standing=False)
+    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_1', include_standing=False)
 
 
 # read and filter new data
 modes = ['up_down_t1', 'down_up_t1']
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [4, 5, 6, 8, 9]
-up_down_session = [0, 1, 2, 3, 4]
-down_up_session = [0, 1, 2, 3]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [6, 7, 8, 9, 10]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [1, 2, 3, 4, 5]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [0, 1, 2, 3]
-# down_up_session = [0, 1, 2, 3]
-# up_down_session = [0, 1, 2, 3]
-# down_up_session = [0, 1, 2, 3]
-# up_down_session = [5, 6, 7, 8, 9, 10]
-# down_up_session = [6, 7, 8, 9, 10]
-# up_down_session = [0, 1, 2, 3, 4, 5]
 # down_up_session = [0, 1, 3, 4]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [0, 1, 2, 3, 4]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [0, 1, 2, 3, 4]
+up_down_session = [0, 1, 2, 3]
+down_up_session = [0, 1, 2, 3]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [0, 1, 2, 3]
 sessions = [up_down_session, down_up_session]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 # new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
 #     envelope_cutoff=envelope_cutoff, envelope=envelope)
 new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_2', include_standing=False)
+    envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_1', include_standing=False)
 
 
 ## normalize and extract emg data for gan model training
@@ -173,7 +167,7 @@ model_type = 'cGAN'
 start_index = 400  # start index relative to the start of the original extracted data
 end_index = 1600  # end index relative to the start of the original extracted data
 classifier_filter_kernel = (40, 40)
-plot_y_limit = 0.5
+plot_y_limit = 0.3
 classifier_result_set = 1
 
 
@@ -222,15 +216,9 @@ new_train_set, shuffled_train_set = best_evaluation.classifierTrainSet(filtered_
 models_best, model_result_best = best_evaluation.trainClassifier(shuffled_train_set, num_epochs=50, batch_size=64, decay_epochs=20)
 accuracy_best, cm_recall_best = best_evaluation.evaluateClassifyResults(model_result_best)  # training and testing data from the same time
 # using old model to classify new data
-cross_validation_groups = Data_Preparation.crossValidationSet(5, filtered_new_real_data)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups,
-    window_parameters['feature_window_size'], increment=window_parameters['feature_window_increment_ms'] * window_parameters['sample_rate'])
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-test_results = basis_evaluation.testClassifier(models_basis, shuffled_test_set)
+test_results = basis_evaluation.testClassifier(models_basis, shuffled_train_set)
 accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
-del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, shuffled_train_set, cross_validation_groups, \
-    sliding_window_dataset, normalized_groups, shuffled_test_set
+del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, shuffled_train_set
 
 ## save results
 model_type = 'classify_basis'
@@ -308,11 +296,11 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_old, real_old, modes, title='old_
 # Plot_Emg_Data.plotMultipleChannelValues(fake_old, real_old, reference_old, modes, ylim=(0, 1))
 # Plot_Emg_Data.plotMutipleEventPsdMeanValues(fake_old, real_old, reference_old, modes, ylim=(0, 0.1), grid='grid_1')
 # plot the dtw distance curve (two selected)
-old_fake_envelopes = selected_old_fake_data['fake_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
-old_real_envelopes = selected_old_fake_data['real_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
-old_fake_envelope_index = selected_old_fake_data['fake_index_based_on_grid_1']['emg_LWSA'][1]
-old_real_envelope_index = selected_old_fake_data['reference_index_based_on_grid_1']['emg_LWSA'][0]
-Dtw_Similarity.plotDtwPath(old_fake_envelopes, old_real_envelopes, old_fake_envelope_index, old_real_envelope_index)
+# old_fake_envelopes = selected_old_fake_data['fake_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
+# old_real_envelopes = selected_old_fake_data['real_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
+# old_fake_envelope_index = selected_old_fake_data['fake_index_based_on_grid_1']['emg_LWSA'][1]
+# old_real_envelope_index = selected_old_fake_data['reference_index_based_on_grid_1']['emg_LWSA'][0]
+# Dtw_Similarity.plotDtwPath(old_fake_envelopes, old_real_envelopes, old_fake_envelope_index, old_real_envelope_index)
 # Plot_Emg_Data.plotMainEventMeanValues(fake_old, real_old, title='old_main_emg', ylim=(0, 0.5), grid='grid_1')
 
 ## save results
@@ -382,11 +370,11 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_new, real_new, modes, title='new_
 # Plot_Emg_Data.plotMultipleChannelValues(fake_new, real_new, reference_new, modes, ylim=(0, 1))
 # Plot_Emg_Data.plotMutipleEventPsdMeanValues(fake_new, real_new, reference_new, modes, ylim=(0, 0.1), grid='grid_1')
 # plot the dtw distance curve (between a selected fake data and reference data)
-new_fake_envelopes = selected_new_fake_data['fake_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
-new_real_envelopes = selected_new_fake_data['real_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
-new_fake_envelope_index = selected_new_fake_data['fake_index_based_on_grid_1']['emg_LWSA'][1]
-new_real_envelope_index = selected_new_fake_data['reference_index_based_on_grid_1']['emg_LWSA'][0]
-Dtw_Similarity.plotDtwPath(new_fake_envelopes, new_real_envelopes, new_fake_envelope_index, new_real_envelope_index)
+# new_fake_envelopes = selected_new_fake_data['fake_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
+# new_real_envelopes = selected_new_fake_data['real_envelope_averaged']['emg_repetition_list']['grid_1']['emg_LWSA']
+# new_fake_envelope_index = selected_new_fake_data['fake_index_based_on_grid_1']['emg_LWSA'][1]
+# new_real_envelope_index = selected_new_fake_data['reference_index_based_on_grid_1']['emg_LWSA'][0]
+# Dtw_Similarity.plotDtwPath(new_fake_envelopes, new_real_envelopes, new_fake_envelope_index, new_real_envelope_index)
 # Plot_Emg_Data.plotMainEventMeanValues(fake_new, real_new, title='new_main_emg', ylim=(0, 0.5), grid='grid_1')
 
 ## save results
@@ -510,71 +498,6 @@ models_combine = Model_Storage.loadClassifyModels(subject, version, model_type, 
 
 
 '''
-    train classifier (average old and fake new data), for improvement purpose
-'''
-## build training data
-# data before spatial filtering, random selection
-sampled_new_fake_data = cGAN_Evaluation.selectRandomData(processed_new_fake_data, modes_generation, num_samples=100)
-average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, processed_mix_data, modes_generation)
-filtered_average_fake_data = Post_Process_Data.spatialFilterModelInput(average_fake_data, kernel=classifier_filter_kernel)
-filtered_new_fake_selected = Dtw_Similarity.extractFakeData(filtered_average_fake_data, filtered_new_real_data, modes_generation,
-    envelope_frequency=None, num_sample=100, num_reference=1, method='random', random_reference=False, split_grids=True)
-
-# data before spatial filtering, dtw selection
-sampled_new_fake_data = cGAN_Evaluation.selectRandomData(processed_new_fake_data, modes_generation, num_samples=100)
-average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, processed_mix_data, modes_generation)
-filtered_average_fake_data = Post_Process_Data.spatialFilterModelInput(average_fake_data, kernel=classifier_filter_kernel)
-filtered_new_fake_selected = Dtw_Similarity.extractFakeData(filtered_average_fake_data, filtered_new_real_data, modes_generation,
-    envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
-
-# data after spatial filtering, random selection
-sampled_new_fake_data = cGAN_Evaluation.selectRandomData(filtered_new_fake_data, modes_generation, num_samples=100)
-average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, filtered_mix_data, modes_generation)
-filtered_new_fake_selected = Dtw_Similarity.extractFakeData(average_fake_data, filtered_new_real_data, modes_generation,
-    envelope_frequency=None, num_sample=100, num_reference=1, method='random', random_reference=False, split_grids=True)
-
-# data after spatial filtering, dtw selection
-average_fake_data = cGAN_Evaluation.calculateAverageValues(selected_new_fake_data['fake_data_based_on_grid_1'], filtered_mix_data, modes_generation)
-filtered_new_fake_selected = Dtw_Similarity.extractFakeData(average_fake_data, filtered_new_real_data, modes_generation,
-    envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
-
-## classification
-mean_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-# use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
-train_set, shuffled_train_set = mean_evaluation.classifierTlTrainSet(filtered_new_fake_selected['fake_data_based_on_grid_1'],
-    reference_new_real_data, dataset='cross_validation_set')
-models_average, model_results_average = mean_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
-acc_average, cm_average = mean_evaluation.evaluateClassifyResults(model_results_average)
-# test classifier
-test_set, shuffled_test_set = mean_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
-test_results = mean_evaluation.testClassifier(models_average, shuffled_test_set)
-accuracy_average, cm_recall_average = mean_evaluation.evaluateClassifyResults(test_results)
-del train_set, shuffled_train_set, test_set, shuffled_test_set
-
-## plotting fake and real emg data for comparison
-# calculate average values
-real_average = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_fake_selected['fake_data_based_on_grid_1'])
-real_new = Plot_Emg_Data.calcuAverageEmgValues(adjusted_new_real_data)
-# plot values of certain transition type
-transition_type = 'emg_LWSA'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-transition_type = 'emg_SALW'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-transition_type = 'emg_LWSD'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-transition_type = 'emg_SDLW'
-modes = modes_generation[transition_type]
-Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-# Plot_Emg_Data.plotMultipleRepetitionValues(real_mix, real_new, None, modes, ylim=(0, 1))
-# Plot_Emg_Data.plotMultipleChannelValues(real_mix, real_new, None, modes, ylim=(0, 1))
-# Plot_Emg_Data.plotMutipleEventPsdMeanValues(real_mix, real_new, None, modes, ylim=(0, 0.1), grid='grid_1')
-
-
-
-'''
     train classifier (on noisy new data), select some reference new data and augment them with noise for training comparison
 '''
 ## generate noise data
@@ -611,3 +534,66 @@ output = {}
 #     output[transition_type] = result
 
 
+
+'''
+    train classifier (average old and fake new data), for improvement purpose
+'''
+## build training data
+# data before spatial filtering, random selection
+# sampled_new_fake_data = cGAN_Evaluation.selectRandomData(processed_new_fake_data, modes_generation, num_samples=100)
+# average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, processed_mix_data, modes_generation)
+# filtered_average_fake_data = Post_Process_Data.spatialFilterModelInput(average_fake_data, kernel=classifier_filter_kernel)
+# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(filtered_average_fake_data, filtered_new_real_data, modes_generation,
+#     envelope_frequency=None, num_sample=100, num_reference=1, method='random', random_reference=False, split_grids=True)
+
+# data before spatial filtering, dtw selection
+# sampled_new_fake_data = cGAN_Evaluation.selectRandomData(processed_new_fake_data, modes_generation, num_samples=100)
+# average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, processed_mix_data, modes_generation)
+# filtered_average_fake_data = Post_Process_Data.spatialFilterModelInput(average_fake_data, kernel=classifier_filter_kernel)
+# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(filtered_average_fake_data, filtered_new_real_data, modes_generation,
+#     envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
+#
+# # data after spatial filtering, random selection
+# sampled_new_fake_data = cGAN_Evaluation.selectRandomData(filtered_new_fake_data, modes_generation, num_samples=100)
+# average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, filtered_mix_data, modes_generation)
+# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(average_fake_data, filtered_new_real_data, modes_generation,
+#     envelope_frequency=None, num_sample=100, num_reference=1, method='random', random_reference=False, split_grids=True)
+#
+# # data after spatial filtering, dtw selection
+# average_fake_data = cGAN_Evaluation.calculateAverageValues(selected_new_fake_data['fake_data_based_on_grid_1'], filtered_mix_data, modes_generation)
+# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(average_fake_data, filtered_new_real_data, modes_generation,
+#     envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
+#
+# ## classification
+# mean_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+# # use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
+# train_set, shuffled_train_set = mean_evaluation.classifierTlTrainSet(filtered_new_fake_selected['fake_data_based_on_grid_1'],
+#     reference_new_real_data, dataset='cross_validation_set')
+# models_average, model_results_average = mean_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
+# acc_average, cm_average = mean_evaluation.evaluateClassifyResults(model_results_average)
+# # test classifier
+# test_set, shuffled_test_set = mean_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
+# test_results = mean_evaluation.testClassifier(models_average, shuffled_test_set)
+# accuracy_average, cm_recall_average = mean_evaluation.evaluateClassifyResults(test_results)
+# del train_set, shuffled_train_set, test_set, shuffled_test_set
+#
+# ## plotting fake and real emg data for comparison
+# # calculate average values
+# real_average = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_fake_selected['fake_data_based_on_grid_1'])
+# real_new = Plot_Emg_Data.calcuAverageEmgValues(adjusted_new_real_data)
+# # plot values of certain transition type
+# transition_type = 'emg_LWSA'
+# modes = modes_generation[transition_type]
+# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
+# transition_type = 'emg_SALW'
+# modes = modes_generation[transition_type]
+# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
+# transition_type = 'emg_LWSD'
+# modes = modes_generation[transition_type]
+# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
+# transition_type = 'emg_SDLW'
+# modes = modes_generation[transition_type]
+# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
+# # Plot_Emg_Data.plotMultipleRepetitionValues(real_mix, real_new, None, modes, ylim=(0, 1))
+# # Plot_Emg_Data.plotMultipleChannelValues(real_mix, real_new, None, modes, ylim=(0, 1))
+# # Plot_Emg_Data.plotMutipleEventPsdMeanValues(real_mix, real_new, None, modes, ylim=(0, 0.1), grid='grid_1')

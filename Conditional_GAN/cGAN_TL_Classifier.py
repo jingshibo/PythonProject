@@ -192,6 +192,7 @@ filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(processed_new
 del old_real_emg_grids, new_real_emg_grids, processed_old_real_data, processed_new_real_data
 
 ## classification
+# use old data to train old model
 basis_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
 old_train_set, shuffled_train_set = basis_evaluation.classifierTrainSet(filtered_old_real_data, dataset='cross_validation_set')
 models_basis, model_result_basis = basis_evaluation.trainClassifier(shuffled_train_set, num_epochs=50, batch_size=1024, decay_epochs=20)
@@ -201,15 +202,10 @@ best_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters
 new_train_set, shuffled_train_set = best_evaluation.classifierTrainSet(filtered_new_real_data, dataset='cross_validation_set')
 models_best, model_result_best = best_evaluation.trainClassifier(shuffled_train_set, num_epochs=50, batch_size=1024, decay_epochs=20)
 accuracy_best, cm_recall_best = best_evaluation.evaluateClassifyResults(model_result_best)  # training and testing data from the same time
-# test classifier
-cross_validation_groups = Data_Preparation.crossValidationSet(5, filtered_new_real_data)
-sliding_window_dataset, feature_window_per_repetition = Raw_Cnn2d_Dataset.separateEmgData(cross_validation_groups,
-    window_parameters['feature_window_size'], increment=window_parameters['feature_window_increment_ms'] * window_parameters['sample_rate'])
-normalized_groups = Raw_Cnn2d_Dataset.combineNormalizedDataset(sliding_window_dataset, normalize=None)
-shuffled_test_set = Raw_Cnn2d_Dataset.shuffleTrainingSet(normalized_groups)
-test_results = basis_evaluation.testClassifier(models_basis, shuffled_test_set)
+# using old model to classify new data
+test_results = basis_evaluation.testClassifier(models_basis, shuffled_train_set)
 accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResultsByGroup(test_results)  # training and testing data from different time
-del old_train_set, new_train_set, shuffled_train_set, cross_validation_groups, sliding_window_dataset, normalized_groups, shuffled_test_set
+del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, shuffled_train_set
 
 ## save results
 model_type = 'classify_basis'
