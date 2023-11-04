@@ -185,11 +185,11 @@ Model_Storage.saveClassifyModels(models_basis, subject, version, 'classify_basis
 ## train classifier (on old data), for testing gan generation performance
 models_old, accuracy_old, cm_recall_old, selected_old_fake_data, filtered_old_real_data = train_classifier.trainClassifierOldData(
     old_emg_classify_normalized, extracted_emg_classify, gen_results)
+## plot data
+train_classifier.plotEmgData(selected_old_fake_data['fake_data_based_on_grid_1'], filtered_old_real_data, plot_ylim=plot_ylim, title='old')
 ## save model
 Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, classifier_result_set, 'classify_old', project='cGAN_Model')
 Model_Storage.saveClassifyModels(models_old, subject, version, 'classify_old', model_number=list(range(5)), project='cGAN_Model')
-## plot data
-train_classifier.plotEmgData(selected_old_fake_data['fake_data_based_on_grid_1'], filtered_old_real_data, plot_ylim=plot_ylim, title='old')
 
 
 
@@ -199,11 +199,11 @@ train_classifier.plotEmgData(selected_old_fake_data['fake_data_based_on_grid_1']
 ## generate fake data
 models_new, accuracy_new, cm_recall_new, selected_new_fake_data, adjusted_new_real_data, reference_new_real_data, processed_new_real_data = \
     train_classifier.trainClassifierNewData(new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis)
+## plot data
+train_classifier.plotEmgData(selected_new_fake_data['fake_data_based_on_grid_1'], adjusted_new_real_data, plot_ylim=plot_ylim, title='new')
 ## save model
 Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, classifier_result_set, 'classify_new', project='cGAN_Model')
 Model_Storage.saveClassifyModels(models_new, subject, version, 'classify_new', model_number=list(range(5)), project='cGAN_Model')
-## plot data
-train_classifier.plotEmgData(selected_new_fake_data['fake_data_based_on_grid_1'], adjusted_new_real_data, plot_ylim=plot_ylim, title='new')
 
 
 
@@ -213,11 +213,11 @@ train_classifier.plotEmgData(selected_new_fake_data['fake_data_based_on_grid_1']
 ##
 accuracy_compare, cm_recall_compare, models_compare, filtered_mix_data = train_classifier.trainClassifierMixData(old_emg_classify_normalized,
     new_emg_classify_normalized, reference_new_real_data, adjusted_new_real_data, models_basis)
+## plot data
+train_classifier.plotEmgData(filtered_mix_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='mix')
 ## save results
 Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, classifier_result_set, 'classify_compare', project='cGAN_Model')
 Model_Storage.saveClassifyModels(models_compare, subject, version, 'classify_compare', model_number=list(range(5)), project='cGAN_Model')
-## plot data
-train_classifier.plotEmgData(filtered_mix_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='mix')
 
 
 
@@ -227,11 +227,11 @@ train_classifier.plotEmgData(filtered_mix_data, adjusted_new_real_data, plot_yli
 ## build training data
 accuracy_combine, cm_recall_combine, models_combine, filtered_combined_data = train_classifier.trainClassifierCombineData(
     selected_new_fake_data, filtered_mix_data, reference_new_real_data, adjusted_new_real_data, models_basis)
+## plot data
+train_classifier.plotEmgData(filtered_combined_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='combine')
 ## save results
 Model_Storage.saveClassifyResult(subject, accuracy_combine, cm_recall_combine, version, classifier_result_set, 'classify_combine', project='cGAN_Model')
 Model_Storage.saveClassifyModels(models_combine, subject, version, 'classify_combine', model_number=list(range(5)), project='cGAN_Model')
-## plot data
-train_classifier.plotEmgData(filtered_combined_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='combine')
 
 
 
@@ -244,6 +244,14 @@ accuracy_noise, cm_recall_noise, models_noise, filtered_noise_data = train_class
 ## save results
 Model_Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, classifier_result_set, 'classify_noise', project='cGAN_Model')
 Model_Storage.saveClassifyModels(models_noise, subject, version, 'classify_noise', model_number=list(range(5)), project='cGAN_Model')
+
+
+
+'''
+    train classifier (on one new data), select some reference new data without any other augmentation for training comparison
+'''
+
+
 
 
 ## load check point models

@@ -525,6 +525,16 @@ Model_Storage.saveClassifyModels(models_noise, subject, version, model_type, mod
 models_noise = Model_Storage.loadClassifyModels(subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
 
 
+
+'''
+    train classifier (on one new data), select some reference new data without any other augmentation for training comparison
+'''
+
+
+
+
+
+
 ## load check point models
 output = {}
 # for transition_type in modes_generation.keys():

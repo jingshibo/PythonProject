@@ -6,6 +6,9 @@ import copy
 from scipy.stats import ttest_rel
 
 
+# define certain columns
+columns_for_model_update = ['accuracy_best', 'accuracy_combine', 'accuracy_new', 'accuracy_compare', 'accuracy_noise', 'accuracy_worst']
+
 ## load results from all models of the subject
 def getSubjectResults(subject, version, result_set):
     accuracy_basis, cm_recall_basis = Model_Storage.loadClassifyResult(subject, version, result_set, 'classify_basis',
@@ -16,13 +19,15 @@ def getSubjectResults(subject, version, result_set):
     accuracy_worst, cm_recall_worst = Model_Storage.loadClassifyResult(subject, version, result_set, 'classify_worst', project='cGAN_Model')
     accuracy_new, cm_recall_new = Model_Storage.loadClassifyResult(subject, version, result_set, 'classify_new', project='cGAN_Model')
     accuracy_compare, cm_recall_compare = Model_Storage.loadClassifyResult(subject, version, result_set, 'classify_compare', project='cGAN_Model')
+    accuracy_combine, cm_recall_combine = Model_Storage.loadClassifyResult(subject, version, result_set, 'classify_combine', project='cGAN_Model')
     accuracy_noise, cm_recall_noise = Model_Storage.loadClassifyResult(subject, version, result_set, 'classify_noise', project='cGAN_Model')
 
-    accuracy = {'accuracy_best': accuracy_best, 'accuracy_new': accuracy_new, 'accuracy_compare': accuracy_compare,
-        'accuracy_noise': accuracy_noise, 'accuracy_worst': accuracy_worst, 'accuracy_basis': accuracy_basis, 'accuracy_old': accuracy_old}
-    cm_call = {'cm_recall_best': cm_recall_best, 'cm_recall_new': cm_recall_new, 'cm_recall_compare': cm_recall_compare,
-        'cm_recall_noise': cm_recall_noise, 'cm_recall_worst': cm_recall_worst, 'cm_recall_basis': cm_recall_basis,
-        'cm_recall_old': cm_recall_old}
+    accuracy = {'accuracy_best': accuracy_best, 'accuracy_combine': accuracy_combine, 'accuracy_new': accuracy_new,
+        'accuracy_compare': accuracy_compare, 'accuracy_noise': accuracy_noise, 'accuracy_worst': accuracy_worst,
+        'accuracy_basis': accuracy_basis, 'accuracy_old': accuracy_old}
+    cm_call = {'cm_recall_best': cm_recall_best, 'cm_recall_combine': cm_recall_combine, 'cm_recall_new': cm_recall_new,
+        'cm_recall_compare': cm_recall_compare, 'cm_recall_noise': cm_recall_noise, 'cm_recall_worst': cm_recall_worst,
+        'cm_recall_basis': cm_recall_basis, 'cm_recall_old': cm_recall_old}
     classify_results = {'accuracy': accuracy, 'cm_call': cm_call}
     return classify_results
 
@@ -45,10 +50,11 @@ def combineModelUpdateResults(original_data):
 ## calculate statistical results for each condition
 def calcuStatValues(combined_results):
     mean_std_value = copy.deepcopy(combined_results)
+    mean_std_value["accuracy"]["statistics"] = {}  # set a new dict to save calculated statistic values
+
     # Create DataFrames to store mean and std values
     mean_df = pd.DataFrame()
     std_df = pd.DataFrame()
-
     # Convert dict to dataframe and compute mean & std
     for model_name, model_value in combined_results["accuracy"].items():
         # Create an empty DataFrame with indices as "NumberX" keys and columns as delay keys
@@ -63,10 +69,13 @@ def calcuStatValues(combined_results):
         mean_df[model_name] = df.mean()
         std_df[model_name] = df.std()
     # Embed the mean and std DataFrames in the original mean_std_value dictionary
-    mean_std_value["accuracy"]["mean"] = mean_df
-    mean_std_value["accuracy"]["std"] = std_df
+    mean_std_value["accuracy"]["statistics"]["mean_all"] = mean_df
+    mean_std_value["accuracy"]["statistics"]["std_all"] = std_df
+    # Select those columns specifically for model update application
+    mean_std_value["accuracy"]["statistics"]["mean_update"] = mean_std_value["accuracy"]["statistics"]["mean_all"][columns_for_model_update]
+    mean_std_value["accuracy"]["statistics"]["std_update"] = mean_std_value["accuracy"]["statistics"]["std_all"][columns_for_model_update]
 
-    # Calculate for cm_call dictionary
+    # Calculate mean values for cm_call dictionary
     for model_name, model_value in combined_results["cm_call"].items():
         mean_std_value["cm_call"][model_name] = {}
         for delay_key, delay_values in model_value.items():
@@ -78,37 +87,52 @@ def calcuStatValues(combined_results):
     # Calculate t-test values between two consecutive keys
     computeTtestValuse(mean_std_value)
 
-    # list accuracy values of all models from all subjects in a single dataframe
+    # put accuracy values of all models from all subjects in a single dataframe for display purpose
     delay_0_df = pd.DataFrame()
     # Iterate over each model in the accuracy dictionary
     for model_name, model_data in mean_std_value["accuracy"].items():
         if isinstance(model_data, pd.DataFrame) and 'delay_0_ms' in model_data.columns:
             delay_0_df[model_name] = model_data['delay_0_ms']
-
-    delay_0_df.loc["mean"] = mean_std_value["accuracy"]["mean"].loc['delay_0_ms']
-    delay_0_df.loc["std"] = mean_std_value["accuracy"]["std"].loc['delay_0_ms']
+    delay_0_df.loc["mean"] = mean_std_value["accuracy"]["statistics"]["mean_all"].loc['delay_0_ms']
+    delay_0_df.loc["std"] = mean_std_value["accuracy"]["statistics"]["std_all"].loc['delay_0_ms']
     # Embed the delay_0_df in the accuracy dictionary under the key 'all'
-    mean_std_value["accuracy"]["all"] = delay_0_df
+    mean_std_value["accuracy"]["all_values"] = delay_0_df
+
+    # Calculate the mean of the diagonal elements of 'cm_call' matrix for each model and add it as a new row in the 'all' DataFrame
+    diagonal_means = {}
+    for model_name, model_data in mean_std_value["cm_call"].items():
+        # Extract the name part of the model_name (assuming model_name starts with 'cm_recall_')
+        cm_call_name_part = model_name[len('cm_recall_'):]
+        # Construct the corresponding accuracy model name
+        accuracy_name = f'accuracy_{cm_call_name_part}'
+        # Calculate the mean of the diagonal elements
+        diagonal_mean = np.mean(np.diag(model_data['delay_0_ms']))
+        diagonal_means[accuracy_name] = diagonal_mean * 100
+    mean_std_value["accuracy"]["statistics"]["cm_diagonal_mean_update"] = pd.DataFrame([diagonal_means], index=['delay_0_ms'])[columns_for_model_update]
+    # Add the diagonal means as a new row in the 'all' DataFrame
+    mean_std_value["accuracy"]['all_values'].loc['cm_diagonal_mean'] = diagonal_means
+    # all_df = mean_std_value["accuracy"]['all']
+    # mean_std_value["accuracy"]['all'].loc['average'] = np.minimum(all_df.loc['mean'], all_df.loc['cm_diagonal_mean_delay_0'])
 
     return mean_std_value
 
 
+## compute t-test values between models
 def computeTtestValuse(mean_std_value):
-    # Order of the keys as manually provided
-    key_order = ['accuracy_best', 'accuracy_new', 'accuracy_compare', 'accuracy_noise', 'accuracy_worst']
     # Obtain the key order directly from the dictionary
     # key_order = list(mean_std_value["accuracy"].keys())
     # key_order = [key for key in key_order if key != "ttest"]  # Exclude the 'ttest' key if 'ttest' already exists in the 'accuracy' dict
-    ttest_df = pd.DataFrame(index=mean_std_value["accuracy"][key_order[0]].columns)
+    # Order of the keys as manually provided
+    ttest_df = pd.DataFrame(index=mean_std_value["accuracy"][columns_for_model_update[0]].columns)
 
     # Loop over consecutive keys
-    for i in range(len(key_order)):
+    for i in range(len(columns_for_model_update )):
         if i == 0:  # key_order[0] = 'accuracy_best'
-            key1 = key_order[i]
-            key2 = key_order[i]
+            key1 = columns_for_model_update[i]
+            key2 = columns_for_model_update[i]
         else:
-            key1 = key_order[i - 1]
-            key2 = key_order[i]
+            key1 = columns_for_model_update[i - 1]
+            key2 = columns_for_model_update[i]
 
         # check if the row index name starts with the word "Number" using Python's built-in string methods
         valid_rows = mean_std_value["accuracy"][key1].index[mean_std_value["accuracy"][key1].index.str.startswith("Number")]
@@ -123,7 +147,5 @@ def computeTtestValuse(mean_std_value):
             p_values.append(p_val)
         ttest_df[key2] = p_values
     # Embed the ttest_df in the original transformed_data dictionary
-    mean_std_value["accuracy"]["ttest"] = ttest_df
+    mean_std_value["accuracy"]["statistics"]["ttest_update"] = ttest_df
 
-
-# exclude 'mean' and 'std', only Number...
