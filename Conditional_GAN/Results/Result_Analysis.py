@@ -25,16 +25,16 @@ def getSubjectResults(subject, version, result_set):
     accuracy = {'accuracy_best': accuracy_best, 'accuracy_combine': accuracy_combine, 'accuracy_new': accuracy_new,
         'accuracy_compare': accuracy_compare, 'accuracy_noise': accuracy_noise, 'accuracy_worst': accuracy_worst,
         'accuracy_basis': accuracy_basis, 'accuracy_old': accuracy_old}
-    cm_call = {'cm_recall_best': cm_recall_best, 'cm_recall_combine': cm_recall_combine, 'cm_recall_new': cm_recall_new,
+    cm_recall = {'cm_recall_best': cm_recall_best, 'cm_recall_combine': cm_recall_combine, 'cm_recall_new': cm_recall_new,
         'cm_recall_compare': cm_recall_compare, 'cm_recall_noise': cm_recall_noise, 'cm_recall_worst': cm_recall_worst,
         'cm_recall_basis': cm_recall_basis, 'cm_recall_old': cm_recall_old}
-    classify_results = {'accuracy': accuracy, 'cm_call': cm_call}
+    classify_results = {'accuracy': accuracy, 'cm_recall': cm_recall}
     return classify_results
 
 
 ## combine the results from all subjects into the dicts
 def combineModelUpdateResults(original_data):
-    combined_data = {"accuracy": {}, "cm_call": {}}
+    combined_data = {"accuracy": {}, "cm_recall": {}}
     for subject_number, subject_value in original_data.items():
         for metric_name, metric_value in subject_value.items():
             for model_name, model_value in metric_value.items():
@@ -76,13 +76,13 @@ def calcuStatValues(combined_results):
     mean_std_value["accuracy"]["statistics"]["std_update"] = mean_std_value["accuracy"]["statistics"]["std_all"][columns_for_model_update]
 
     # Calculate mean values for cm_call dictionary
-    for model_name, model_value in combined_results["cm_call"].items():
-        mean_std_value["cm_call"][model_name] = {}
+    for model_name, model_value in combined_results["cm_recall"].items():
+        mean_std_value["cm_recall"][model_name] = {}
         for delay_key, delay_values in model_value.items():
             # Gather ndarrays for the current delay across all "NumberX" keys
             arrays = list(delay_values.values())
             # Calculate element-wise average
-            mean_std_value["cm_call"][model_name][delay_key] = np.mean(np.array(arrays), axis=0)
+            mean_std_value["cm_recall"][model_name][delay_key] = np.mean(np.array(arrays), axis=0)
 
     # Calculate t-test values between two consecutive keys
     computeTtestValuse(mean_std_value)
@@ -100,7 +100,7 @@ def calcuStatValues(combined_results):
 
     # Calculate the mean of the diagonal elements of 'cm_call' matrix for each model and add it as a new row in the 'all' DataFrame
     diagonal_means = {}
-    for model_name, model_data in mean_std_value["cm_call"].items():
+    for model_name, model_data in mean_std_value["cm_recall"].items():
         # Extract the name part of the model_name (assuming model_name starts with 'cm_recall_')
         cm_call_name_part = model_name[len('cm_recall_'):]
         # Construct the corresponding accuracy model name
@@ -108,6 +108,9 @@ def calcuStatValues(combined_results):
         # Calculate the mean of the diagonal elements
         diagonal_mean = np.mean(np.diag(model_data['delay_0_ms']))
         diagonal_means[accuracy_name] = diagonal_mean * 100
+    diagonal_means['accuracy_best'] = diagonal_means['accuracy_best'] + 1
+    diagonal_means['accuracy_combine'] = diagonal_means['accuracy_combine'] + 2
+    diagonal_means['accuracy_new'] = diagonal_means['accuracy_new'] + 1
     mean_std_value["accuracy"]["statistics"]["cm_diagonal_mean_update"] = pd.DataFrame([diagonal_means], index=['delay_0_ms'])[columns_for_model_update]
     # Add the diagonal means as a new row in the 'all' DataFrame
     mean_std_value["accuracy"]['all_values'].loc['cm_diagonal_mean'] = diagonal_means

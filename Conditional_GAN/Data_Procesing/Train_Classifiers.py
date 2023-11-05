@@ -37,7 +37,7 @@ class ClassifierTraining():
             new_emg_classify_reshaped, time_interval, length, output_list=False)
         del old_emg_classify_reshaped, new_emg_classify_reshaped
 
-        return gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted_emg_classify
+        return gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted_emg_classify, self.window_parameters
 
 
     ## train classifier (basic scenarios), training and testing using data from the same and different time
@@ -66,13 +66,18 @@ class ClassifierTraining():
         # using old model to classify new data
         test_results = basis_evaluation.testClassifier(models_basis, shuffled_train_set)
         accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
-        del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, shuffled_train_set
+        # use new data to train old model by transfer learning
+        tf_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
+        train_set, shuffled_train_set = tf_evaluation.classifierTlTrainSet(filtered_new_real_data, None, dataset='cross_validation_set')
+        models_tf, model_results_tf = tf_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
+        accuracy_tf, cm_recall_tf = tf_evaluation.evaluateClassifyResults(model_results_tf)
+        del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, train_set, shuffled_train_set
 
-        return models_basis, accuracy_basis, cm_recall_basis, accuracy_best, cm_recall_best, accuracy_worst, cm_recall_worst
+        return models_basis, accuracy_basis, cm_recall_basis, accuracy_best, cm_recall_best, accuracy_worst, cm_recall_worst, accuracy_tf, cm_recall_tf
 
 
     ##  train classifier (on old data), for testing gan generation performance
-    def trainClassifierOldData(self, old_emg_classify_normalized, extracted_emg_classify, gen_results):
+    def trainClassifierOldData(self, old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample):
         old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         synthetic_old_data, fake_old_images = old_evaluation.generateFakeData(extracted_emg_classify, 'old', self.modes_generation,
             old_emg_classify_normalized, spatial_filtering=False, kernel=self.gan_filter_kernel)
@@ -90,7 +95,7 @@ class ClassifierTraining():
         filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(processed_old_real_data, kernel=self.classifier_filter_kernel)
         # select representative fake data for classification model training
         selected_old_fake_data = Dtw_Similarity.extractFakeData(filtered_old_fake_data, filtered_old_real_data, self.modes_generation,
-            envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
+            envelope_frequency=None, num_sample=num_sample, num_reference=1, method='select', random_reference=False, split_grids=True)
         del processed_old_fake_data, processed_old_real_data, filtered_old_fake_data
 
         # classification
@@ -108,7 +113,7 @@ class ClassifierTraining():
 
 
     ##  train classifier (on new data), for evaluating the proposed method performance
-    def trainClassifierNewData(self, new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis):
+    def trainClassifierNewData(self, new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis, num_sample):
         new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         synthetic_new_data, fake_new_images = new_evaluation.generateFakeData(extracted_emg_classify, 'new', self.modes_generation,
             new_emg_classify_normalized, spatial_filtering=False, kernel=self.gan_filter_kernel)
@@ -126,7 +131,7 @@ class ClassifierTraining():
         filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(processed_new_real_data, kernel=self.classifier_filter_kernel)
         # select representative fake data for classification model training
         selected_new_fake_data = Dtw_Similarity.extractFakeData(filtered_new_fake_data, filtered_new_real_data, self.modes_generation,
-            envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
+            envelope_frequency=None, num_sample=num_sample, num_reference=1, method='select', random_reference=False, split_grids=True)
 
         # classification
         reference_indices = selected_new_fake_data['reference_index_based_on_grid_1']
@@ -142,7 +147,8 @@ class ClassifierTraining():
         accuracy_new, cm_recall_new = new_evaluation.evaluateClassifyResults(test_results)
         del train_set, shuffled_train_set, test_set, shuffled_test_set
 
-        return models_new, accuracy_new, cm_recall_new, selected_new_fake_data, adjusted_new_real_data, reference_new_real_data, processed_new_real_data
+        return models_new, accuracy_new, cm_recall_new, selected_new_fake_data, adjusted_new_real_data, reference_new_real_data, \
+            processed_new_real_data, filtered_new_real_data
 
 
     ##  train classifier (on old and new data), for comparison purpose
@@ -207,11 +213,11 @@ class ClassifierTraining():
 
 
     ## train classifier (on noisy new data), select some reference new data and augment them with noise for training comparison
-    def trainClassifierNoiseData(self, processed_new_real_data, reference_new_real_data, adjusted_new_real_data, models_basis):
+    def trainClassifierNoiseData(self, processed_new_real_data, reference_new_real_data, adjusted_new_real_data, models_basis, num_sample):
         # generate noise data
         gen_results = None
         noise_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)  # window_parameters are in line with the above
-        noise_new_data = noise_evaluation.generateNoiseData(processed_new_real_data, reference_new_real_data, num_sample=100, snr=0.05)
+        noise_new_data = noise_evaluation.generateNoiseData(processed_new_real_data, reference_new_real_data, num_sample=num_sample, snr=0.05)
         # median filtering
         filtered_noise_data = Post_Process_Data.spatialFilterModelInput(noise_new_data, kernel=self.classifier_filter_kernel)
 
@@ -229,6 +235,30 @@ class ClassifierTraining():
         del train_set, shuffled_train_set, test_set, shuffled_test_set
 
         return accuracy_noise, cm_recall_noise, models_noise, filtered_noise_data
+
+
+    ## train classifier (on only copying new data), replicate only reference new data without augmentation to build the dataset
+    def trainClassifierCopyData(self, filtered_new_real_data, reference_new_real_data, adjusted_new_real_data, models_basis, num_sample):
+        gen_results = None
+        copy_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
+        # replicate the current reference new data multiple times to build the dataset. This dataset has already been spatial filtered
+        replicated_only_new_data = copy_evaluation.replicateReferenceNewData(filtered_new_real_data, reference_new_real_data,
+            self.modes_generation, num_sample=num_sample)
+
+        # classification
+        train_set, shuffled_train_set = copy_evaluation.classifierTlTrainSet(replicated_only_new_data, reference_new_real_data,
+            dataset='cross_validation_set')
+        models_copy, model_results_copy = copy_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32,
+            decay_epochs=10)
+        acc_copy, cm_copy = copy_evaluation.evaluateClassifyResults(model_results_copy)
+        # test classifier
+        test_set, shuffled_test_set = copy_evaluation.classifierTestSet(self.modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
+        test_results = copy_evaluation.testClassifier(models_copy, shuffled_test_set)
+        accuracy_copy, cm_recall_copy = copy_evaluation.evaluateClassifyResults(test_results)
+        del train_set, shuffled_train_set, test_set, shuffled_test_set
+
+        return accuracy_copy, cm_recall_copy, models_copy, replicated_only_new_data
+
 
     ## plotting fake and real emg data for comparison
     def plotEmgData(self,fake_emg_data, real_emg_data, plot_ylim, title):

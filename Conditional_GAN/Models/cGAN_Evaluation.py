@@ -78,14 +78,17 @@ class cGAN_Evaluation:
 
 
     # generate fake data by adding noise to reference real emg data and substitute original emg dataset using this data
-    def generateNoiseData(self, real_emg_normalized, reference_data, num_sample=60, snr=25):
+    def generateNoiseData(self, real_emg_normalized, reference_new_real_data, num_sample=60, snr=25):
         '''
         :param real_emg_normalized: real emg data dict
-        :param reference_data: selected real data used for noisy sample generation
+        :param reference_new_real_data: selected real data used for noisy sample generation
         :param num_sample:  the number of noisy samples to generate for each locomotion mode
         :param snr_db:  the amplitude of noise to add based on signal-to-noise ratio
         :return: real emg data with certain modes replaced by generated noisy data
         '''
+
+        if not reference_new_real_data:  # if no new data are available for the transition modes
+            raise Exception('No reference data available!')
 
         # add noise to reference data
         def generate_noisy_sample(real_data, snr_db):  # add Gaussian Noise with signal-to-noise ratio (SNR) of 25
@@ -102,20 +105,31 @@ class cGAN_Evaluation:
         synthetic_data = copy.deepcopy(real_emg_normalized)
         # Generate noisy samples for each numpy array in reference_data
         reference_data_with_noise = {locomotion_mode: [generate_noisy_sample(array, snr) for array in array_list for _ in
-            range(int(num_sample / len(array_list)))] for locomotion_mode, array_list in reference_data.items()}
+            range(int(num_sample / len(array_list)))] for locomotion_mode, array_list in reference_new_real_data.items()}
         synthetic_data = Process_Fake_Data.replaceUsingFakeEmg(reference_data_with_noise, synthetic_data)
 
         return synthetic_data
 
 
+    # replicate current selected reference new data to build the training set without using other augmentation methods
+    def replicateReferenceNewData(self, filtered_new_real_data, reference_new_real_data, modes_generation, num_sample):
+        reference_data = copy.deepcopy(reference_new_real_data)
+        if not reference_new_real_data:  # if no new data are available for the transition modes
+            reference_data = {key: [] for key in modes_generation.keys()}
+            raise Exception('No reference data available!')
+        else:
+            reference_data = {key: reference_data[key] * (num_sample // len(reference_data[key])) for key in reference_data}
+        replicated_reference_data = Process_Fake_Data.replaceUsingFakeEmg(reference_data, filtered_new_real_data)
+        return replicated_reference_data
+
+
     # extract reference real emg data from the real dataset and remove them from the real dataset
     def addressReferenceData(self, reference_indices, filtered_real_data):
-        # selecting the data based on reference_indices
-        reference_new_real_data = {}
         adjusted_new_real_data = copy.deepcopy(filtered_real_data)
         if not reference_indices:
             reference_new_real_data = []
-        else:
+        else:  # selecting the data based on reference_indices
+            reference_new_real_data = {}
             for key, indices in reference_indices.items():
                 if len(indices) > 5:  # maximum reference data number is 5
                     raise Exception('too many reference data!')

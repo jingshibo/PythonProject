@@ -9,6 +9,7 @@ from matplotlib.patches import Rectangle
 
 
 def plotConfusionMatrix(cm, classes, normalize=False, title='', cmap=plt.cm.Blues):
+    plt.figure()
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     font_size = 20

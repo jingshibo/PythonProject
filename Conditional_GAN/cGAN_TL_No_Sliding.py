@@ -29,7 +29,7 @@ envelope = True  # the output will always be rectified if set True
 
 
 ## read and filter old data
-subject = 'Number7'
+subject = 'Number3'
 version = 0  # the data from which experiment version to process
 modes = ['up_down_t0', 'down_up_t0']
 # up_down_session = [0, 1, 2, 3, 4]
@@ -38,16 +38,16 @@ modes = ['up_down_t0', 'down_up_t0']
 # down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [6, 8, 9, 10]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
+up_down_session = [0, 1, 2, 3, 4, 5]
+down_up_session = [0, 1, 2, 3, 4, 5]
 # up_down_session = [0, 1, 2, 4, 5]
 # down_up_session = [0, 1, 2, 3, 4]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 3, 4]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [2, 3, 4, 5]
-up_down_session = [0, 1, 2, 3, 4]
-down_up_session = [0, 1, 2, 3, 4]
+# up_down_session = [0, 1, 2, 3, 4]
+# down_up_session = [0, 1, 2, 3, 4]
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [7, 8, 9, 10]
 sessions = [up_down_session, down_up_session]
@@ -66,16 +66,16 @@ modes = ['up_down_t1', 'down_up_t1']
 # down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [5, 6, 7, 8, 9]
 # down_up_session = [6, 7, 8, 9, 10]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [1, 2, 3, 4, 5]
+up_down_session = [0, 1, 2, 3, 4, 5]
+down_up_session = [1, 2, 3, 4, 5]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 3, 4]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 3, 4]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 3, 4]
-up_down_session = [0, 1, 2, 3]
-down_up_session = [0, 1, 2, 3]
+# up_down_session = [0, 1, 2, 3]
+# down_up_session = [0, 1, 2, 3]
 # up_down_session = [0, 1, 2, 3, 4]
 # down_up_session = [0, 1, 2, 3]
 sessions = [up_down_session, down_up_session]
@@ -121,7 +121,7 @@ checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{versi
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
 model_name = ['gen', 'disc']
-gan_result_set = 0
+gan_result_set = 1
 
 
 ## train and save gan models for multiple transitions
@@ -218,7 +218,12 @@ accuracy_best, cm_recall_best = best_evaluation.evaluateClassifyResults(model_re
 # using old model to classify new data
 test_results = basis_evaluation.testClassifier(models_basis, shuffled_train_set)
 accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
-del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, shuffled_train_set
+# use new data to train old model by transfer learning
+tf_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+train_set, shuffled_train_set = tf_evaluation.classifierTlTrainSet(filtered_new_real_data, None, dataset='cross_validation_set')
+models_tf, model_results_tf = tf_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
+accuracy_tf, cm_recall_tf = tf_evaluation.evaluateClassifyResults(model_results_tf)
+del filtered_old_real_data, filtered_new_real_data, old_train_set, new_train_set, train_set, shuffled_train_set
 
 ## save results
 model_type = 'classify_basis'
@@ -230,6 +235,9 @@ accuracy_best, cm_recall_best = Model_Storage.loadClassifyResult(subject, versio
 model_type = 'classify_worst'
 Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, classifier_result_set, model_type, project='cGAN_Model')
 accuracy_worst, cm_recall_worst = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
+model_type = 'classify_tf'
+Model_Storage.saveClassifyResult(subject, accuracy_tf, cm_recall_tf, version, classifier_result_set, model_type, project='cGAN_Model')
+accuracy_tf, cm_recall_tf = Model_Storage.loadClassifyResult(subject, version, classifier_result_set, model_type, project='cGAN_Model')
 model_type = 'classify_basis'
 Model_Storage.saveClassifyModels(models_basis, subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
 models_basis = Model_Storage.loadClassifyModels(subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
@@ -258,7 +266,7 @@ filtered_old_fake_data = Post_Process_Data.spatialFilterModelInput(processed_old
 filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(processed_old_real_data, kernel=classifier_filter_kernel)
 # select representative fake data for classification model training
 selected_old_fake_data = Dtw_Similarity.extractFakeData(filtered_old_fake_data, filtered_old_real_data, modes_generation,
-    envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
+    envelope_frequency=None, num_sample=50, num_reference=1, method='select', random_reference=False, split_grids=True)
 del processed_old_fake_data, processed_old_real_data, filtered_old_fake_data
 
 ## classification
@@ -333,7 +341,7 @@ filtered_new_fake_data = Post_Process_Data.spatialFilterModelInput(processed_new
 filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(processed_new_real_data, kernel=classifier_filter_kernel)
 # select representative fake data for classification model training
 selected_new_fake_data = Dtw_Similarity.extractFakeData(filtered_new_fake_data, filtered_new_real_data, modes_generation,
-    envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
+    envelope_frequency=None, num_sample=50, num_reference=1, method='select', random_reference=False, split_grids=True)
 
 ## classification
 reference_indices = selected_new_fake_data['reference_index_based_on_grid_1']
@@ -502,7 +510,7 @@ models_combine = Model_Storage.loadClassifyModels(subject, version, model_type, 
 '''
 ## generate noise data
 noise_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)  # window_parameters are in line with the above
-noise_new_data = noise_evaluation.generateNoiseData(processed_new_real_data, reference_new_real_data, num_sample=100, snr=0.05)
+noise_new_data = noise_evaluation.generateNoiseData(processed_new_real_data, reference_new_real_data, num_sample=50, snr=0.05)
 # median filtering
 filtered_noise_data = Post_Process_Data.spatialFilterModelInput(noise_new_data, kernel=classifier_filter_kernel)
 
@@ -515,7 +523,7 @@ acc_noise, cm_noise = noise_evaluation.evaluateClassifyResults(model_results_noi
 test_set, shuffled_test_set = noise_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
 test_results = noise_evaluation.testClassifier(models_noise, shuffled_test_set)
 accuracy_noise, cm_recall_noise = noise_evaluation.evaluateClassifyResults(test_results)
-del filtered_noise_data, train_set, shuffled_train_set, test_set, shuffled_test_set
+del train_set, shuffled_train_set, test_set, shuffled_test_set
 
 ## save results
 model_type = 'classify_noise'
@@ -527,11 +535,26 @@ models_noise = Model_Storage.loadClassifyModels(subject, version, model_type, mo
 
 
 '''
-    train classifier (on one new data), select some reference new data without any other augmentation for training comparison
+    train classifier (on only copying new data), replicate only reference new data without augmentation to build the dataset
 '''
+## replicate the current reference new data multiple times to build the dataset
+copy_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
+replicated_only_new_data = copy_evaluation.replicateReferenceNewData(filtered_new_real_data, reference_new_real_data, modes_generation, num_sample=50)
 
+## classification
+train_set, shuffled_train_set = copy_evaluation.classifierTlTrainSet(replicated_only_new_data, reference_new_real_data, dataset='cross_validation_set')
+models_copy, model_results_copy = copy_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
+acc_copy, cm_copy = copy_evaluation.evaluateClassifyResults(model_results_copy)
+# test classifier
+test_set, shuffled_test_set = copy_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
+test_results = copy_evaluation.testClassifier(models_copy, shuffled_test_set)
+accuracy_copy, cm_recall_copy = copy_evaluation.evaluateClassifyResults(test_results)
+del train_set, shuffled_train_set, test_set, shuffled_test_set
 
-
+## save results
+model_type = 'classify_copy'
+Model_Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, classifier_result_set, model_type, project='cGAN_Model')
+Model_Storage.saveClassifyModels(models_copy, subject, version, model_type, model_number=list(range(5)), project='cGAN_Model')
 
 
 
