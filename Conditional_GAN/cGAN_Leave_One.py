@@ -1,7 +1,7 @@
 '''
     using conditional gan to generate transitional data and fine-train the classifier based on transfer learning. For each locomotion
     mode, only one prediction result is made, with no delay reported.
-    This version introduces cross validation to the gan training data set, so that the old emg dataset will be trained using the training
+    This version introduces leave one validation to the gan training data set, so that the old emg dataset will be trained using the training
     set and tested using test set.
 '''
 
@@ -181,7 +181,9 @@ new_emg_data_classify, _ = Post_Process_Data.sliceEmgData(new_emg_data, start=st
 old_emg_classify_normalized, new_emg_classify_normalized, old_emg_classify_reshaped, new_emg_classify_reshaped = \
     Process_Raw_Data.normalizeFilterEmgData(old_emg_data_classify, new_emg_data_classify, range_limit, normalize='(0,1)',
         spatial_filter=True, kernel=gan_filter_kernel)
-extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, old_emg_classify_reshaped, new_emg_classify_reshaped,
+_, _, gan_old_test_set, gan_new_test_set = Process_Raw_Data.splitGanDataset(old_emg_classify_reshaped,
+    new_emg_classify_reshaped, training_percent=0.8)  # split data for training set and test set
+extracted_emg_classify, _ = Process_Raw_Data.extractSeparateEmgData(modes_generation, gan_old_test_set, new_emg_classify_reshaped,
     time_interval, length, output_list=False)
 del old_emg_classify_reshaped, new_emg_classify_reshaped
 

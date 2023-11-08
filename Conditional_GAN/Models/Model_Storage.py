@@ -111,9 +111,13 @@ def loadCheckPointCGanResults(checkpoint_result_path, transition_type=None, epoc
 
 
 ## save classification accuracy and cm recall values
-def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model'):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
+def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model', num_reference=None):
+    if num_reference is None:
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
+        result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
+    else:  # save data to the num_reference folder
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results\\num_reference\\filter_set_{result_set}'
+        result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     # Convert numpy arrays in the cm_recall dictionary to lists
@@ -127,9 +131,13 @@ def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_
 
 
 ## read classification accuracy and cm recall values
-def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model'):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
-    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
+def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model', num_reference=None):
+    if num_reference is None:
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results'
+        result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_results_{result_set}.json'
+    else:  # save data to the num_reference folder
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\model_results\\num_reference\\filter_set_{result_set}'
+        result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
     with open(result_path, 'r') as f:
@@ -142,24 +150,32 @@ def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_M
 
 
 ##
-def saveClassifyModels(models, subject, version, model_type, model_number=None, project='cGAN_Model'):
+def saveClassifyModels(models, subject, version, model_type, model_number=None, project='cGAN_Model', num_reference=None):
     # model path
     for number in model_number:
         # model path
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
-        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_group_{number}.json'
+        if num_reference is None:
+            data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
+            model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_group_{number}.json'
+        else:
+            data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
+            model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_group_{number}.json'
         model_path = os.path.join(data_dir, model_file)
         # save model
         torch.save(models[number].to("cpu"), model_path)
 
 
 ##
-def loadClassifyModels(subject, version, model_type, model_number=None, project='cGAN_Model'):
+def loadClassifyModels(subject, version, model_type, model_number=None, project='cGAN_Model', num_reference=None):
     models = []
     # model path
     for number in model_number:
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
-        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_group_{number}.json'
+        if num_reference is None:
+            data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
+            model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_group_{number}.json'
+        else:
+            data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\models\classifier'
+            model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_group_{number}.json'
         model_path = os.path.join(data_dir, model_file)
         # load model
         model = torch.load(model_path)
@@ -173,7 +189,7 @@ def loadBlendingFactors(subject, version, result_set, model_type, modes_generati
     for transition_type in modes_generation.keys():
         if epoch_number is None:
             gen_result = loadCGanResults(subject, version, result_set, model_type, transition_type, project='cGAN_Model')
-        elif epoch_number is not None:  # if no epoch_number input, output the final epoch results
+        else:  # if no epoch_number input, output the final epoch results
             gen_result = loadCheckPointCGanResults(checkpoint_result_path, transition_type, epoch_number=epoch_number)
         gen_results[transition_type] = gen_result  # there could be more than one transition to generate
     return gen_results

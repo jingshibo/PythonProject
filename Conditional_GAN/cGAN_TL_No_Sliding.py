@@ -32,25 +32,25 @@ envelope = True  # the output will always be rectified if set True
 subject = 'Number3'
 version = 0  # the data from which experiment version to process
 modes = ['up_down_t0', 'down_up_t0']
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 5, 6]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [1, 2, 3, 4, 5]
-# up_down_session = [5, 6, 7, 8, 9]
-# down_up_session = [6, 8, 9, 10]
-up_down_session = [0, 1, 2, 3, 4, 5]
-down_up_session = [0, 1, 2, 3, 4, 5]
-# up_down_session = [0, 1, 2, 4, 5]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [2, 3, 4, 5]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [5, 6, 7, 8, 9]
-# down_up_session = [7, 8, 9, 10]
-sessions = [up_down_session, down_up_session]
+# up_down_session_t0 = [0, 1, 2, 3, 4]
+# down_up_session_t0 = [0, 1, 2, 5, 6]
+# up_down_session_t0 = [0, 1, 2, 3, 4]
+# down_up_session_t0 = [1, 2, 3, 4, 5]
+# up_down_session_t0 = [5, 6, 7, 8, 9]
+# down_up_session_t0 = [6, 8, 9, 10]
+up_down_session_t0 = [0, 1, 2, 3, 4]
+down_up_session_t0 = [0, 1, 2, 3, 4]
+# up_down_session_t0 = [0, 1, 2, 4, 5]
+# down_up_session_t0 = [0, 1, 2, 3, 4]
+# up_down_session_t0 = [0, 1, 2, 3, 4]
+# down_up_session_t0 = [0, 1, 2, 3, 4]
+# up_down_session_t0 = [0, 1, 2, 3, 4]
+# down_up_session_t0 = [2, 3, 4, 5]
+# up_down_session_t0 = [0, 1, 2, 3, 4]
+# down_up_session_t0 = [0, 1, 2, 3, 4]
+# up_down_session_t0 = [5, 6, 7, 8, 9]
+# down_up_session_t0 = [7, 8, 9, 10]
+sessions = [up_down_session_t0, down_up_session_t0]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 # old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
 #     envelope_cutoff=envelope_cutoff, envelope=envelope)
@@ -60,25 +60,25 @@ old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters
 
 # read and filter new data
 modes = ['up_down_t1', 'down_up_t1']
-# up_down_session = [5, 6, 7, 8, 9]
-# down_up_session = [4, 5, 6, 8, 9]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [1, 2, 3, 4, 5]
-# up_down_session = [5, 6, 7, 8, 9]
-# down_up_session = [6, 7, 8, 9, 10]
-up_down_session = [0, 1, 2, 3, 4, 5]
-down_up_session = [1, 2, 3, 4, 5]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 3, 4]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3, 4]
-# up_down_session = [0, 1, 2, 3]
-# down_up_session = [0, 1, 2, 3]
-# up_down_session = [0, 1, 2, 3, 4]
-# down_up_session = [0, 1, 2, 3]
-sessions = [up_down_session, down_up_session]
+# up_down_session_t1 = [5, 6, 7, 8, 9]
+# down_up_session_t1 = [4, 5, 6, 8, 9]
+# up_down_session_t1 = [0, 1, 2, 3, 4]
+# down_up_session_t1 = [1, 2, 3, 4, 5]
+# up_down_session_t1 = [5, 6, 7, 8, 9]
+# down_up_session_t1 = [6, 7, 8, 9, 10]
+up_down_session_t1 = [0, 1, 2, 3, 4, 5]
+down_up_session_t1 = [1, 2, 3, 4, 5]
+# up_down_session_t1 = [0, 1, 2, 3, 4]
+# down_up_session_t1 = [0, 1, 3, 4]
+# up_down_session_t1 = [0, 1, 2, 3, 4]
+# down_up_session_t1 = [0, 1, 2, 3, 4]
+# up_down_session_t1 = [0, 1, 2, 3, 4]
+# down_up_session_t1 = [0, 1, 2, 3, 4]
+# up_down_session_t1 = [0, 1, 2, 3]
+# down_up_session_t1 = [0, 1, 2, 3]
+# up_down_session_t1 = [0, 1, 2, 3, 4]
+# down_up_session_t1 = [0, 1, 2, 3]
+sessions = [up_down_session_t1, down_up_session_t1]
 data_source = {'subject': subject, 'version': version, 'modes': modes, 'sessions': sessions}
 # new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
 #     envelope_cutoff=envelope_cutoff, envelope=envelope)
@@ -121,7 +121,7 @@ checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{versi
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
 model_name = ['gen', 'disc']
-gan_result_set = 1
+gan_result_set = 0
 
 
 ## train and save gan models for multiple transitions
@@ -168,7 +168,7 @@ start_index = 400  # start index relative to the start of the original extracted
 end_index = 1600  # end index relative to the start of the original extracted data
 classifier_filter_kernel = (40, 40)
 plot_y_limit = 0.3
-classifier_result_set = 1
+classifier_result_set = 0
 
 
 # slice blending factors
@@ -266,8 +266,7 @@ filtered_old_fake_data = Post_Process_Data.spatialFilterModelInput(processed_old
 filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(processed_old_real_data, kernel=classifier_filter_kernel)
 # select representative fake data for classification model training
 selected_old_fake_data = Dtw_Similarity.extractFakeData(filtered_old_fake_data, filtered_old_real_data, modes_generation,
-    envelope_frequency=None, num_sample=50, num_reference=1, method='select', random_reference=False, split_grids=True)
-del processed_old_fake_data, processed_old_real_data, filtered_old_fake_data
+    envelope_frequency=None, num_sample=50, num_reference=10, method='select', random_reference=False, split_grids=True)
 
 ## classification
 train_set, shuffled_train_set = old_evaluation.classifierTrainSet(selected_old_fake_data['fake_data_based_on_grid_1'], dataset='cross_validation_set')
@@ -310,7 +309,7 @@ Plot_Emg_Data.plotMultipleEventMeanValues(fake_old, real_old, modes, title='old_
 # old_real_envelope_index = selected_old_fake_data['reference_index_based_on_grid_1']['emg_LWSA'][0]
 # Dtw_Similarity.plotDtwPath(old_fake_envelopes, old_real_envelopes, old_fake_envelope_index, old_real_envelope_index)
 # Plot_Emg_Data.plotMainEventMeanValues(fake_old, real_old, title='old_main_emg', ylim=(0, 0.5), grid='grid_1')
-
+#
 ## save results
 model_type = 'classify_old'
 Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, classifier_result_set, model_type, project='cGAN_Model')

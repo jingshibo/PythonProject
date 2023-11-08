@@ -11,14 +11,15 @@ from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, 
 
 '''train generative model'''
 ## read and filter old data
-subject = 'Number3'
+subject = 'Number1'
+grid = 'grid_1'
 version = 0  # the data from which experiment version to process
-up_down_session_t0 = [0, 1, 2, 3, 4, 5]
-down_up_session_t0 = [0, 1, 2, 3, 4, 5]
-up_down_session_t1 = [0, 1, 2, 3, 4, 5]
+up_down_session_t0 = [0, 1, 2, 3, 4]
+down_up_session_t0 = [1, 2, 3, 4, 5]
+up_down_session_t1 = [0, 1, 2, 3, 4]
 down_up_session_t1 = [1, 2, 3, 4, 5]
 old_emg_data, new_emg_data, window_parameters, start_before_toeoff_ms = Train_cGan.realEmgData(subject, version, up_down_session_t0,
-    down_up_session_t0, up_down_session_t1, down_up_session_t1)
+    down_up_session_t0, up_down_session_t1, down_up_session_t1, grid=grid)
 
 ## parameters for extracting emg data to train gan model
 range_limit = 1500
@@ -51,14 +52,15 @@ checkpoint_model_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{versi
 checkpoint_result_path = f'D:\Data\cGAN_Model\subject_{subject}\Experiment_{version}\model_results\check_points'
 model_type = 'cGAN'
 model_name = ['gen', 'disc']
-gan_result_set = 1
+gan_result_set = 0
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name,
     'result_set': gan_result_set, 'checkpoint_model_path': checkpoint_model_path, 'checkpoint_result_path': checkpoint_result_path}
-blending_factors = Train_cGan.trainCGan(train_gan_data, modes_generation, training_parameters, storage_parameters)
+# train gan model
+# blending_factors = Train_cGan.trainCGan(train_gan_data, modes_generation, training_parameters, storage_parameters)
 del old_emg_normalized, new_emg_normalized, old_emg_reshaped, new_emg_reshaped, extracted_emg, train_gan_data
 
 ## plotting fake and real emg data for comparison
-Train_cGan.plotEmgData(old_emg_data, new_emg_data, ylim=(0, 1500))
+# Train_cGan.plotEmgData(old_emg_data, new_emg_data, ylim=(0, 1500))
 
 
 
@@ -70,9 +72,12 @@ Train_cGan.plotEmgData(old_emg_data, new_emg_data, ylim=(0, 1500))
 epoch_number = None
 start_index = 400  # start index relative to the start of the original extracted data
 end_index = 1600  # end index relative to the start of the original extracted data
+num_sample = 50
+num_reference = 1
 classifier_filter_kernel = (40, 40)
-plot_ylim = 0.3
-classifier_result_set = 1
+plot_ylim = 0.2
+classifier_result_set = 0
+reference = None  # value: None or num_reference, decide where to save the results
 
 train_classifier = Train_Classifiers.ClassifierTraining(classifier_filter_kernel, gan_filter_kernel, window_parameters, modes_generation)
 gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted_emg_classify, window_parameters = \
@@ -87,11 +92,11 @@ gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted
 models_basis, accuracy_basis, cm_recall_basis, accuracy_best, cm_recall_best, accuracy_worst, cm_recall_worst, accuracy_tf, cm_recall_tf = \
     train_classifier.trainClassifierBasicScenarios(old_emg_classify_normalized, new_emg_classify_normalized)
 ## save models
-Model_Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, classifier_result_set, 'classify_basis', project='cGAN_Model')
-Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, classifier_result_set, 'classify_best', project='cGAN_Model')
-Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, classifier_result_set, 'classify_worst', project='cGAN_Model')
-Model_Storage.saveClassifyResult(subject, accuracy_tf, cm_recall_tf, version, classifier_result_set, 'classify_tf', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_basis, subject, version, 'classify_basis', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, classifier_result_set, 'classify_basis', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, classifier_result_set, 'classify_best', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_tf, cm_recall_tf, version, classifier_result_set, 'classify_tf', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, classifier_result_set, 'classify_worst', project='cGAN_Model')
+# Model_Storage.saveClassifyModels(models_basis, subject, version, 'classify_basis', model_number=list(range(5)), project='cGAN_Model')
 
 
 '''
@@ -99,12 +104,12 @@ Model_Storage.saveClassifyModels(models_basis, subject, version, 'classify_basis
 '''
 ## build dataset and train classifier
 models_old, accuracy_old, cm_recall_old, selected_old_fake_data, filtered_old_real_data = train_classifier.trainClassifierOldData(
-    old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample=50)
+    old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample=num_sample, num_ref=num_reference)
 # plot data
 train_classifier.plotEmgData(selected_old_fake_data['fake_data_based_on_grid_1'], filtered_old_real_data, plot_ylim=plot_ylim, title='old')
 ## save model
-Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, classifier_result_set, 'classify_old', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_old, subject, version, 'classify_old', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, classifier_result_set, 'classify_old', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyModels(models_old, subject, version, 'classify_old', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 '''
@@ -113,12 +118,12 @@ Model_Storage.saveClassifyModels(models_old, subject, version, 'classify_old', m
 ## build dataset and train classifier
 models_new, accuracy_new, cm_recall_new, selected_new_fake_data, adjusted_new_real_data, reference_new_real_data, \
     processed_new_real_data, filtered_new_real_data = train_classifier.trainClassifierNewData(
-    new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis, num_sample=50)
+    new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis, num_sample=num_sample, num_ref=num_reference)
 # plot data
 train_classifier.plotEmgData(selected_new_fake_data['fake_data_based_on_grid_1'], adjusted_new_real_data, plot_ylim=plot_ylim, title='new')
 ## save model
-Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, classifier_result_set, 'classify_new', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_new, subject, version, 'classify_new', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, classifier_result_set, 'classify_new', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyModels(models_new, subject, version, 'classify_new', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 '''
@@ -130,8 +135,8 @@ accuracy_compare, cm_recall_compare, models_compare, filtered_mix_data = train_c
 # plot data
 train_classifier.plotEmgData(filtered_mix_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='mix')
 ## save results
-Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, classifier_result_set, 'classify_compare', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_compare, subject, version, 'classify_compare', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, classifier_result_set, 'classify_compare', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyModels(models_compare, subject, version, 'classify_compare', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 '''
@@ -143,8 +148,8 @@ accuracy_combine, cm_recall_combine, models_combine, filtered_combined_data = tr
 # plot data
 train_classifier.plotEmgData(filtered_combined_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='combine')
 ## save results
-Model_Storage.saveClassifyResult(subject, accuracy_combine, cm_recall_combine, version, classifier_result_set, 'classify_combine', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_combine, subject, version, 'classify_combine', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_combine, cm_recall_combine, version, classifier_result_set, 'classify_combine', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyModels(models_combine, subject, version, 'classify_combine', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 '''
@@ -152,10 +157,10 @@ Model_Storage.saveClassifyModels(models_combine, subject, version, 'classify_com
 '''
 ## build dataset and train classifier
 accuracy_noise, cm_recall_noise, models_noise, filtered_noise_data = train_classifier.trainClassifierNoiseData(processed_new_real_data,
-    reference_new_real_data, adjusted_new_real_data, models_basis, num_sample=50)
+    reference_new_real_data, adjusted_new_real_data, models_basis, num_sample=num_sample)
 ## save results
-Model_Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, classifier_result_set, 'classify_noise', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_noise, subject, version, 'classify_noise', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, classifier_result_set, 'classify_noise', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyModels(models_noise, subject, version, 'classify_noise', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 '''
@@ -163,10 +168,10 @@ Model_Storage.saveClassifyModels(models_noise, subject, version, 'classify_noise
 '''
 ## build dataset and train classifier
 accuracy_copy, cm_recall_copy, models_copy, replicated_only_new_data = train_classifier.trainClassifierCopyData(filtered_new_real_data,
-    reference_new_real_data, adjusted_new_real_data, models_basis, num_sample=50)
+    reference_new_real_data, adjusted_new_real_data, models_basis, num_sample=num_sample)
 ## save results
-Model_Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, classifier_result_set, 'classify_copy', project='cGAN_Model')
-Model_Storage.saveClassifyModels(models_noise, subject, version, 'classify_copy', model_number=list(range(5)), project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, classifier_result_set, 'classify_copy', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyModels(models_copy, subject, version, 'classify_copy', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 ## load check point models
@@ -176,68 +181,3 @@ output = {}
 #     gen_model = cGAN_Testing.ModelTesting(test_model['gen'])
 #     result = gen_model.estimateBlendingFactors(train_gan_data[transition_type], noise_dim=noise_dim)
 #     output[transition_type] = result
-
-
-
-'''
-    train classifier (average old and fake new data), for improvement purpose
-'''
-## build training data
-# data before spatial filtering, random selection
-# sampled_new_fake_data = cGAN_Evaluation.selectRandomData(processed_new_fake_data, modes_generation, num_samples=100)
-# average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, processed_mix_data, modes_generation)
-# filtered_average_fake_data = Post_Process_Data.spatialFilterModelInput(average_fake_data, kernel=classifier_filter_kernel)
-# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(filtered_average_fake_data, filtered_new_real_data, modes_generation,
-#     envelope_frequency=None, num_sample=100, num_reference=1, method='random', random_reference=False, split_grids=True)
-
-# data before spatial filtering, dtw selection
-# sampled_new_fake_data = cGAN_Evaluation.selectRandomData(processed_new_fake_data, modes_generation, num_samples=100)
-# average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, processed_mix_data, modes_generation)
-# filtered_average_fake_data = Post_Process_Data.spatialFilterModelInput(average_fake_data, kernel=classifier_filter_kernel)
-# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(filtered_average_fake_data, filtered_new_real_data, modes_generation,
-#     envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
-#
-# # data after spatial filtering, random selection
-# sampled_new_fake_data = cGAN_Evaluation.selectRandomData(filtered_new_fake_data, modes_generation, num_samples=100)
-# average_fake_data = cGAN_Evaluation.calculateAverageValues(sampled_new_fake_data, filtered_mix_data, modes_generation)
-# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(average_fake_data, filtered_new_real_data, modes_generation,
-#     envelope_frequency=None, num_sample=100, num_reference=1, method='random', random_reference=False, split_grids=True)
-#
-# # data after spatial filtering, dtw selection
-# average_fake_data = cGAN_Evaluation.calculateAverageValues(selected_new_fake_data['fake_data_based_on_grid_1'], filtered_mix_data, modes_generation)
-# filtered_new_fake_selected = Dtw_Similarity.extractFakeData(average_fake_data, filtered_new_real_data, modes_generation,
-#     envelope_frequency=None, num_sample=100, num_reference=1, method='select', random_reference=False, split_grids=True)
-#
-# ## classification
-# mean_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-# # use the same reference new data above as the available new data for the mix dataset, to adjust both the train_set and test_set
-# train_set, shuffled_train_set = mean_evaluation.classifierTlTrainSet(filtered_new_fake_selected['fake_data_based_on_grid_1'],
-#     reference_new_real_data, dataset='cross_validation_set')
-# models_average, model_results_average = mean_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)
-# acc_average, cm_average = mean_evaluation.evaluateClassifyResults(model_results_average)
-# # test classifier
-# test_set, shuffled_test_set = mean_evaluation.classifierTestSet(modes_generation, adjusted_new_real_data, train_set, test_ratio=1)
-# test_results = mean_evaluation.testClassifier(models_average, shuffled_test_set)
-# accuracy_average, cm_recall_average = mean_evaluation.evaluateClassifyResults(test_results)
-# del train_set, shuffled_train_set, test_set, shuffled_test_set
-#
-# ## plotting fake and real emg data for comparison
-# # calculate average values
-# real_average = Plot_Emg_Data.calcuAverageEmgValues(filtered_new_fake_selected['fake_data_based_on_grid_1'])
-# real_new = Plot_Emg_Data.calcuAverageEmgValues(adjusted_new_real_data)
-# # plot values of certain transition type
-# transition_type = 'emg_LWSA'
-# modes = modes_generation[transition_type]
-# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-# transition_type = 'emg_SALW'
-# modes = modes_generation[transition_type]
-# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-# transition_type = 'emg_LWSD'
-# modes = modes_generation[transition_type]
-# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-# transition_type = 'emg_SDLW'
-# modes = modes_generation[transition_type]
-# Plot_Emg_Data.plotMultipleEventMeanValues(real_average, real_new, modes, title='average_emg_2', ylim=(0, plot_y_limit))
-# # Plot_Emg_Data.plotMultipleRepetitionValues(real_mix, real_new, None, modes, ylim=(0, 1))
-# # Plot_Emg_Data.plotMultipleChannelValues(real_mix, real_new, None, modes, ylim=(0, 1))
-# # Plot_Emg_Data.plotMutipleEventPsdMeanValues(real_mix, real_new, None, modes, ylim=(0, 0.1), grid='grid_1')

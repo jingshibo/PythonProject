@@ -19,7 +19,7 @@ envelope = True  # the output will always be rectified if set True
 
 
 ## read and filter emg data
-def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_down_session_t1, down_up_session_t1):
+def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_down_session_t1, down_up_session_t1, grid):
     # read and filter old data
     modes = ['up_down_t0', 'down_up_t0']
     sessions = [up_down_session_t0, down_up_session_t0]
@@ -27,7 +27,7 @@ def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_dow
     # old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
     #     envelope_cutoff=envelope_cutoff, envelope=envelope)
     old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_1', include_standing=False)
+        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid=grid, include_standing=False)
     # read and filter new data
     modes = ['up_down_t1', 'down_up_t1']
     sessions = [up_down_session_t1, down_up_session_t1]
@@ -35,7 +35,7 @@ def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_dow
     # new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
     #     envelope_cutoff=envelope_cutoff, envelope=envelope)
     new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid='grid_1', include_standing=False)
+        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid=grid, include_standing=False)
     return old_emg_data, new_emg_data, window_parameters, start_before_toeoff_ms
 
 

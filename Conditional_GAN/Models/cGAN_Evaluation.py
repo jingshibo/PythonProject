@@ -131,8 +131,8 @@ class cGAN_Evaluation:
         else:  # selecting the data based on reference_indices
             reference_new_real_data = {}
             for key, indices in reference_indices.items():
-                if len(indices) > 5:  # maximum reference data number is 5
-                    raise Exception('too many reference data!')
+                # if len(indices) > 10:  # maximum reference data number is 5
+                #     raise Exception('too many reference data!')
                 reference_new_real_data[key] = [filtered_real_data[key][i] for i in indices]
                 # Update filtered_new_real_data by excluding the selected data
                 adjusted_new_real_data[key] = [filtered_real_data[key][i] for i in range(len(filtered_real_data[key])) if

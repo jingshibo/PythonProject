@@ -77,7 +77,7 @@ class ClassifierTraining():
 
 
     ##  train classifier (on old data), for testing gan generation performance
-    def trainClassifierOldData(self, old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample):
+    def trainClassifierOldData(self, old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample, num_ref, method='select'):
         old_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         synthetic_old_data, fake_old_images = old_evaluation.generateFakeData(extracted_emg_classify, 'old', self.modes_generation,
             old_emg_classify_normalized, spatial_filtering=False, kernel=self.gan_filter_kernel)
@@ -95,7 +95,7 @@ class ClassifierTraining():
         filtered_old_real_data = Post_Process_Data.spatialFilterModelInput(processed_old_real_data, kernel=self.classifier_filter_kernel)
         # select representative fake data for classification model training
         selected_old_fake_data = Dtw_Similarity.extractFakeData(filtered_old_fake_data, filtered_old_real_data, self.modes_generation,
-            envelope_frequency=None, num_sample=num_sample, num_reference=1, method='select', random_reference=False, split_grids=True)
+            envelope_frequency=None, num_sample=num_sample, num_reference=num_ref, method=method, random_reference=False, split_grids=True)
         del processed_old_fake_data, processed_old_real_data, filtered_old_fake_data
 
         # classification
@@ -113,7 +113,7 @@ class ClassifierTraining():
 
 
     ##  train classifier (on new data), for evaluating the proposed method performance
-    def trainClassifierNewData(self, new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis, num_sample):
+    def trainClassifierNewData(self, new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis, num_sample, num_ref, method='select'):
         new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         synthetic_new_data, fake_new_images = new_evaluation.generateFakeData(extracted_emg_classify, 'new', self.modes_generation,
             new_emg_classify_normalized, spatial_filtering=False, kernel=self.gan_filter_kernel)
@@ -131,7 +131,7 @@ class ClassifierTraining():
         filtered_new_real_data = Post_Process_Data.spatialFilterModelInput(processed_new_real_data, kernel=self.classifier_filter_kernel)
         # select representative fake data for classification model training
         selected_new_fake_data = Dtw_Similarity.extractFakeData(filtered_new_fake_data, filtered_new_real_data, self.modes_generation,
-            envelope_frequency=None, num_sample=num_sample, num_reference=1, method='select', random_reference=False, split_grids=True)
+            envelope_frequency=None, num_sample=num_sample, num_reference=num_ref, method=method, random_reference=False, split_grids=True)
 
         # classification
         reference_indices = selected_new_fake_data['reference_index_based_on_grid_1']
