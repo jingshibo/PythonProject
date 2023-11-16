@@ -4,9 +4,9 @@ import pandas as pd
 
 
 ##  plot the bars with all columns compared to the previous column for the significance level annotation
-def plotSubjectAdjacentTtest(reorganized_results, legend, columns_to_plot, title, bonferroni_coeff=1):
+def plotSubjectAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bonferroni_coeff=1):
     # Create sample data
-    data = copy.deepcopy(reorganized_results)
+    data = copy.deepcopy(mean_std_value)
     df_mean = data['accuracy']['statistics']['cm_diagonal_mean'][columns_to_plot]
     df_std = data['accuracy']['statistics']['std'][columns_to_plot]
     df_pval = data['accuracy']['statistics']['ttest'][columns_to_plot]
@@ -17,7 +17,6 @@ def plotSubjectAdjacentTtest(reorganized_results, legend, columns_to_plot, title
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
-    color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue']
     # Plot bar chart with error bars
     ax = df_mean.plot.bar(yerr=df_std, capsize=4, width=0.8, color=color_list)
     # Correcting p_val based on the number of group pairs to compare
@@ -57,7 +56,7 @@ def plotSubjectAdjacentTtest(reorganized_results, legend, columns_to_plot, title
                 right_line = ax.plot([x_right, x_right], [y_right - 0.005 * height, y_right], 'k-', lw=1)
 
     # Set x-axis
-    x_label = ax.set_xlabel('Dataset Methods', fontsize=font_size)  # Set x-axis label
+    x_label = ax.set_xlabel('Model Training Methods', fontsize=font_size)  # Set x-axis label
     x_tick_labels = [label.get_text() for label in ax.get_xticklabels()]
     x_tick_ms = [string[string.find('_')+1: string.find('_', string.find('_')+1)] for string in x_tick_labels]  # extract only the delay value
     ax.set_xticklabels([])  # set x-tick value
@@ -81,9 +80,9 @@ def plotSubjectAdjacentTtest(reorganized_results, legend, columns_to_plot, title
 
 
 ##  plot the bars with all columns compared to the previous column for the significance level annotation
-def plotNumOfReferenceAdjacentTtest(reorganized_results, legend, columns_to_plot, title, bonferroni_coeff=1):
+def plotNumOfReferenceAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bonferroni_coeff=1):
     # Create sample data
-    data = copy.deepcopy(reorganized_results)
+    data = copy.deepcopy(mean_std_value)
     df_mean = data['accuracy']['statistics']['cm_diagonal_mean'][columns_to_plot]
     df_std = data['accuracy']['statistics']['std'][columns_to_plot]
     df_pval = data['accuracy']['statistics']['ttest'][columns_to_plot]
@@ -94,7 +93,6 @@ def plotNumOfReferenceAdjacentTtest(reorganized_results, legend, columns_to_plot
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
-    color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink']
     # Plot bar chart with error bars
     ax = df_mean.plot.bar(yerr=df_std, capsize=4, width=0.8, color=color_list)
     # Correcting p_val based on the number of group pairs to compare
@@ -155,3 +153,31 @@ def plotNumOfReferenceAdjacentTtest(reorganized_results, legend, columns_to_plot
     ax.set_title(title, fontsize=font_size)  # Set plot title
     # Show plot
     plt.show()
+
+
+##  plot the bars with all columns compared to the previous column for the significance level annotation
+def plotModeAccuracyAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bonferroni_coeff=1):
+    # Create sample data
+    data = copy.deepcopy(mean_std_value)
+    df_mean = data['accuracy']['statistics']['mean'][columns_to_plot]
+    df_mean.columns = legend
+    font_size = 20
+
+    # Create color list
+    color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold',
+        'slategray']
+    ax = df_mean.plot.bar(capsize=4, width=0.8, color=color_list)
+
+    # Customizations
+    plt.title(title, fontsize=font_size+2)
+    plt.xlabel('Transition Modes', fontsize=font_size)
+    plt.ylabel('Prediction Accuracy(%)', fontsize=font_size)
+    plt.xticks(range(len(df_mean.index)), df_mean.index, rotation=0, fontsize=font_size)  # Set x-tick labels as row index names
+    plt.yticks(fontsize=font_size)
+    ax.set_ylim(55, 100)
+    # Display the plot
+
+    plt.legend(loc='upper right', fontsize=font_size-3)  # Adjust legend
+    plt.tight_layout()  # Adjust layout for saving or displaying
+    plt.show()
+

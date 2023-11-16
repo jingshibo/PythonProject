@@ -19,8 +19,7 @@ class ConditionalNorm2d(nn.Module):
             self.norm = nn.InstanceNorm2d(num_channels, affine=False)
         self.embed = nn.Embedding(num_classes, num_channels * 2)
         self.embed.weight.data[:, :num_channels].fill_(1.)  # Initialize scale at 1
-        self.embed.weight.data[:, num_channels:].zero_()  # Initialize bias at 0
-        # self.embed = nn.Linear(num_classes, num_channels * 2)
+        self.embed.weight.data[:, num_channels:].zero_()  # Initialize bias at 0  # self.embed = nn.Linear(num_classes, num_channels * 2)
 
     def forward(self, x, label):
         out = self.norm(x)
@@ -33,14 +32,17 @@ class ConditionalNorm2d(nn.Module):
         out = gamma * out + beta
         return out
 
+
 class ContractingBlock(nn.Module):
     def __init__(self, input_channels, num_classes, use_norm=True, stride=1, kernel_size=3, padding=1, activation='relu', SN=False):
         super(ContractingBlock, self).__init__()
         if SN:  # spectral normalization
             self.conv1 = nn.utils.spectral_norm(
-                nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode='replicate'))
+                nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding,
+                    padding_mode='replicate'))
         else:
-            self.conv1 = nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode='replicate')
+            self.conv1 = nn.Conv2d(input_channels, input_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding,
+                padding_mode='replicate')
         self.activation = nn.ReLU() if activation == 'relu' else nn.LeakyReLU(0.2)
         if use_norm:
             self.norm = ConditionalNorm2d(input_channels * 2, num_classes, norm='batch_norm')
@@ -111,10 +113,14 @@ class Generator_UNet(nn.Module):
         self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
 
         # decoder
-        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
-        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.expand4 = ExpandingBlock(hidden_channels * 16 + hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu',
+            SN=True)
+        self.expand3 = ExpandingBlock(hidden_channels * 12 + hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu',
+            SN=True)
+        self.expand2 = ExpandingBlock(hidden_channels * 8 + hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu',
+            SN=True)
+        self.expand1 = ExpandingBlock(hidden_channels * 5 + hidden_channels, num_classes, kernel_size=3, padding=1, activation='lrelu',
+            SN=True)
         self.downfeature = FeatureMapBlock(int(hidden_channels * 3), output_chan, stride=1, SN=True)
 
         self.sig = torch.nn.Sigmoid()
@@ -149,7 +155,8 @@ class Discriminator_Same(nn.Module):
         super(Discriminator_Same, self).__init__()
 
         self.upfeature = FeatureMapBlock(input_channels, hidden_channels, SN=True)
-        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_norm=True, kernel_size=3, padding=1, activation='lrelu', SN=True)
+        self.contract1 = ContractingBlock(hidden_channels, num_classes, use_norm=True, kernel_size=3, padding=1, activation='lrelu',
+            SN=True)
         self.contract2 = ContractingBlock(hidden_channels * 2, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract3 = ContractingBlock(hidden_channels * 4, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
         self.contract4 = ContractingBlock(hidden_channels * 8, num_classes, kernel_size=3, padding=1, activation='lrelu', SN=True)
@@ -163,6 +170,7 @@ class Discriminator_Same(nn.Module):
         x = self.contract4(x, label)
         x = self.final(x)
         return x
+
 
 class Discriminator_Shrinking(nn.Module):
     def __init__(self, input_channels, num_classes, padding='valid', hidden_channels=32):
@@ -195,6 +203,7 @@ class ModifiedGenerator(nn.Module):
     '''
     Modified Generator Class
     '''
+
     def __init__(self, input_vector_dim, img_height, img_width, output_chan, hidden_channels=32):
         super(ModifiedGenerator, self).__init__()
         # data size

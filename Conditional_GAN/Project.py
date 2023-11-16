@@ -76,7 +76,8 @@ num_sample = 50
 num_reference = 1
 classifier_filter_kernel = (40, 40)
 plot_ylim = 0.2
-classifier_result_set = 0
+basis_result_set = 0
+filter_result_set = 0  # the results from different classifier filter kernel size are saved into different folders
 reference = None  # value: None or num_reference, decide where to save the results
 
 train_classifier = Train_Classifiers.ClassifierTraining(classifier_filter_kernel, gan_filter_kernel, window_parameters, modes_generation)
@@ -92,10 +93,10 @@ gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted
 models_basis, accuracy_basis, cm_recall_basis, accuracy_best, cm_recall_best, accuracy_worst, cm_recall_worst, accuracy_tf, cm_recall_tf = \
     train_classifier.trainClassifierBasicScenarios(old_emg_classify_normalized, new_emg_classify_normalized)
 ## save models
-# Model_Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, classifier_result_set, 'classify_basis', project='cGAN_Model')
-# Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, classifier_result_set, 'classify_best', project='cGAN_Model')
-# Model_Storage.saveClassifyResult(subject, accuracy_tf, cm_recall_tf, version, classifier_result_set, 'classify_tf', project='cGAN_Model')
-# Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, classifier_result_set, 'classify_worst', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, basis_result_set, 'classify_basis', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, basis_result_set, 'classify_best', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_tf, cm_recall_tf, version, basis_result_set, 'classify_tf', project='cGAN_Model')
+# Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, basis_result_set, 'classify_worst', project='cGAN_Model')
 # Model_Storage.saveClassifyModels(models_basis, subject, version, 'classify_basis', model_number=list(range(5)), project='cGAN_Model')
 
 
@@ -108,7 +109,7 @@ models_old, accuracy_old, cm_recall_old, selected_old_fake_data, filtered_old_re
 # plot data
 train_classifier.plotEmgData(selected_old_fake_data['fake_data_based_on_grid_1'], filtered_old_real_data, plot_ylim=plot_ylim, title='old')
 ## save model
-# Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, classifier_result_set, 'classify_old', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, filter_result_set, 'classify_old', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_old, subject, version, 'classify_old', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
@@ -122,7 +123,7 @@ models_new, accuracy_new, cm_recall_new, selected_new_fake_data, adjusted_new_re
 # plot data
 train_classifier.plotEmgData(selected_new_fake_data['fake_data_based_on_grid_1'], adjusted_new_real_data, plot_ylim=plot_ylim, title='new')
 ## save model
-# Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, classifier_result_set, 'classify_new', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyResult(subject, accuracy_new, cm_recall_new, version, filter_result_set, 'classify_new', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_new, subject, version, 'classify_new', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
@@ -135,7 +136,7 @@ accuracy_compare, cm_recall_compare, models_compare, filtered_mix_data = train_c
 # plot data
 train_classifier.plotEmgData(filtered_mix_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='mix')
 ## save results
-# Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, classifier_result_set, 'classify_compare', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyResult(subject, accuracy_compare, cm_recall_compare, version, filter_result_set, 'classify_compare', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_compare, subject, version, 'classify_compare', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
@@ -148,7 +149,7 @@ accuracy_combine, cm_recall_combine, models_combine, filtered_combined_data = tr
 # plot data
 train_classifier.plotEmgData(filtered_combined_data, adjusted_new_real_data, plot_ylim=plot_ylim, title='combine')
 ## save results
-# Model_Storage.saveClassifyResult(subject, accuracy_combine, cm_recall_combine, version, classifier_result_set, 'classify_combine', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyResult(subject, accuracy_combine, cm_recall_combine, version, filter_result_set, 'classify_combine', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_combine, subject, version, 'classify_combine', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
@@ -159,7 +160,7 @@ train_classifier.plotEmgData(filtered_combined_data, adjusted_new_real_data, plo
 accuracy_noise, cm_recall_noise, models_noise, filtered_noise_data = train_classifier.trainClassifierNoiseData(processed_new_real_data,
     reference_new_real_data, adjusted_new_real_data, models_basis, num_sample=num_sample)
 ## save results
-# Model_Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, classifier_result_set, 'classify_noise', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, filter_result_set, 'classify_noise', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_noise, subject, version, 'classify_noise', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
@@ -170,7 +171,7 @@ accuracy_noise, cm_recall_noise, models_noise, filtered_noise_data = train_class
 accuracy_copy, cm_recall_copy, models_copy, replicated_only_new_data = train_classifier.trainClassifierCopyData(filtered_new_real_data,
     reference_new_real_data, adjusted_new_real_data, models_basis, num_sample=num_sample)
 ## save results
-# Model_Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, classifier_result_set, 'classify_copy', project='cGAN_Model', num_reference=reference)
+# Model_Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, filter_result_set, 'classify_copy', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_copy, subject, version, 'classify_copy', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 

@@ -31,7 +31,7 @@ def plotConfusionMatrix(cm, classes, normalize=False, title='', cmap=plt.cm.Blue
 
     if normalize:
         cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100, 1)  # calculate cm recall
-        print("normalized confusion matrix")
+        print("Confusion matrix, with normalization")
     else:
         cm = np.around(cm * 100, 1)
         print('Confusion matrix, without normalization')

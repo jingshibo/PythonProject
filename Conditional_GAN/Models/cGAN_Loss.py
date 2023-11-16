@@ -15,7 +15,7 @@ class LossFunction():
     def getVarianceWithinClass(self, blending_factor, image_one_hot_labels):
         n_classes = image_one_hot_labels.shape[1]
 
-        class_specific_variances = []  # List to store variance for each class
+        class_specific_variances = []  # List to store variance for each class (timepoint conditions)
         # Loop through each class to calculate class-specific variance
         for i in range(n_classes):
             class_mask = image_one_hot_labels[:, i, 0, 0].bool()
@@ -37,7 +37,7 @@ class LossFunction():
 
         # Initialize list to store the mean absolute difference for each class
         class_specific_diffs = []
-        # Loop through each class to calculate the class-specific mean absolute differences
+        # Loop through each class (timepoint conditions) to calculate the class-specific mean absolute differences
         for i in range(n_classes):
             # Create a boolean mask for samples belonging to the i-th class
             class_mask = image_one_hot_labels[:, i, 0, 0].bool()
@@ -116,7 +116,7 @@ class WGANloss():
 
         # Initialize list to store the mean absolute difference for each class
         class_specific_diffs = []
-        # Loop through each class to calculate the class-specific mean absolute differences
+        # Loop through each class (timepoint conditions) to calculate the class-specific mean absolute differences
         for i in range(n_classes):
             # Create a boolean mask for samples belonging to the i-th class
             class_mask = image_one_hot_labels[:, i, 0, 0].bool()
@@ -138,7 +138,7 @@ class WGANloss():
     def getVarianceWithinClass(self, blending_factor, image_one_hot_labels):
         n_classes = image_one_hot_labels.shape[1]
 
-        class_specific_variances = []  # List to store variance for each class
+        class_specific_variances = []  # List to store variance for each class (timepoint conditions)
         # Loop through each class to calculate class-specific variance
         for i in range(n_classes):
             class_mask = image_one_hot_labels[:, i, 0, 0].bool()
@@ -185,8 +185,8 @@ class WGANloss():
         weighted_term = self.getWeightedTerm(blending_factor)
 
         # Add the variance term and construct error to the loss
-        gen_loss = -1. * torch.mean(
-            disc_fake_pred) + self.var_weight * variance_value + self.construct_weight * construct_error + torch.mean(weighted_term)
+        gen_loss = -1. * torch.mean(disc_fake_pred) + self.var_weight * variance_value +\
+                   self.construct_weight * construct_error + torch.mean(weighted_term)
         return gen_loss
 
     # Return the loss of a disc given the disc's scores for fake and real images, the gradient penalty, and gradient penalty weight.
