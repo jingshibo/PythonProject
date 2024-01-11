@@ -2954,7 +2954,7 @@ for experiment_version, experiment_data in split_parameters.items():
                         print("wrong parameters:", experiment_version, mode, session, wrong_index)
 
 
-## save split results to json files
+## save split parameters to json files
 Insole_Data_Splition.saveSplitParameters(subject, split_parameters, project=project)
 
 

@@ -72,13 +72,16 @@ def plotAverageValue(emg_data, mode, num_columns=30, layout=None, title=None, yl
 def plotMultipleModeValues(emg_list, title=None, ylim=(0, 0.5)):
     plt.figure(figsize=(10, 6))
     for label, arr in emg_list.items():
-        plt.plot(arr, label=label)
+        plt.plot(arr, label=label, linewidth=3)
 
+    font_size = 28
     plt.title(title)
-    plt.xlabel('Index')
-    plt.ylabel('Value')
+    plt.xlabel('Time Points', fontsize=font_size)
+    plt.ylabel('Average EMG Value', fontsize=font_size)
     plt.ylim(*ylim)
-    plt.legend()
+    plt.xticks(fontsize=font_size)
+    plt.yticks(fontsize=font_size)
+    plt.legend(loc='upper left', fontsize=font_size-5)
     plt.grid(True)
     plt.show(block=False)
 
@@ -140,11 +143,22 @@ def plotPsd(emg_data, mode, num_columns=30, layout=None, title=None, ylim=None):
 
 ##  plot average emg values from multiple locomotion modes in a single plot for comparison
 def plotMultipleEventMeanValues(fake_data, real_data, modes, title=None, ylim=(0, 0.5), grid='grid_1'):
+    def extractModeName(mode):
+        mode_name = mode.split('_')[1]
+        if len(mode_name) % 2 == 0 and mode_name[:len(mode_name) // 2] == mode_name[len(mode_name) // 2:]:
+            return mode_name[:len(mode_name) // 2]
+        else:
+            return mode_name
+
+    mode_0 = extractModeName(modes[0])
+    mode_1 = extractModeName(modes[1])
+    mode_2 = extractModeName(modes[2])
+
     mean_emg_to_plot = {
-        f'fake_{modes[2]}': fake_data['emg_event_mean'][grid][modes[2]],
-        f'real_{modes[2]}': real_data['emg_event_mean'][grid][modes[2]],
-        f'real_{modes[0]}': real_data['emg_event_mean'][grid][modes[0]],
-        f'real_{modes[1]}': real_data['emg_event_mean'][grid][modes[1]]}
+        f'Old {mode_2} Data': fake_data['emg_event_mean'][grid][modes[2]],
+        f'New {mode_2} Data': real_data['emg_event_mean'][grid][modes[2]],
+        f'New {mode_0} Data': real_data['emg_event_mean'][grid][modes[0]],
+        f'New {mode_1} Data': real_data['emg_event_mean'][grid][modes[1]]}
     plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
 
 

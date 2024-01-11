@@ -24,7 +24,7 @@ class Raw_Cnn_2d(nn.Module):
         self.conv2_parameter = [32, 3]
         self.conv3_parameter = [32, 3]
         # self.conv4_parameter = [32, 3]
-        self.linear1_parameter = 1000
+        self.linear1_parameter = 500
         self.linear2_parameter = 100
 
         # define convolutional layer

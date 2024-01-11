@@ -91,13 +91,15 @@ reorganized_results = Statistic_Calculation.reorganizeStatResults(mean_std_value
 dataset = 'reduce_number_dataset'
 legend = ['All', '35 (Area)', '33 (Density)', '25 (Area)', '21 (Density)', '15 (Area)', '11 (Density)', '8 (Density)', '6 (Area)', 'Bipolar']
 title = 'Effect of Channel Number and Delay Time on Prediction Accuracy'
-Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1)
+rows = [0, 2, 4]  # only plot three delay points: 0ms, 200ms, 400ms
+Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', delay_selection=rows, bonferroni_coeff=1)
 
 ##
 dataset = 'reduce_muscle_dataset'
 legend = ['HDsEMG on Both Muscles', 'HDsEMG on RF Muscle', 'HDsEMG on TA Muscle', 'Bipolar on RF Muscle', 'Bipolar on TA Muscle', 'Bipolar on Both Muscles']
 title = 'Comparing Prediction Accuracy of HD-EMG and Bipolar EMG Across Different Muscle Groups and Delay Times'
-Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1)
+rows = [0, 2, 4]  # only plot three delay points: 0ms, 200ms, 400ms
+Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', delay_selection=rows, bonferroni_coeff=1)
 
 ##
 dataset = 'lose_random_dataset'
@@ -125,8 +127,8 @@ Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset, legend, ti
 
 ##
 dataset = 'model_type'
-legend = ['CNN features + GRU Output', 'CNN features + Majority Vote', 'Manual Features + GRU Output',
-    'Manual Features + Majority Vote']
+legend = ['CNN features + GRU Output (CNN + GRU)', 'CNN features + Majority Vote (CNN + MV)', 'Manual Features + GRU Output (Manual + GRU)',
+    'Manual Features + Majority Vote (Manual + MV)']
 title = 'Comparing Prediction Accuracy of Different Classification Methods'
 Result_Plotting.plotAdjacentTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1)
 
@@ -137,7 +139,8 @@ legend_1 = ['Original Data', '5 Corner Loss', '10 Corner Loss', '15 Corner Loss'
 legend_2 = ['Original Data', '5 Corner Recovery', '10 Corner Recovery', '15 Corner Recovery', '20 Corner Recovery']
 title = '(b) Effect of Corner Channel Loss on Prediction Accuracy Across Different Delay Times before and after recovery'
 # Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', bonferroni_coeff=1)
-Result_Plotting.plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='')
+rows = [0, 2, 4]  # only plot three delay points: 0ms, 200ms, 400ms
+Result_Plotting.plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', delay_selection=rows)
 
 ##
 dataset_1 = 'lose_random_dataset'
@@ -146,7 +149,8 @@ legend_1 = ['Original Data', '5 Random Loss', '10 Random Loss', '15 Random Loss'
 legend_2 = ['Original Data', '5 Random Recovery', '10 Random Recovery', '15 Random Recovery', '20 Random Recovery']
 title = '(b) Effect of Corner Channel Loss on Prediction Accuracy Across Different Delay Times before and after recovery'
 # Result_Plotting.plotCompareToFirstTtest(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', bonferroni_coeff=1)
-Result_Plotting.plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='')
+rows = [0, 2, 4]  # only plot three delay points: 0ms, 200ms, 400ms
+Result_Plotting.plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', delay_selection=rows)
 
 
 # ##

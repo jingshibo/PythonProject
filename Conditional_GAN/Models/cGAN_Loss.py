@@ -87,9 +87,9 @@ class WGANloss():
     # Return the gradient of the discic's scores with respect to mixes of real and fake images.
     def get_gradient(self, disc, real, fake, epsilon, one_hot_labels):
         # Get mixed images
-        mixed_images = real * epsilon + fake * (1 - epsilon)
+        mixed_images = real * epsilon + fake * (1 - epsilon)  # each pair of real image and fake image should be from the same condition
         # Calculate the discic's scores on the mixed images
-        mixed_scores = disc(mixed_images, one_hot_labels)
+        mixed_scores = disc(mixed_images, one_hot_labels)  # one_hot_labels provide the condition information
         # Take the gradient of the scores with respect to the images
         gradient = torch.autograd.grad(
             # Note: You need to take the gradient of outputs with respect to inputs.
@@ -191,10 +191,10 @@ class WGANloss():
 
     # Return the loss of a disc given the disc's scores for fake and real images, the gradient penalty, and gradient penalty weight.
     def get_disc_loss(self, fake, real, image_one_hot_labels, one_hot_labels, disc):
-        fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
         real_image_and_labels = torch.cat((real.float(), image_one_hot_labels.float()), 1)
-        disc_fake_pred = disc(fake_image_and_labels.detach(), one_hot_labels)
+        fake_image_and_labels = torch.cat((fake.float(), image_one_hot_labels.float()), 1)
         disc_real_pred = disc(real_image_and_labels, one_hot_labels)
+        disc_fake_pred = disc(fake_image_and_labels.detach(), one_hot_labels)
 
         epsilon = torch.rand(len(real), 1, 1, 1, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), requires_grad=True)
         gradient = self.get_gradient(disc, real_image_and_labels, fake_image_and_labels.detach(), epsilon, one_hot_labels)

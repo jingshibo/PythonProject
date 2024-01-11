@@ -92,6 +92,17 @@ def calcuEmgFeatures(emg_window_data):
     # return np.concatenate([MAV, RMS, WL, SSCn, ZCn])
 
 
+## calculate imu features within a window
+def calcuImuFeatures(imu_window_data):
+    abs_imu_data = np.abs(imu_window_data)
+
+    max_values = np.max(imu_window_data, axis=0)
+    min_values = np.min(imu_window_data, axis=0)
+    mean_values = np.mean(imu_window_data, axis=0)
+    std_values = np.std(imu_window_data, axis=0)
+    return np.concatenate([max_values, min_values, mean_values, std_values])
+
+
 ## extract features for emg data in an experiment round, which contains multiple windows
 def labelEmgFeatures(gait_event_label, gait_event_emg, window_size, increment):
     emg_feature_labelled = {}

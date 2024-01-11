@@ -55,13 +55,6 @@ all_subjects[subject] = subject_results
 # all_subjects[subject] = subject_results
 
 
-##
-subject = 'Test'
-version = 1
-subject_results = Sliding_Ann_Results.getPredictResults(subject, version, result_set, model_type, project='Cycle_GAN')
-all_subjects[subject] = subject_results
-
-
 ##  average accuracy across subjects
 delay_groups = list(all_subjects['Shibo']['accuracy'].keys())  # list all transition types
 average_accuracy = {delay_time: 0 for delay_time in delay_groups}  # initialize average accuracy list
@@ -100,12 +93,11 @@ plt.title('Prediction accuracy for the prediction at different delay points')
 
 
 ##  print confusion matrix
-delay = 00
+delay = 300
 cm_call = average_cm[f'delay_{delay}_ms']
 # subject = 'Shibo'
 # cm_call = all_subjects[f'{subject}']['cm_call'][f'delay_{delay}_ms']
 class_labels = ['LW-LW', 'LW-SA', 'LW-SD', 'LW-SS', 'SA-LW', 'SA-SA', 'SA-SS', 'SD-LW', 'SD-SD', 'SD-SS', 'SS-LW', 'SS-SA', 'SS-SD']
-plt.figure()
 Confusion_Matrix.plotConfusionMatrix(cm_call, class_labels, normalize=False)
 
 

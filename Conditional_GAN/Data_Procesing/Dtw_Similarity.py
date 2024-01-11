@@ -48,7 +48,7 @@ class Dtw_Distance:
             else:  # select representative references
                 dtw_reference_mean = np.mean(dtw_results[transition_type]['within_reference_ds'], axis=0)
                 sorted_reference_index = np.argsort(dtw_reference_mean)
-                if len(sorted_reference_index) < self.num_reference: # in case selected reference number is larger than the available number
+                if len(sorted_reference_index) < self.num_reference:  # in case selected reference number is larger than the available number
                     self.num_reference = len(sorted_reference_index)
                 selected_reference_index = sorted_reference_index[0::len(sorted_reference_index) // self.num_reference][0: self.num_reference]
 

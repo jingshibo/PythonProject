@@ -111,8 +111,68 @@ class ClassifierTraining():
 
         return models_old, accuracy_old, cm_recall_old, selected_old_fake_data, filtered_old_real_data
 
+    ##  train classifier (on synthetic and old data), mix old and synthetic data to train the classifier
+    def trainClassifierOldMixData(self, old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample, num_ref, method='select'):
+        old_mix_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
+        synthetic_old_mix_data, fake_old_mix_images = old_mix_evaluation.generateFakeData(extracted_emg_classify, 'old', self.modes_generation,
+            old_emg_classify_normalized, spatial_filtering=False, kernel=self.gan_filter_kernel)
+        # separate and store grids in a list if only use one grid later
+        old_mix_fake_emg_grids = Post_Process_Data.separateEmgGrids(synthetic_old_mix_data, separate=True)
+        old_mix_real_emg_grids = Post_Process_Data.separateEmgGrids(old_emg_classify_normalized, separate=True)
+        del synthetic_old_mix_data
+        # only preprocess selected grid
+        processed_old_mix_fake_data = Process_Fake_Data.reorderSmoothDataSet(old_mix_fake_emg_grids['grid_1'], filtering=False, modes=self.modes_generation)
+        processed_old_mix_real_data = Process_Fake_Data.reorderSmoothDataSet(old_mix_real_emg_grids['grid_1'], filtering=False, modes=None)
+        del old_mix_fake_emg_grids, old_mix_real_emg_grids
 
-    ##  train classifier (on new data), for evaluating the proposed method performance
+        # post-process dataset for model input
+        filtered_old_mix_fake_data = Post_Process_Data.spatialFilterModelInput(processed_old_mix_fake_data, kernel=self.classifier_filter_kernel)
+        filtered_old_mix_real_data = Post_Process_Data.spatialFilterModelInput(processed_old_mix_real_data, kernel=self.classifier_filter_kernel)
+        # select representative fake data for classification model training
+        selected_old_mix_fake_data = Dtw_Similarity.extractFakeData(filtered_old_mix_fake_data, filtered_old_mix_real_data, self.modes_generation,
+            envelope_frequency=None, num_sample=num_sample, num_reference=num_ref, method=method, random_reference=False, split_grids=True)
+
+        # classification
+        reference_indices = selected_old_mix_fake_data['reference_index_based_on_grid_1']
+        reference_old_mix_real_data, adjusted_old_mix_real_data = old_mix_evaluation.addressReferenceData(reference_indices, filtered_old_mix_real_data)
+        train_set, shuffled_train_set = old_mix_evaluation.classifierTlTrainSet(selected_old_mix_fake_data['fake_data_based_on_grid_1'],
+            reference_old_mix_real_data, dataset='cross_validation_set', minimum_train_number=10, exchange_dataset=False)
+        models_old_mix, model_result_old_mix = old_mix_evaluation.trainClassifier(shuffled_train_set, num_epochs=50, batch_size=64, decay_epochs=20)
+        acc_old_mix, cm_old_mix = old_mix_evaluation.evaluateClassifyResults(model_result_old_mix)
+        # test classifier
+        test_set, shuffled_test_set = old_mix_evaluation.classifierTestSet(self.modes_generation, adjusted_old_mix_real_data, train_set, test_ratio=1)
+        test_results = old_mix_evaluation.testClassifier(models_old_mix, shuffled_test_set)
+        accuracy_old_mix, cm_recall_old_mix = old_mix_evaluation.evaluateClassifyResults(test_results)
+        del train_set, shuffled_train_set, test_set, shuffled_test_set
+
+        return models_old_mix, accuracy_old_mix, cm_recall_old_mix, selected_old_mix_fake_data, adjusted_old_mix_real_data, \
+            reference_old_mix_real_data, processed_old_mix_real_data, filtered_old_mix_real_data
+
+
+    ##  train classifier (on copying old data), replicate avaliable old data to train the classifier
+    def trainClassifierOldCopyData(self, filtered_old_real_data, reference_old_real_data, adjusted_old_real_data, num_sample):
+        gen_results = None
+        old_copy_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
+        # replicate the current reference new data multiple times to build the dataset. This dataset has already been spatial filtered
+        replicated_only_old_data = old_copy_evaluation.replicateReferenceData(filtered_old_real_data, reference_old_real_data,
+            self.modes_generation, num_sample=num_sample)
+
+        # classification
+        train_set, shuffled_train_set = old_copy_evaluation.classifierTlTrainSet(replicated_only_old_data, reference_old_real_data,
+            dataset='cross_validation_set', minimum_train_number=10, exchange_dataset=False)
+        models_old_copy, model_results_old_copy = old_copy_evaluation.trainClassifier(shuffled_train_set, num_epochs=50, batch_size=64, decay_epochs=20)
+        acc_old_copy, cm_old_copy = old_copy_evaluation.evaluateClassifyResults(model_results_old_copy)
+
+        # test classifier
+        test_set, shuffled_test_set = old_copy_evaluation.classifierTestSet(self.modes_generation, adjusted_old_real_data, train_set, test_ratio=1)
+        test_results = old_copy_evaluation.testClassifier(models_old_copy, shuffled_test_set)
+        accuracy_old_copy, cm_recall_old_copy = old_copy_evaluation.evaluateClassifyResults(test_results)
+        del train_set, shuffled_train_set, test_set, shuffled_test_set
+
+        return accuracy_old_copy, cm_recall_old_copy, models_old_copy, replicated_only_old_data
+
+
+    ##  retrain classifier (on new data), for evaluating the proposed method performance
     def trainClassifierNewData(self, new_emg_classify_normalized, extracted_emg_classify, gen_results, models_basis, num_sample, num_ref, method='select'):
         new_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         synthetic_new_data, fake_new_images = new_evaluation.generateFakeData(extracted_emg_classify, 'new', self.modes_generation,
@@ -151,7 +211,7 @@ class ClassifierTraining():
             processed_new_real_data, filtered_new_real_data
 
 
-    ##  train classifier (on old and new data), for comparison purpose
+    ##  retrain classifier (on old and new data), for comparison purpose
     def trainClassifierMixData(self, old_emg_classify_normalized, new_emg_classify_normalized, reference_new_real_data, adjusted_new_real_data, models_basis):
         # build training data
         old_emg_for_replacement = {modes[2]: old_emg_classify_normalized[modes[2]] for transition_type, modes in self.modes_generation.items()}
@@ -183,7 +243,7 @@ class ClassifierTraining():
         return accuracy_compare, cm_recall_compare, models_compare, filtered_mix_data
 
 
-    ## train classifier (on old and fake new data), for improvement purpose
+    ## retrain classifier (on old and fake new data), for improvement purpose
     def trainClassifierCombineData(self, selected_new_fake_data, filtered_mix_data, reference_new_real_data, adjusted_new_real_data, models_basis):
         ## build training data
         gen_results = None
@@ -212,7 +272,7 @@ class ClassifierTraining():
         return accuracy_combine, cm_recall_combine, models_combine, filtered_combined_data
 
 
-    ## train classifier (on noisy new data), select some reference new data and augment them with noise for training comparison
+    ## retrain classifier (on noisy new data), select some reference new data and augment them with noise for training comparison
     def trainClassifierNoiseData(self, processed_new_real_data, reference_new_real_data, adjusted_new_real_data, models_basis, num_sample):
         # generate noise data
         gen_results = None
@@ -237,12 +297,12 @@ class ClassifierTraining():
         return accuracy_noise, cm_recall_noise, models_noise, filtered_noise_data
 
 
-    ## train classifier (on only copying new data), replicate only reference new data without augmentation to build the dataset
+    ## retrain classifier (on only copying new data), replicate only reference new data without augmentation to build the dataset
     def trainClassifierCopyData(self, filtered_new_real_data, reference_new_real_data, adjusted_new_real_data, models_basis, num_sample):
         gen_results = None
         copy_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         # replicate the current reference new data multiple times to build the dataset. This dataset has already been spatial filtered
-        replicated_only_new_data = copy_evaluation.replicateReferenceNewData(filtered_new_real_data, reference_new_real_data,
+        replicated_only_new_data = copy_evaluation.replicateReferenceData(filtered_new_real_data, reference_new_real_data,
             self.modes_generation, num_sample=num_sample)
 
         # classification
@@ -261,21 +321,39 @@ class ClassifierTraining():
 
 
     ## plotting fake and real emg data for comparison
-    def plotEmgData(self,fake_emg_data, real_emg_data, plot_ylim, title):
+    def plotEmgData(self,fake_emg_data, real_emg_data, plot_ylim, title, grid='grid_1'):
         # calculate average values
         fake_data = Plot_Emg_Data.calcuAverageEmgValues(fake_emg_data)
         real_data = Plot_Emg_Data.calcuAverageEmgValues(real_emg_data)
+
+        # get the maximum element value as the ylim
+        global_max = float('-inf')
+        for key in fake_data['emg_event_mean'][grid]:
+            current_max = fake_data['emg_event_mean'][grid][key].max()
+            if current_max > global_max:
+                global_max = current_max
+        for key in real_data['emg_event_mean'][grid]:
+            current_max = real_data['emg_event_mean'][grid][key].max()
+            if current_max > global_max:
+                global_max = current_max
+        # normalize all elements in the two dictionaries using the maximum value
+        for key in fake_data['emg_event_mean'][grid]:
+            fake_data['emg_event_mean'][grid][key] = fake_data['emg_event_mean'][grid][key] / global_max
+
+        for key in real_data['emg_event_mean'][grid]:
+            real_data['emg_event_mean'][grid][key] = real_data['emg_event_mean'][grid][key] / global_max
+
         # plot values of certain transition type
         transition_type = 'emg_LWSA'
         modes = self.modes_generation[transition_type]
-        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim))
+        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim), grid=grid)
         transition_type = 'emg_SALW'
         modes = self.modes_generation[transition_type]
-        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim))
+        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim), grid=grid)
         transition_type = 'emg_LWSD'
         modes = self.modes_generation[transition_type]
-        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim))
+        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim), grid=grid)
         transition_type = 'emg_SDLW'
         modes = self.modes_generation[transition_type]
-        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim))
+        Plot_Emg_Data.plotMultipleEventMeanValues(fake_data, real_data, modes, title=title, ylim=(0, plot_ylim), grid=grid)
 

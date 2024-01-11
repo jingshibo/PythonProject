@@ -112,7 +112,7 @@ class cGAN_Evaluation:
 
 
     # replicate current selected reference new data to build the training set without using other augmentation methods
-    def replicateReferenceNewData(self, filtered_new_real_data, reference_new_real_data, modes_generation, num_sample):
+    def replicateReferenceData(self, filtered_new_real_data, reference_new_real_data, modes_generation, num_sample):
         reference_data = copy.deepcopy(reference_new_real_data)
         if not reference_new_real_data:  # if no new data are available for the transition modes
             reference_data = {key: [] for key in modes_generation.keys()}
@@ -141,7 +141,7 @@ class cGAN_Evaluation:
 
 
     # divide classifier training set for transfer learning
-    def classifierTlTrainSet(self, generated_data, reference_data, dataset='leave_one_set', fold=5, training_percent=0.8, minimum_train_number=10):
+    def classifierTlTrainSet(self, generated_data, reference_data, dataset='leave_one_set', fold=5, training_percent=0.8, minimum_train_number=10, exchange_dataset=True):
         if dataset == 'leave_one_set':
             train_dataset = Data_Preparation.leaveOutDataSet(training_percent, generated_data, shuffle=True)
         elif dataset == 'cross_validation_set':
@@ -151,7 +151,8 @@ class cGAN_Evaluation:
         # adjust the train dataset to meet the requirement of transfer learning
         for group_number, group_value in train_dataset.items():
             # exchange the training set and test set
-            group_value['train_set'], group_value['test_set'] = group_value['test_set'], group_value['train_set']
+            if exchange_dataset is True:
+                group_value['train_set'], group_value['test_set'] = group_value['test_set'], group_value['train_set']
             # add reference data into the train_set as they are available new transition data for model training
             if reference_data:  # if we used reference_data, include it into the training set
                 for key, data_list in reference_data.items():

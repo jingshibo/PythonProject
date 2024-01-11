@@ -538,7 +538,7 @@ models_noise = Model_Storage.loadClassifyModels(subject, version, model_type, mo
 '''
 ## replicate the current reference new data multiple times to build the dataset
 copy_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, window_parameters)
-replicated_only_new_data = copy_evaluation.replicateReferenceNewData(filtered_new_real_data, reference_new_real_data, modes_generation, num_sample=50)
+replicated_only_new_data = copy_evaluation.replicateReferenceData(filtered_new_real_data, reference_new_real_data, modes_generation, num_sample=50)
 
 ## classification
 train_set, shuffled_train_set = copy_evaluation.classifierTlTrainSet(replicated_only_new_data, reference_new_real_data, dataset='cross_validation_set')

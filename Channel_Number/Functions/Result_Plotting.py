@@ -6,16 +6,22 @@ import copy
 
 
 ##  plot the bars with all columns compared to the first column for the significance level annotation
-def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonferroni_coeff=1):
+def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', delay_selection=None, bonferroni_coeff=1):
     # Create sample data
     data = copy.deepcopy(reorganized_results)
-    df_mean = data[dataset]['mean']
-    df_std = data[dataset]['std']
-    df_pval = data[dataset]['ttest']
+    if delay_selection is None:
+        df_mean = data[dataset]['mean']
+        df_std = data[dataset]['std']
+        df_pval = data[dataset]['ttest']
+    else:  # plot selected delay points
+        df_mean = data[dataset]['mean'].iloc[delay_selection]
+        df_std = data[dataset]['std'].iloc[delay_selection]
+        df_pval = data[dataset]['ttest'].iloc[delay_selection]
+
     df_mean.columns = legend
     df_std.columns = legend
     df_pval.columns = legend
-    font_size = 20
+    font_size = 25
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
@@ -76,7 +82,7 @@ def plotCompareToFirstTtest(reorganized_results, dataset, legend, title='', bonf
     elif df_mean.shape[1] == 6:
         ax.set_ylim(50, 115)  # for one muscle channels
     elif df_mean.shape[1] == 10:
-        ax.set_ylim(50, 120)  # for reduced channels
+        ax.set_ylim(60, 120)  # for reduced channels
     ymin, ymax = ax.get_ylim()  # get the current limits of the y-axis
     yticks = range(int(ymin), int(ymax+1), 5)  # set the space between y-axis ticks to 5
     ax.set_yticks(yticks)
@@ -107,7 +113,7 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_co
     df_mean.columns = legend
     df_std.columns = legend
     df_pval.columns = legend
-    font_size = 20
+    font_size = 27
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
@@ -174,26 +180,39 @@ def plotAdjacentTtest(reorganized_results, dataset, legend, title, bonferroni_co
 
 
 ## plot the accuracy of channel loss before and after recovery via stacked bar visualization
-def plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', bonferroni_coeff=1):
+def plotChannelLoss(reorganized_results, dataset_1, dataset_2, legend_1, legend_2, title='', delay_selection=None, bonferroni_coeff=1):
     font_size = 30
     data = copy.deepcopy(reorganized_results)
 
     # Extract data for both datasets
-    df_mean_1 = data[dataset_1]['mean']
-    df_mean_1.columns = legend_1
-    df_mean_2 = data[dataset_2]['mean']
-    df_mean_2.columns = legend_1
-    enhancement = df_mean_2 - df_mean_1
-    enhancement.columns = legend_2
-    df_mean_2.columns = legend_2
-    df_std_1 = data[dataset_1]['std']
-    df_std_2 = data[dataset_2]['std']
-    df_pval = data[dataset_2]['ttest']
-    df_pval.columns = legend_2
+    if delay_selection is None:
+        df_mean_1 = data[dataset_1]['mean']
+        df_mean_1.columns = legend_1
+        df_mean_2 = data[dataset_2]['mean']
+        df_mean_2.columns = legend_1
+        enhancement = df_mean_2 - df_mean_1
+        enhancement.columns = legend_2
+        df_mean_2.columns = legend_2
+        df_std_1 = data[dataset_1]['std']
+        df_std_2 = data[dataset_2]['std']
+        df_pval = data[dataset_2]['ttest']
+        df_pval.columns = legend_2
+    else:  # plot selected delay points
+        df_mean_1 = data[dataset_1]['mean'].iloc[delay_selection]
+        df_mean_1.columns = legend_1
+        df_mean_2 = data[dataset_2]['mean'].iloc[delay_selection]
+        df_mean_2.columns = legend_1
+        enhancement = df_mean_2 - df_mean_1
+        enhancement.columns = legend_2
+        df_mean_2.columns = legend_2
+        df_std_1 = data[dataset_1]['std'].iloc[delay_selection]
+        df_std_2 = data[dataset_2]['std'].iloc[delay_selection]
+        df_pval = data[dataset_2]['ttest'].iloc[delay_selection]
+        df_pval.columns = legend_2
 
     # Create color list for both datasets
-    color_list_1 = ['darkgray', 'wheat', 'darkorange', 'yellowgreen', 'pink']
-    color_list_2 = ['slategray', 'lawngreen', 'cornflowerblue', 'gold', 'steelblue']
+    color_list_1 = ['darkgray', 'lightgreen', 'lightskyblue', 'khaki', 'pink']
+    color_list_2 = ['slategray', 'green', 'royalblue', 'goldenrod', 'salmon']
 
     # Set up the figure and axis
     fig, ax = plt.subplots(figsize=(8, 6))
