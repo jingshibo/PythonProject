@@ -108,12 +108,12 @@ def classifyUsingAnnModel(shuffled_groups):
         model.summary()
 
         # model parameters
-        num_epochs = 50
+        num_epochs = 120
         decay_epochs = 30
-        batch_size = 1024
+        batch_size = 128
         decay_steps = decay_epochs * len(train_set_y) / batch_size
         # model configuration
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=decay_steps, decay_rate=0.3)
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=decay_steps, decay_rate=0.5)
         opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule, epsilon=1e-08)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics='accuracy')
         # model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics='accuracy')
@@ -218,3 +218,4 @@ def loadResult(subject, model_type, result_set, project='Bipolar_Data'):
     combined_results = {'accuracy': loaded_data['accuracy'], 'cm_recall': np.array(loaded_data['cm_recall']),
         'cm_num': np.array(loaded_data['cm_num'])}
     return combined_results
+

@@ -99,7 +99,7 @@ def calcuImuFeatures(imu_window_data):
     max_values = np.max(imu_window_data, axis=0)
     min_values = np.min(imu_window_data, axis=0)
     mean_values = np.mean(imu_window_data, axis=0)
-    std_values = np.std(imu_window_data, axis=0)
+    std_values = np.std(imu_window_data, axis=0)  # this is included in feature set 0, but excluded in feature set 1
     return np.concatenate([max_values, min_values, mean_values, std_values])
 
 

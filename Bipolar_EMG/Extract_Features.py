@@ -1,3 +1,8 @@
+'''
+    calculate emg and imu features
+'''
+
+
 ##
 from Bipolar_EMG.Utility_Functions import Emg_Imu_Preprocessing
 from Transition_Prediction.RawData.Utility_Functions import Upsampling_Filtering, Insole_Data_Splition
@@ -73,6 +78,6 @@ for mode, name in modes.items():
 
 
 ## save features
-feature_set = 0  # there may be multiple sets of features to be calculated for comparison
+feature_set = 1  # there may be multiple sets of features to be calculated for comparison
 Emg_Imu_Preprocessing.saveFeatures(subject, emg_features, imu_features, feature_set)
 

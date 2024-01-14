@@ -1,3 +1,6 @@
+'''
+    Read and align emg and imu raw data
+'''
 ##
 import numpy as np
 import pandas as pd
@@ -5,7 +8,7 @@ from Bipolar_EMG.Utility_Functions import Emg_Imu_Preprocessing
 
 
 ## Read data
-subject = 'Number1'
+subject = 'Number8'
 mode = 'standing'
 
 # Read bipolar EMG data
@@ -22,22 +25,21 @@ with open(f'D:\Data\Bipolar_Data\subject_{subject}\\raw_data\\IMU\{mode}.dat', '
 # diff = np.diff(imu_data, axis=0)
 # rows_with_zero = np.where(diff[:, 0] != 1)[0]
 
-
-## plot the pulses of imu and emg for alignment
+# plot the pulses of imu and emg for alignment
 Emg_Imu_Preprocessing.plotEmgImu(emg_data, imu_data, start_index=0, end_index=-1)
 
 
 ## align the beginning of emg and imu data
-emg_start_index = 9729
-imu_start_index = 558
+emg_start_index = 8627
+imu_start_index = 517
 emg_begin_cropped, imu_begin_cropped = Emg_Imu_Preprocessing.alignEmgImuBeginIndex(emg_start_index, imu_start_index, emg_data, imu_data)
 # plot begin-cropped emg and imu data for ending index alignment
 Emg_Imu_Preprocessing.plotEmgImu(emg_begin_cropped, imu_begin_cropped, start_index=0, end_index=-1)
 
 
 ## align the end of emg and imu data
-emg_end_index = 119802
-imu_end_index = 4491
+emg_end_index = 83347
+imu_end_index = 3126
 emg_aligned = emg_begin_cropped.iloc[:emg_end_index + 1, 1:].reset_index(drop=True)  # remove the first column indicating data number
 imu_aligned = imu_begin_cropped.iloc[:imu_end_index + 1, 1:].reset_index(drop=True)  # remove the first column indicating data number
 # upsamling insole data to match emg
