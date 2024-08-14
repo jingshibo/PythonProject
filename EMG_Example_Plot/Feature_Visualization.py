@@ -87,7 +87,7 @@ cnn_labels_to_pca = cnn_labels[indices.tolist()]
 
 ##  cnn features pca calculation
 cnn_feature_after_pca = PCA_Features.calculatePca(cnn_feature_to_pca, dimension=3)
-
+cnn_feature_after_tsne = PCA_Features.calculateTSNE(cnn_feature_to_pca, dimension=3)
 
 
 ## obtain manually extracted emg feature data (you only need to run this once)
@@ -121,10 +121,16 @@ manual_labels_to_pca = manual_labels[indices.tolist()]
 
 ##  manual features pca calculation
 manual_feature_after_pca = PCA_Features.calculatePca(manual_features_to_pca, dimension=3)
-
+manual_feature_after_tsne = PCA_Features.calculateTSNE(manual_features_to_pca, dimension=3)
 
 
 ##  scatter plot reduced-dimensional data
-PCA_Features.plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_after_pca, manual_labels_to_pca)
+PCA_Features.plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_after_pca, manual_labels_to_pca,
+                cnn_xlim=(-60, 60), cnn_ylim=(-40, 40), cnn_zlim=(-40, 40),
+                manual_xlim=(-60, 60), manual_ylim=(-40, 40), manual_zlim=(-40, 40),
+                invert_cnn_xaxis=True, invert_cnn_yaxis=False, invert_cnn_zaxis=True,
+                invert_manual_xaxis=True, invert_manual_yaxis=False, invert_manual_zaxis=True, interval=20)
+PCA_Features.plotTSNEFeatures(cnn_feature_after_tsne, cnn_labels_to_pca, manual_feature_after_tsne, manual_labels_to_pca)
 
-
+##
+pass

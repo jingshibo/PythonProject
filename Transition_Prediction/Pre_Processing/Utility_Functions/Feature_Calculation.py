@@ -30,32 +30,32 @@ def calcuEmgFeatures(emg_window_data):
         d2 = emg_window_data[i + 1, :] - emg_window_data[i + 2, :]  # difference of sample i+1 and sample i+2
         product_12 = d1 * d2
         for j in np.arange(0, channel_number):
-            if product_12[j] < 0:  # check if point i+2 starts to turn [must not include equal'=' here]
-                # if this is true, we need to check if the next point [i+3] is also a turning point
+            if product_12[j] < 0:  # check if point i+1 starts to turn [must not include equal'=' here]
+                # if this is true, we need to check if the next point [i+2] is also a turning point
                 d3 = emg_window_data[i + 2, j] - emg_window_data[i + 3, j]
                 product_23 = d2[j] * d3
-                if product_23 < 0:  # if this is true, it means point [i+3] is a turning point, and point [i+2] is noisy
-                    # then we need to see if the next next point [i+4] is also a turning point
+                if product_23 < 0:  # if this is true, it means point [i+2] is a turning point, and point [i+1] may not be a turning point
+                    # then we need to see if the next next point [i+3] is also a turning point
                     d4 = emg_window_data[i + 3, j] - emg_window_data[i + 4, j]
                     product_34 = d3 * d4
-                    if product_34 < 0:  # if this is true, it means point [i+4] is also a turning point
-                        # if [i+4] is also a turning point, we think point [i+2] is noisy, but it is still a turning point
+                    if product_34 < 0:  # if this is true, it means point [i+3] is also a turning point
+                        # if [i+3] is also a turning point, we think point [i+2] is noisy, and [i+1] is confirmed a turning point
                         SSC[i, j] = 1
-                        # because turning point [i+2] is a noisy value, we need to reset it value to be more correct
-                        if d1[j] > 0:  # the previous slope is decrease, and turning point [i+2] is the bottom
+                        # because point [i+2] is a noisy value, we need to reset its value to be more correct
+                        if d1[j] > 0:  # the d1 slope is decrease, and turning point [i+1] is the bottom
                             emg_window_data[i + 2, j] = np.minimum(emg_window_data[i + 1, j], emg_window_data[i + 3, j])
-                        else:  # the previous slope is increase, and turning point [i+2] is the peak
+                        else:  # the d1 slope is increase, and turning point [i+1] is the peak
                             emg_window_data[i + 2, j] = np.maximum(emg_window_data[i + 1, j], emg_window_data[i + 3, j])
-                    else:  # if [i+4] is not a turning point, we think point [i+2] is noisy, and it is not a turning point
+                    else:  # if [i+3] is not a turning point, we still think point [i+2] is noisy, but [i+1] is not a turning point
                         SSC[i, j] = 0
-                        # because non-turning point [i+2] is a noisy value, we need to reset it value to be more correct
-                        if d1[j] > 0:
+                        # because point [i+2] is a noisy value, we need to reset its value to be more correct
+                        if d1[j] > 0:  # the d1 slope is decrease
                             emg_window_data[i + 2, j] = np.maximum(emg_window_data[i + 1, j], emg_window_data[i + 3, j])
-                        else:
+                        else:  # the d1 slope is increase
                             emg_window_data[i + 2, j] = np.minimum(emg_window_data[i + 1, j], emg_window_data[i + 3, j])
-                else:  # if product_23[j] >= 0, it means the next point [i+3] is not a turning point
-                    SSC[i, j] = 1  # point [i+2] is a stable turing point, and thus slope sign changes
-            else:  # if product_12[j] >= 0, it means point [i+2] is not a turning point
+                else:  # if product_23[j] >= 0, it means the next point [i+2] is not a turning point
+                    SSC[i, j] = 1  # point [i+1] is a stable turing point, and thus slope sign changes
+            else:  # if product_12[j] >= 0, it means point [i+1] is not a turning point
                 SSC[i, j] = 0  # slope sign does not change
     SSCn = np.sum(SSC, axis=0)
 
@@ -64,7 +64,7 @@ def calcuEmgFeatures(emg_window_data):
     for i in np.arange(0, sample_number - 2):
         product_1 = emg_window_data[i, :] * emg_window_data[i + 1, :]  # product of sample i and sample i+1
         for j in np.arange(0, channel_number):
-            if product_1[j] <= 0:  # if sign change is detected [must include equal'=' here, in case there are two consective zero values]
+            if product_1[j] <= 0:  # if sign change is detected [must include equal'=' here, in case there are two consecutive zero values]
                 product_2 = emg_window_data[i + 1, j] * emg_window_data[i + 2, j]  # product of sample i+1 and sample i+2
                 if product_2 >= 0:
                     ZC[i, j] = 1  # it is a stable change, record this change

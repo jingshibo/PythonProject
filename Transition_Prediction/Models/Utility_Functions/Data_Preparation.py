@@ -83,7 +83,7 @@ def crossValidationSet(fold, emg_feature_data, shuffle=True):
             # shuffle the list (important)
             if shuffle:
                 random.Random(5).shuffle(gait_event_features)  # 5 is a seed
-            else:
+            else:  # we do not shuffle it in this application
                 pass
             # separate the training and test set
             test_set[gait_event_label] = gait_event_features[
@@ -107,6 +107,8 @@ def leaveOutDataSet(training_percent, emg_feature_data, shuffle=True):
         if shuffle:
             random.Random(5).shuffle(gait_event_features)  # 5 is a seed
             # random.shuffle(gait_event_features)
+        else:  # we do not shuffle it in this application
+            pass
         # separate the training and test set
         test_set[gait_event_label] = gait_event_features[math.ceil(len(gait_event_features) * training_percent):]
         del gait_event_features[math.ceil(len(gait_event_features) * training_percent):]  # remove test set from original set

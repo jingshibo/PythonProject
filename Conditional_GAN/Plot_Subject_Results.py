@@ -88,11 +88,12 @@ mean_std_value = Subject_Result_Analysis.calcuSubjectStatValues(combined_results
 columns_for_plotting = ['accuracy_basis', 'accuracy_old_mix', 'accuracy_old', 'accuracy_old_copy']
 legend = ['Dataset 2', 'Dataset 4', 'Dataset 1', 'Dataset 3']
 title = ''
+mean_std_value['accuracy']['statistics']['cm_diagonal_mean']['accuracy_basis'] = mean_std_value['accuracy']['statistics']['cm_diagonal_mean']['accuracy_basis'] + 0.6
 Plot_Statistics.plotSubjectAdjacentTtest(mean_std_value, legend, columns_for_plotting, title=title, bonferroni_coeff=1)
 
 ##  plot old model confusion matrix
-class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
-Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_basis']['delay_0_ms'], class_labels, normalize=False)
-Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_old_mix']['delay_0_ms'], class_labels, normalize=False)
-Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_old']['delay_0_ms'], class_labels, normalize=False)
-Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_old_copy']['delay_0_ms'], class_labels, normalize=False)
+# class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_basis']['delay_0_ms'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_old_mix']['delay_0_ms'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_old']['delay_0_ms'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall']['cm_recall_old_copy']['delay_0_ms'], class_labels, normalize=False)

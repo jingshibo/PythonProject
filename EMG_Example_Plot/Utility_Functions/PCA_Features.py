@@ -7,6 +7,8 @@ from matplotlib.colors import ListedColormap
 import os
 import numpy as np
 import torch
+from sklearn.manifold import TSNE
+
 
 
 ##  save example features
@@ -99,7 +101,9 @@ def calculatePca(input_features, dimension=3):
 
 
 ## plot scatter pca features
-def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_after_pca, manual_labels_to_pca):
+def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_after_pca, manual_labels_to_pca, cnn_xlim=None, cnn_ylim=None,
+        cnn_zlim=None, manual_xlim=None, manual_ylim=None, manual_zlim=None, invert_cnn_xaxis=False, invert_cnn_yaxis=False,
+        invert_cnn_zaxis=False, invert_manual_xaxis=False, invert_manual_yaxis=False, invert_manual_zaxis=False, interval=20):
     labels = ['SA-SA', 'SA-SS', 'SA-LW']  # order of number 5,6,4
     colors = ['r', 'g', 'b']
     font_size = 16
@@ -113,7 +117,7 @@ def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_aft
     cat_cnn = cnn_labels_to_pca
 
     ax_1 = fig.add_subplot(121, projection='3d')
-    ax_1.scatter(x_cnn, y_cnn, z_cnn, c=cat_cnn, cmap=colormap, edgecolors="black")
+    scatter_1 = ax_1.scatter(x_cnn, y_cnn, z_cnn, c=cat_cnn, cmap=colormap, edgecolors="black")
     ax_1.set_xlabel('PCA 1', fontsize=font_size, labelpad=label_pad)
     ax_1.set_ylabel('PCA 2', fontsize=font_size, labelpad=label_pad)
     ax_1.set_zlabel('PCA 3', fontsize=font_size, labelpad=label_pad)
@@ -121,6 +125,31 @@ def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_aft
     ax_1.tick_params(axis='x', labelsize=font_size)
     ax_1.tick_params(axis='y', labelsize=font_size)
     ax_1.tick_params(axis='z', labelsize=font_size)
+
+    # Set axis limits if provided
+    if cnn_xlim:
+        ax_1.set_xlim(cnn_xlim)
+    if cnn_ylim:
+        ax_1.set_ylim(cnn_ylim)
+    if cnn_zlim:
+        ax_1.set_zlim(cnn_zlim)
+
+    # Set axis ticks interval
+    if cnn_xlim:
+        ax_1.set_xticks(np.arange(cnn_xlim[0], cnn_xlim[1] + interval, interval))
+    if cnn_ylim:
+        ax_1.set_yticks(np.arange(cnn_ylim[0], cnn_ylim[1] + interval, interval))
+    if cnn_zlim:
+        ax_1.set_zticks(np.arange(cnn_zlim[0], cnn_zlim[1] + interval, interval))
+
+    # Invert axes if specified
+    if invert_cnn_xaxis:
+        ax_1.invert_xaxis()
+    if invert_cnn_yaxis:
+        ax_1.invert_yaxis()
+    if invert_cnn_zaxis:
+        ax_1.invert_zaxis()
+
     handles = [plt.Line2D([], [], color=colors[i], marker='o', linestyle='', label=labels[i]) for i in range(len(labels))]
     plt.legend(handles=handles, fontsize=font_size)
     ax_1.set_title('(a) CNN-Extracted Features with PCA Dimension Reduction')
@@ -131,7 +160,7 @@ def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_aft
     cat_manual = manual_labels_to_pca
 
     ax_2 = fig.add_subplot(122, projection='3d')
-    ax_2.scatter(x_manual, y_manual, z_manual, c=cat_manual, cmap=colormap, edgecolors="black")
+    scatter_2 = ax_2.scatter(x_manual, y_manual, z_manual, c=cat_manual, cmap=colormap, edgecolors="black")
     ax_2.set_xlabel('PCA 1', fontsize=font_size, labelpad=label_pad)
     ax_2.set_ylabel('PCA 2', fontsize=font_size, labelpad=label_pad)
     ax_2.set_zlabel('PCA 3', fontsize=font_size, labelpad=label_pad)
@@ -139,7 +168,107 @@ def plotPcaFeatures(cnn_feature_after_pca, cnn_labels_to_pca, manual_feature_aft
     ax_2.tick_params(axis='x', labelsize=font_size)
     ax_2.tick_params(axis='y', labelsize=font_size)
     ax_2.tick_params(axis='z', labelsize=font_size)
+
+    # Set axis limits if provided
+    if manual_xlim:
+        ax_2.set_xlim(manual_xlim)
+    if manual_ylim:
+        ax_2.set_ylim(manual_ylim)
+    if manual_zlim:
+        ax_2.set_zlim(manual_zlim)
+
+    # Set axis ticks interval
+    if manual_xlim:
+        ax_2.set_xticks(np.arange(manual_xlim[0], manual_xlim[1] + interval, interval))
+    if manual_ylim:
+        ax_2.set_yticks(np.arange(manual_ylim[0], manual_ylim[1] + interval, interval))
+    if manual_zlim:
+        ax_2.set_zticks(np.arange(manual_zlim[0], manual_zlim[1] + interval, interval))
+
+    # Invert axes if specified
+    if invert_manual_xaxis:
+        ax_2.invert_xaxis()
+    if invert_manual_yaxis:
+        ax_2.invert_yaxis()
+    if invert_manual_zaxis:
+        ax_2.invert_zaxis()
+
     handles = [plt.Line2D([], [], color=colors[i], marker='o', linestyle='', label=labels[i]) for i in range(len(labels))]
     plt.legend(handles=handles, fontsize=font_size)
     ax_2.set_title('(b) Manually-Extracted Features with PCA Dimension Reduction')
     # fig.suptitle('Comparing CNN-extracted and Manually-Extracted Features Using PCA Dimension Reduction Visualization', fontsize=12)
+    plt.show()
+
+
+## reduce the dimension using the t-SNE method
+def calculateTSNE(input_features, dimension=2, perplexity=30, n_iter=5000):
+    """
+    Apply t-SNE on the input features.
+
+    :param input_features: array-like, shape (n_samples, n_features)
+    :param dimension: int, optional (default: 2)
+        Dimension of the embedded space.
+    :param perplexity: float, optional (default: 30)
+        The perplexity is related to the number of nearest neighbors.
+        Typical values usually range between 5 and 50.
+    :param n_iter: int, optional (default: 1000)
+        Maximum number of iterations for the optimization.
+
+    :return: array-like, shape (n_samples, dimension)
+        The embedded space learned by t-SNE.
+    """
+
+    data_standardized = StandardScaler().fit_transform(input_features)  # standardize the features
+
+    tsne = TSNE(n_components=dimension, perplexity=perplexity, n_iter=n_iter)
+    data_tsne = tsne.fit_transform(data_standardized)
+
+    return data_tsne
+
+
+
+def plotTSNEFeatures(cnn_feature_after_tsne, cnn_labels_to_tsne, manual_feature_after_tsne, manual_labels_to_tsne):
+    labels = ['SA-SA', 'SA-SS', 'SA-LW']  # example labels
+    colors = ['r', 'g', 'b']
+    font_size = 16
+    label_pad = 20
+    colormap = ListedColormap(colors)  # define colors for 3 categories
+    fig = plt.figure(figsize=(20, 10))
+
+    # CNN Features
+    x_cnn = cnn_feature_after_tsne[:, 0]
+    y_cnn = cnn_feature_after_tsne[:, 1]
+    z_cnn = cnn_feature_after_tsne[:, 2]
+    cat_cnn = cnn_labels_to_tsne
+
+    ax_1 = fig.add_subplot(121, projection='3d')
+    ax_1.scatter(x_cnn, y_cnn, z_cnn, c=cat_cnn, cmap=colormap, edgecolors="black")
+    ax_1.set_xlabel('t-SNE 1', fontsize=font_size, labelpad=label_pad)
+    ax_1.set_ylabel('t-SNE 2', fontsize=font_size, labelpad=label_pad)
+    ax_1.set_zlabel('t-SNE 3', fontsize=font_size, labelpad=label_pad)
+    ax_1.tick_params(axis='x', labelsize=font_size)
+    ax_1.tick_params(axis='y', labelsize=font_size)
+    ax_1.tick_params(axis='z', labelsize=font_size)
+    ax_1.set_title('(a) CNN-Extracted Features with t-SNE Dimension Reduction')
+
+    # Manually Extracted Features
+    x_manual = manual_feature_after_tsne[:, 0]
+    y_manual = manual_feature_after_tsne[:, 1]
+    z_manual = manual_feature_after_tsne[:, 2]
+    cat_manual = manual_labels_to_tsne
+
+    ax_2 = fig.add_subplot(122, projection='3d')
+    ax_2.scatter(x_manual, y_manual, z_manual, c=cat_manual, cmap=colormap, edgecolors="black")
+    ax_2.set_xlabel('t-SNE 1', fontsize=font_size, labelpad=label_pad)
+    ax_2.set_ylabel('t-SNE 2', fontsize=font_size, labelpad=label_pad)
+    ax_2.set_zlabel('t-SNE 3', fontsize=font_size, labelpad=label_pad)
+    ax_2.tick_params(axis='x', labelsize=font_size)
+    ax_2.tick_params(axis='y', labelsize=font_size)
+    ax_2.tick_params(axis='z', labelsize=font_size)
+    ax_2.set_title('(b) Manually-Extracted Features with t-SNE Dimension Reduction')
+
+    # Legend
+    handles = [plt.Line2D([], [], color=colors[i], marker='o', linestyle='', label=labels[i]) for i in range(len(labels))]
+    fig.legend(handles=handles, loc='upper center', fontsize=font_size, ncol=len(labels))
+
+    plt.show()

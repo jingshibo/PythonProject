@@ -9,21 +9,26 @@ import datetime
 ## selecting certain inputs
 sensor_sets = {
     # 'emg_0': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM'],  # three front and back
-    'emg_1': ['RF', 'TA', 'BF', 'GM'],  # front two + back two
-    # 'emg_2': ['RF', 'TA', 'VM'],  # all front
-    # 'emg_3': ['BF', 'SL', 'GM'],  # all back
-    'emg_4': ['RF', 'BF', 'VM'],  # upper three
-    'emg_5': ['TA', 'SL', 'GM'],  # lower three
-    'emg_6': ['RF', 'TA'],  # front two
-    'emg_7': ['BF', 'GM'],  # back two
-    'emg_8': ['RF', 'BF'],  # upper two
-    'emg_9': ['TA', 'GM'],  # lower two
-    # 'emg_10': ['RF'],
-    # 'emg_11': ['TA'],
-    # 'emg_12': ['BF'],
-    # 'emg_13': ['SL'],
-    # 'emg_14': ['VM'],
-    # 'emg_15': ['GM'],
+    'emg_1': ['RF', 'BF', 'VM', 'TA', 'GM'],  # upper three + lower two
+    'emg_2': ['RF', 'BF', 'TA', 'SL', 'GM'],  # upper two + lower three
+    'emg_3': ['RF', 'BF', 'TA', 'GM'],  # upper two + lower two
+    'emg_4': ['VM', 'BF', 'TA', 'SL'],  # another upper two + lower two
+    'emg_5': ['VM', 'RF', 'GM', 'SL'],  # another upper two + lower two
+    'emg_6': ['RF', 'TA', 'VM'],  # all front
+    'emg_7': ['BF', 'SL', 'GM'],  # all back
+    'emg_8': ['RF', 'BF', 'VM'],  # upper three
+    'emg_9': ['TA', 'SL', 'GM'],  # lower three
+    'emg_10': ['RF', 'TA'],  # front two
+    'emg_11': ['BF', 'GM'],  # back two
+    'emg_12': ['RF', 'BF'],  # upper two as agonist-antagonist pair
+    'emg_13': ['TA', 'GM'],  # lower two as agonist-antagonist pair
+    'emg_14': ['BF', 'TA'],  # front one + back one
+    'emg_15': ['RF'],
+    'emg_16': ['TA'],
+    'emg_17': ['BF'],
+    'emg_18': ['SL'],
+    'emg_19': ['VM'],
+    'emg_20': ['GM'],
     # # only imu
     # 'imu_0': ['LL', 'FT', 'UL'],
     # 'imu_1': ['FT', 'UL'],
@@ -34,10 +39,10 @@ sensor_sets = {
     # # emg+imu
     # 'emg_imu_0': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM', 'LL', 'FT', 'UL'],
     # 'emg_imu_1': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM', 'LL', 'UL'],
-    'emg_imu_2': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM', 'FT'],
-    'emg_imu_3': ['RF', 'TA', 'BF', 'GM', 'LL', 'FT', 'UL'],
-    'emg_imu_4': ['RF', 'TA', 'BF', 'GM', 'LL', 'UL'],
-    'emg_imu_5': ['RF', 'TA', 'BF', 'GM', 'FT'],
+    # 'emg_imu_2': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM', 'FT'],
+    # 'emg_imu_3': ['RF', 'TA', 'BF', 'GM', 'LL', 'FT', 'UL'],
+    # 'emg_imu_4': ['RF', 'TA', 'BF', 'GM', 'LL', 'UL'],
+    # 'emg_imu_5': ['RF', 'TA', 'BF', 'GM', 'FT'],
 }
 emg = {'RF': list(range(0, 48, 6)), 'VM': list(range(1, 48, 6)), 'TA': list(range(2, 48, 6)), 'BF': list(range(3, 48, 6)),
     'GM': list(range(4, 48, 6)), 'SL': list(range(5, 48, 6))}
@@ -56,7 +61,7 @@ for subject in subjects:
     emg_imu_combined = {key: [emg_features + imu_features for imu_features, emg_features in zip(imu_features[key], emg_features[key])]
         for key in imu_features}  # combine emg and imu data together
 
-    # cross validation sets
+    # cross validation sets (do not shuffle it here)
     emg_imu_cross_validation = Data_Preparation.crossValidationSet(5, emg_imu_combined, shuffle=False)
 
     ## training model

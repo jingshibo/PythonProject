@@ -66,7 +66,7 @@ class ClassifierTraining():
         # using old model to classify new data
         test_results = basis_evaluation.testClassifier(models_basis, shuffled_train_set)
         accuracy_worst, cm_recall_worst = basis_evaluation.evaluateClassifyResults(test_results)  # training and testing data from different time
-        # use new data to train old model by transfer learning
+        # use new data to retrain old model by transfer learning and classify new data
         tf_evaluation = cGAN_Evaluation.cGAN_Evaluation(gen_results, self.window_parameters)
         train_set, shuffled_train_set = tf_evaluation.classifierTlTrainSet(filtered_new_real_data, None, dataset='cross_validation_set')
         models_tf, model_results_tf = tf_evaluation.trainTlClassifier(models_basis, shuffled_train_set, num_epochs=30, batch_size=32, decay_epochs=10)

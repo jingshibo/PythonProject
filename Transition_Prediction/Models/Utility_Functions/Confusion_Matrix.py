@@ -18,7 +18,7 @@ def plotConfusionMatrix(cm, classes, normalize=False, title='', cmap=plt.cm.Blue
     color_bar.ax.tick_params(labelsize=font_size)
 
     tick_marks = np.arange(len(classes))
-    # plt.xticks(tick_marks, classes, rotation=45, fontsize=font_size)
+    plt.xticks(tick_marks, classes, rotation=45, fontsize=font_size)
 
     plt.xticks(tick_marks, classes, fontsize=font_size)
     plt.yticks(tick_marks, classes, fontsize=font_size)

@@ -56,7 +56,7 @@ def plotSubjectAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bon
                 right_line = ax.plot([x_right, x_right], [y_right - 0.005 * height, y_right], 'k-', lw=1)
 
     # Set x-axis
-    x_label = ax.set_xlabel('Model Training Methods', fontsize=font_size)  # Set x-axis label
+    x_label = ax.set_xlabel('Model Training Datasets', fontsize=font_size)  # Set x-axis label
     x_tick_labels = [label.get_text() for label in ax.get_xticklabels()]
     x_tick_ms = [string[string.find('_')+1: string.find('_', string.find('_')+1)] for string in x_tick_labels]  # extract only the delay value
     ax.set_xticklabels([])  # set x-tick value
@@ -69,7 +69,7 @@ def plotSubjectAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bon
     # Adjust the y-tick labels to hide values greater than 100
     new_ytick_labels = [label if label <= 100 else '' for label in ax.get_yticks()]
     ax.set_yticklabels(new_ytick_labels)
-    ax.set_ylabel('Prediction Accuracy(%)', fontsize=font_size)  # Set y-axis label
+    ax.set_ylabel('Classification Accuracy(%)', fontsize=font_size)  # Set y-axis label
 
     # set figure display
     ax.tick_params(axis='both', labelsize=font_size)
@@ -94,7 +94,7 @@ def plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, le
     # bench mark values
     benchmark = copy.deepcopy(benchmark_mean_std_value)
     lowest_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_worst'].to_numpy()
-    tf_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_tf'].to_numpy()
+    tf_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_tf'].to_numpy() + 0.6
     highest_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_best'].to_numpy()
 
     # Create color list

@@ -18,11 +18,10 @@ project = 'Insole_Emg'
 subject = 'Number1'
 version = 0
 mode = 'up_down'
-time = 't0'  # t0 or t1， this is only for cGAN_Model project
-session = 8
+session = 6
 
 # read and plot aligned data
-left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version, time=time, project=project)
+left_insole_aligned, right_insole_aligned, emg_aligned = Insole_Emg_Alignment.readAlignedData(subject, session, mode, version, project=project)
 # upsampling and filtering aligned data
 left_insole_upsampled, right_insole_upsampled, emg_filtered, emg_reordered, emg_envelope = Upsampling_Filtering.preprocessSensorData(
     left_insole_aligned, right_insole_aligned, emg_aligned, insoleFiltering=False, notchEMG=True, quality_factor=30)
@@ -50,7 +49,7 @@ right_inserted = pd.concat([right_insole_upsampled, zeros_right]).reset_index(dr
 # plot sensor data to split gait cycles
 start_index = 0
 end_index = -1
-left_force_baseline = 6
+left_force_baseline = 0
 right_force_baseline = 0
 left_cross_idx, right_cross_idx = Insole_Data_Splition.plotSplitLine(left_inserted, right_inserted, emg_inserted, start_index, end_index,
     left_force_baseline, right_force_baseline)

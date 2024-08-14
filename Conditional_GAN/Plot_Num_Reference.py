@@ -134,8 +134,8 @@ Plot_Statistics.plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_s
 # Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_combine'], class_labels, normalize=False)
 # Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_new'], class_labels, normalize=False)
 # Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_compare'], class_labels, normalize=False)
-# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_noise'], class_labels, normalize=False)
 # Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_copy'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_noise'], class_labels, normalize=False)
 # Confusion_Matrix.plotConfusionMatrix(benchmark_mean_std_value['cm_recall']['cm_recall_worst'][f'delay_0_ms'], class_labels, normalize=False)
 #
 #

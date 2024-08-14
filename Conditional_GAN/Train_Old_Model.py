@@ -74,7 +74,7 @@ start_index = 400  # start index relative to the start of the original extracted
 end_index = 1600  # end index relative to the start of the original extracted data
 num_sample = 50
 num_reference = 1
-classifier_filter_kernel = (20, 20)
+classifier_filter_kernel = (10, 10)
 plot_ylim = 1
 basis_result_set = 0
 filter_result_set = 0  # the results from different classifier filter kernel size are saved into different folders
@@ -87,7 +87,7 @@ gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted
 
 
 '''
-    train classifier (train on synthetic old data), for testing gan generation performance
+    train classifier (train on synthetic old data), for testing gan generation performance (Dataset 1)
 '''
 ## build dataset and train classifier
 models_old, accuracy_old, cm_recall_old, selected_old_fake_data, filtered_old_real_data = train_classifier.trainClassifierOldData(
@@ -100,25 +100,25 @@ train_classifier.plotEmgData(selected_old_fake_data['fake_data_based_on_grid_1']
 
 
 '''
-    train classifier (train on real old + synthetic old data), for evaluating the proposed method performance
+    train classifier (train on real old + synthetic old data), for evaluating the proposed method performance (Dataset 4)
 '''
 ## build dataset and train classifier
-models_old_mix, accuracy_old_mix, cm_recall_old_mix, selected_old_mix_fake_data, adjusted_old_mix_real_data, \
-            reference_old_mix_real_data, processed_old_mix_real_data, filtered_old_mix_real_data = train_classifier.trainClassifierOldMixData(
-    old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample=num_sample, num_ref=num_reference)
-# plot data
-train_classifier.plotEmgData(selected_old_mix_fake_data['fake_data_based_on_grid_1'], adjusted_old_mix_real_data, plot_ylim=plot_ylim, title='')
+# models_old_mix, accuracy_old_mix, cm_recall_old_mix, selected_old_mix_fake_data, adjusted_old_mix_real_data, \
+#             reference_old_mix_real_data, processed_old_mix_real_data, filtered_old_mix_real_data = train_classifier.trainClassifierOldMixData(
+#     old_emg_classify_normalized, extracted_emg_classify, gen_results, num_sample=num_sample, num_ref=num_reference)
+# # plot data
+# train_classifier.plotEmgData(selected_old_mix_fake_data['fake_data_based_on_grid_1'], adjusted_old_mix_real_data, plot_ylim=plot_ylim, title='')
 ## save model
 # Model_Storage.saveClassifyResult(subject, accuracy_old_mix, cm_recall_old_mix, version, filter_result_set, 'classify_old_mix', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_old_mix, subject, version, 'classify_old_mix', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
 
 
 '''
-    train classifier (train on copying old data), select some reference new data without any other augmentation for training comparison
+    train classifier (train on copying old data), select some reference new data without any other augmentation for training comparison (Dataset 3)
 '''
 ## build dataset and train classifier
-accuracy_old_copy, cm_recall_old_copy, models_old_copy, replicated_only_old_data = train_classifier.trainClassifierOldCopyData(
-    filtered_old_mix_real_data, reference_old_mix_real_data, adjusted_old_mix_real_data, num_sample=num_sample)
+# accuracy_old_copy, cm_recall_old_copy, models_old_copy, replicated_only_old_data = train_classifier.trainClassifierOldCopyData(
+#     filtered_old_mix_real_data, reference_old_mix_real_data, adjusted_old_mix_real_data, num_sample=num_sample)
 ## save results
 # # Model_Storage.saveClassifyResult(subject, accuracy_old_copy, cm_recall_old_copy, version, filter_result_set, 'classify_old_copy', project='cGAN_Model', num_reference=reference)
 # # Model_Storage.saveClassifyModels(models_old_copy, subject, version, 'classify_old_copy', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)

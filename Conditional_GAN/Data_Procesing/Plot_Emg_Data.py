@@ -155,10 +155,10 @@ def plotMultipleEventMeanValues(fake_data, real_data, modes, title=None, ylim=(0
     mode_2 = extractModeName(modes[2])
 
     mean_emg_to_plot = {
-        f'Old {mode_2} Data': fake_data['emg_event_mean'][grid][modes[2]],
-        f'New {mode_2} Data': real_data['emg_event_mean'][grid][modes[2]],
-        f'New {mode_0} Data': real_data['emg_event_mean'][grid][modes[0]],
-        f'New {mode_1} Data': real_data['emg_event_mean'][grid][modes[1]]}
+        f'Synthetic {mode_2} Data': fake_data['emg_event_mean'][grid][modes[2]],
+        f'Real {mode_2} Data': real_data['emg_event_mean'][grid][modes[2]],
+        f'Real {mode_0} Data': real_data['emg_event_mean'][grid][modes[0]],
+        f'Real {mode_1} Data': real_data['emg_event_mean'][grid][modes[1]]}
     plotMultipleModeValues(mean_emg_to_plot, title=title, ylim=ylim)
 
 
