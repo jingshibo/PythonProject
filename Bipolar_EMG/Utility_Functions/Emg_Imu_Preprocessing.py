@@ -150,7 +150,7 @@ def readAlignedData(subject, mode, project='Bipolar_Data'):
     return imu_aligned, emg_aligned
 
 
-# calculate and plot MAV values of emg and imu data
+## calculate and plot MAV values of emg and imu data
 def plotMeanAbsValue(emg_filtered, imu_filtered):
     # calculate MAV values of emg and imu data
     emg_mav = emg_filtered.abs().mean(axis=1)

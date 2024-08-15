@@ -1,7 +1,11 @@
+'''
+    Extract emg data of each locomotion mode from .mat files and save the extracted data in the aligned data folder.
+'''
+
 ##
 import scipy.io
-import numpy as np
 import pandas as pd
+import os
 
 ## load emg data from .mat file
 # Load the .mat file
@@ -15,7 +19,6 @@ emg_np = [emg_data[0, i] for i in range(emg_data.shape[1])]
 emg_pd = [pd.DataFrame(matrix) for matrix in emg_np]
 
 ##
-import os
 modes = {'standing': 0, 'level': 1, 'upstairs': 2, 'downstairs': 2, 'upslope': 3, 'downslope': 3}
 
 for mode, index in modes.items():
