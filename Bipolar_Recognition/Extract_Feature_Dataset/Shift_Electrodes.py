@@ -58,17 +58,17 @@ for subject in subjects:
             emg_windowed[name] = Emg_Preprocessing.createWindows(bipolar_emg[name], 512, 64)
 
         # calculate features for each window data
-        emg_features = {}
+        bipolar_features = {}
         for mode, name in modes.items():
             emg_feature_list = []
             for emg_window_data in emg_windowed[name]:
                 emg_feature = Feature_Calculation.calcuEmgFeatures(emg_window_data)
                 emg_feature_list.append(emg_feature)
-            emg_features[name] = np.vstack(emg_feature_list).tolist()  # convert numpy to list for dict storage
+            bipolar_features[name] = np.vstack(emg_feature_list).tolist()  # convert numpy to list for dict storage
 
         # save features
         feature_set = bipolar_number  # there may be multiple sets of features to be calculated for comparison
-        Emg_Preprocessing.saveFeatures(subject, emg_features, feature_set)
+        Emg_Preprocessing.saveFeatures(subject, bipolar_features, feature_set)
 
 
 

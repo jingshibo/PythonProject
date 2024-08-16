@@ -40,6 +40,7 @@ for subject in subjects:
 
     ''' interpolate emg features '''
     ## read emg features
+    emg_features = Emg_Preprocessing.readFeatures(subject, 'hdsemg')
     emg_feature_array = {key: np.array(value) for key, value in emg_features.items()}
 
     ## reshape emg features

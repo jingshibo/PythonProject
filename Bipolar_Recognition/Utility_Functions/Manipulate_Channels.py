@@ -54,8 +54,8 @@ def extractHdsemgShiftFeatures(hdsemg_features, selected_channels):
     return channel_results
 
 
-## construct the dataset with the training set from original features and test set from shift features
-def constructTrainingDataset(subject, original_features, shift_features):
+## construct the dataset for shift evaluation with the training set from original features and test set from shift features
+def constructShiftDataset(subject, original_features, shift_features):
     # extract original features
     emg_feature_original = Emg_Preprocessing.readFeatures(subject, original_features)
     emg_cross_validation_original = Data_Preparation.crossValidationSet(5, emg_feature_original, shuffle=False)
