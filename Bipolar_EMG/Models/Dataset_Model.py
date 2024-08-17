@@ -8,6 +8,7 @@ from sklearn.metrics import confusion_matrix
 import json
 import os
 
+
 ## select the input dataset
 def selectInput(data_dict, indices):
     selected_data = {}
@@ -122,6 +123,7 @@ def classifyUsingAnnModel(shuffled_groups):
         now = datetime.datetime.now()
         model.fit(train_set_x, train_set_y, validation_split=0.1, epochs=num_epochs, batch_size=batch_size, shuffle=True, verbose='auto')
         print(datetime.datetime.now() - now)
+
         # test model
         predictions = model.predict(test_set_x)  # return predicted probabilities
         predict_y = np.argmax(predictions, axis=-1)  # return predicted labels

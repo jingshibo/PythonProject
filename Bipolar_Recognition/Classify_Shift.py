@@ -1,7 +1,6 @@
 ##
-from Bipolar_Recognition.Utility_Functions import Manipulate_Channels
+from Bipolar_Recognition.Utility_Functions import Manipulate_Channels, Models
 from Bipolar_EMG.Models import Dataset_Model
-from Bipolar_Recognition.Models import Result_Processing
 from Transition_Prediction.Models.ANN.Functions import Ann_Dataset
 
 
@@ -40,6 +39,6 @@ for subject in subjects:
             ## save results
             model_type = shift_features
             result_set = 0
-            Result_Processing.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
+            Models.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
 
 

@@ -1,24 +1,34 @@
 ##
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Models
+from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Manipulate_Channels, Models
 from Bipolar_EMG.Models import Dataset_Model
-from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Models.ANN.Functions import Ann_Dataset
 
-## read emg features
+
+##
 subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']
-feature_set = ['hdsemg', 'bipolar_1', 'bipolar_2', 'bipolar_3', 'bipolar_4', 'bipolar_5', 'bipolar_6', 'bipolar_7', 'bipolar_8', 'bipolar_9']
+feature_set = ['left', 'up']
 
 for subject in subjects:
-    for feature_name in feature_set:
-        emg_features = Emg_Preprocessing.readFeatures(subject, feature_name)
-        emg_cross_validation = Data_Preparation.crossValidationSet(5, emg_features, shuffle=False)
+    for direction in feature_set:
+        ## load interpolated emg features
+        interp_emg_features = Emg_Preprocessing.readInterpFeatures(subject, 'hdsemg')
+
+        ## construct augmented cross validation dataset
+        shift_direction = direction
+        clip_original_emg, clip_shift_emg = Manipulate_Channels.clipShiftimages(interp_emg_features, shift_direction=shift_direction, max_shift=8,
+            num_shifts=3, vertical_channels=slice(8, 89), horizontal_channels=slice(0, 25))
+        # combine the shifted data into the training set for augmentation
+        emg_cross_validation = Manipulate_Channels.constructAugmentDataset(clip_original_emg, clip_shift_emg)
+        del interp_emg_features, clip_original_emg, clip_shift_emg
 
         ## shuffle normalized dataset
         emg_normalized = Dataset_Model.combineNormalizedDataset(emg_cross_validation)
+        del emg_cross_validation
         emg_shuffled_groups = Ann_Dataset.shuffleTrainingSet(emg_normalized)
+        del emg_normalized
 
         ## classify using a single ann model
-        models, model_results = Dataset_Model.classifyUsingAnnModel(emg_shuffled_groups)
+        models, model_results = Models.classifyUsingCnnModel(emg_shuffled_groups)
 
         ## predict MV results
         predict_results, true_labels = Dataset_Model.reorganizePredictionResults(model_results)
@@ -33,8 +43,9 @@ for subject in subjects:
             average_cm_recalls.append(average_cm_recall)
 
         ## save results
-        model_type = feature_name
+        model_type = 'aug_' + direction
         result_set = 0
         Models.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
 
+        del emg_shuffled_groups
 

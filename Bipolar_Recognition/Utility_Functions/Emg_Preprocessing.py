@@ -41,7 +41,7 @@ def preprocessEmgData(subject, modes):
     return emg_preprocessed
 
 
-# separate data into windows
+## separate data into windows
 def createWindows(data, window_size, increment):
     windows_data = []
     for start in range(0, len(data) - window_size + 1, increment):
