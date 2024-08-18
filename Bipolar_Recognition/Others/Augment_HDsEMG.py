@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 
 selected_number = 1  # e.g., the first image
 selected_channel = 1  # e.g., the first channel
-matrix = emg_cross_validation_shift['shift_1']['group_0']['train_set']['SS'][selected_number][:, :, selected_channel]
+matrix = clip_emg_h['shift_1']['SS'][selected_number][:, :, selected_channel]
 
 plt.figure(figsize=(5, 13))
 plt.imshow(matrix, cmap='viridis', aspect='auto')  # 'viridis' is a popular colormap
@@ -53,12 +53,3 @@ plt.xlabel('Width')
 plt.ylabel('Length')
 plt.show()
 
-matrix = emg_cross_validation_original['group_0']['train_set']['SS'][selected_number][:, :, selected_channel]
-
-plt.figure(figsize=(5, 13))
-plt.imshow(matrix, cmap='viridis', aspect='auto')  # 'viridis' is a popular colormap
-plt.colorbar(label='Intensity')
-plt.title(f'Heatmap for Number {selected_number}, Channel {selected_channel}')
-plt.xlabel('Width')
-plt.ylabel('Length')
-plt.show()

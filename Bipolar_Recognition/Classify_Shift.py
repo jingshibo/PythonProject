@@ -1,5 +1,5 @@
 ##
-from Bipolar_Recognition.Utility_Functions import Manipulate_Channels, Models
+from Bipolar_Recognition.Utility_Functions import Manipulate_Channels, Model_Results
 from Bipolar_EMG.Models import Dataset_Model
 from Transition_Prediction.Models.ANN.Functions import Ann_Dataset
 
@@ -10,7 +10,7 @@ feature_set = {'hdsemg_original': ['hdsemg_original', 'hdsemg_h_shift', 'hdsemg_
     'bipolar_original': ['bipolar_original', 'bipolar_h_shift_1', 'bipolar_h_shift_3', 'bipolar_h_shift_4', 'bipolar_h_shift_6',
         'bipolar_v_shift_1', 'bipolar_v_shift_3', 'bipolar_v_shift_4', 'bipolar_v_shift_6']}
 
-
+subjects = ['Number2', 'Number3']
 for subject in subjects:
     for original_features in feature_set.keys():
         for shift_features in feature_set[original_features]:
@@ -39,6 +39,6 @@ for subject in subjects:
             ## save results
             model_type = shift_features
             result_set = 0
-            Models.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
+            Model_Results.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
 
 

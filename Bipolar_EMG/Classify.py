@@ -52,9 +52,9 @@ imu = {sensor: [i for j in range(4) for i in range(start + 18 * j, start + 6 + 1
 
 ## read and cross validate dataset
 # read data
-subjects = ['Number1', 'Number2', 'Number3', 'Number5', 'Number7', 'Number9', 'Number10']
+subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number7', 'Number8', 'Number9', 'Number10']
 # subjects = ['Number1']
-feature_set = 0
+feature_set = 1
 
 for subject in subjects:
     emg_features, imu_features = Emg_Imu_Preprocessing.readFeatures(subject, feature_set)
@@ -85,7 +85,7 @@ for subject in subjects:
 
         ## save results
         model_type = '+'.join(sensor_set)
-        result_set = 0
+        result_set = 1
         Dataset_Model.saveResult(subject, average_accuracy, average_cm_number, average_cm_recall, model_type, result_set, project='Bipolar_Data')
     print(datetime.datetime.now() - now)
 

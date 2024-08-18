@@ -1,6 +1,6 @@
 ##
 import copy
-from Bipolar_EMG.Models import Dataset_Model, Plotting_Process
+from Bipolar_EMG.Models import Dataset_Model, Plotting_Results
 import numpy as np
 
 
@@ -17,7 +17,7 @@ bipolar_accuracy_from_hdsemg = [
 bipolar_accuracy_from_hdsemg_matrix = np.reshape(bipolar_accuracy_from_hdsemg, (7, 10))
 accuracy_mean = np.mean(bipolar_accuracy_from_hdsemg_matrix, axis=0)
 accuracy_std = np.std(bipolar_accuracy_from_hdsemg_matrix, axis=0)
-Plotting_Process.plotOldBoxBipolar(bipolar_accuracy_from_hdsemg_matrix, RF_accuracy=accuracy_mean[0])
+Plotting_Results.plotOldBoxBipolar(bipolar_accuracy_from_hdsemg_matrix, RF_accuracy=accuracy_mean[0])
 
 
 ## model set
@@ -59,7 +59,7 @@ sensor_sets = {
     # 'emg_imu_5': ['RF', 'TA', 'BF', 'GM', 'FT'],
 }
 all_subjects = {}  # save all subject results
-result_set = 0
+result_set = 1
 
 
 ##
@@ -118,21 +118,36 @@ for sensor_set in sensor_sets.values():
     subject_results[f'{model_type}_{result_set}'] = Dataset_Model.loadResult(subject, model_type, result_set, project='Bipolar_Data')
 all_subjects[subject] = subject_results
 
+##
+subject = 'Number4'
+subject_results = {}
+for sensor_set in sensor_sets.values():
+    model_type = '+'.join(sensor_set)
+    subject_results[f'{model_type}_{result_set}'] = Dataset_Model.loadResult(subject, model_type, result_set, project='Bipolar_Data')
+all_subjects[subject] = subject_results
+
+##
+subject = 'Number8'
+subject_results = {}
+for sensor_set in sensor_sets.values():
+    model_type = '+'.join(sensor_set)
+    subject_results[f'{model_type}_{result_set}'] = Dataset_Model.loadResult(subject, model_type, result_set, project='Bipolar_Data')
+all_subjects[subject] = subject_results
 
 ##  calculate accuracy across subjects for each bipolar EMG dataset
 subjects_data = copy.deepcopy(all_subjects)
 for subject_key, subject_data in subjects_data.items():
     subject_data['RF+TA+BF+SL+VM+GM_0']['accuracy'] += 1.5
-average_by_bipolar = Plotting_Process.calculate_bipolar_mean(subjects_data)
+average_by_bipolar = Plotting_Results.calculate_bipolar_mean(subjects_data)
 
 ##  plot box accuracy grouped by number of bipolarEMG
-combined_by_bipolar = Plotting_Process.aggregate_results(subjects_data)
+combined_by_bipolar = Plotting_Results.aggregate_results(subjects_data)
 rf_accuracy = average_by_bipolar['RF_0']['accuracy_mean']  # accuracy of rectus femoris bipolar EMG
-combined_by_bipolar_group = Plotting_Process.aggregate_by_bipolar_number(combined_by_bipolar)
-Plotting_Process.plotBipolarBoxAccuracy(combined_by_bipolar_group, RF_accuracy=rf_accuracy, RF_accuracy_old=accuracy_mean[0])
+combined_by_bipolar_group = Plotting_Results.aggregate_by_bipolar_number(combined_by_bipolar)
+Plotting_Results.plotBipolarBoxAccuracy(combined_by_bipolar_group, RF_accuracy=rf_accuracy, RF_accuracy_old=accuracy_mean[0])
 
 ##  plot average accuracy grouped by number of bipolarEMG
-results_by_muscle_number = Plotting_Process.groupResultByMuscleNumber(average_by_bipolar)
-average_by_bipolar_group = Plotting_Process.calculate_bipolar_group_mean(combined_by_bipolar_group)
-Plotting_Process.plotMeanAccuracy(average_by_bipolar_group, results_by_muscle_number)
+results_by_muscle_number = Plotting_Results.groupResultByMuscleNumber(average_by_bipolar)
+average_by_bipolar_group = Plotting_Results.calculate_bipolar_group_mean(combined_by_bipolar_group)
+Plotting_Results.plotMeanAccuracy(average_by_bipolar_group, results_by_muscle_number)
 

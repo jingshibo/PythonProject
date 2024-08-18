@@ -48,10 +48,10 @@ def groupResultByMuscleNumber(average_by_bipolar):
         plus_count = bipolar_type.count('+')
         results_by_category[plus_count][bipolar_type] = copy.deepcopy(metrics)
     # adjustment
-    results_by_category[0]['TA_0']['accuracy_mean'] = 62
-    results_by_category[0]['BF_0']['accuracy_mean'] = 66
-    results_by_category[2]['BF+SL+GM_0']['accuracy_mean'] = 89
-    results_by_category[2]['TA+SL+GM_0']['accuracy_mean'] = 87
+    # results_by_category[0]['TA_0']['accuracy_mean'] = 62
+    # results_by_category[0]['BF_0']['accuracy_mean'] = 66
+    # results_by_category[2]['BF+SL+GM_0']['accuracy_mean'] = 89
+    # results_by_category[2]['TA+SL+GM_0']['accuracy_mean'] = 87
 
     return results_by_category
 

@@ -8,7 +8,7 @@ from Transition_Prediction.Pre_Processing.Utility_Functions import Feature_Calcu
 
 '''calculate emg features'''
 ## extract data
-subjects = ['Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']
+subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']
 modes = {'standing': 'SS', 'level': 'LW', 'upstairs': 'SA', 'downstairs': 'SD', 'upslope': 'RA', 'downslope': 'RD'}
 
 for subject in subjects:

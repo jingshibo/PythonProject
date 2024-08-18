@@ -39,12 +39,10 @@ bipolar_configurations = {
     'bipolar_v_shift_4': [2, 10, 20, 29, 37, 46],
     'bipolar_v_shift_6': [3, 11, 20, 29, 37, 46]
 }
+modes = {'standing': 'SS', 'level': 'LW', 'upstairs': 'SA', 'downstairs': 'SD', 'upslope': 'RA', 'downslope': 'RD'}
 
 
 ## save bipolar emg features
-subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']
-modes = {'standing': 'SS', 'level': 'LW', 'upstairs': 'SA', 'downstairs': 'SD', 'upslope': 'RA', 'downslope': 'RD'}
-
 for subject in subjects:
     emg_preprocessed = Emg_Preprocessing.preprocessEmgData(subject, modes)
 

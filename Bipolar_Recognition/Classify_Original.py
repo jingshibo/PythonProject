@@ -1,5 +1,5 @@
 ##
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Models
+from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Model_Results
 from Bipolar_EMG.Models import Dataset_Model
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Models.ANN.Functions import Ann_Dataset
@@ -35,6 +35,6 @@ for subject in subjects:
         ## save results
         model_type = feature_name
         result_set = 0
-        Models.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
+        Model_Results.saveResult(subject, average_accuracies, average_cm_numbers, average_cm_recalls, model_type, result_set, project='HDsEMG_Recognition')
 
 

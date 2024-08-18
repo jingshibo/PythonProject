@@ -57,7 +57,7 @@ accuracy_shift_df.index = ['Original\nBipolar', '1 Bipolar\nShift', '3 Bipolar\n
 accuracy_shift_df.plot.bar(yerr=std_shift, figsize=(10, 6), capsize=4, color='steelblue', width=0.5, ylim=(20, 100), legend=False)
 
 # Adding details to the plot
-plt.xlabel('Number of Electrode Shift', fontsize=font_size)
+plt.xlabel('Number of Bipolar Shift', fontsize=font_size)
 plt.ylabel('Classification Accuracy (%)', fontsize=font_size)
 plt.title('')
 plt.xticks(rotation=0, fontsize=font_size)
