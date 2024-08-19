@@ -1,3 +1,5 @@
+'''calculate hdsemg and derived bipolar emg classification performance at original position without electrode shfit'''
+
 ##
 from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Model_Results
 from Bipolar_EMG.Models import Dataset_Model

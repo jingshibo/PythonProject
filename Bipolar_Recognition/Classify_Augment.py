@@ -1,3 +1,5 @@
+'''calculate hdsemg classification performance under electrode shfit with the help of data augmentation'''
+
 ##
 from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Manipulate_Channels, Model_Results
 from Bipolar_EMG.Models import Dataset_Model

@@ -1,3 +1,5 @@
+''' plot classification results without electrode shift'''
+
 ##
 from Bipolar_Recognition.Utility_Functions import Model_Results
 from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
@@ -36,8 +38,8 @@ bipolar_accuracy = {
         } for condition_key, condition_data in subject_data.items()
     } for subject_key, subject_data in all_subjects.items()
 }
-Model_Results.plotDerivedBipolarBox(bipolar_accuracy)
-
+median_accuracy = Model_Results.plotDerivedBipolarBox(bipolar_accuracy)
+mean_accuracy = Model_Results.averageBipolarAccuracies(bipolar_accuracy)
 
 
 

@@ -8,7 +8,7 @@ import datetime
 
 ## selecting certain inputs
 sensor_sets = {
-    # 'emg_0': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM'],  # three front and back
+    'emg_0': ['RF', 'TA', 'BF', 'SL', 'VM', 'GM'],  # three front and back
     'emg_1': ['RF', 'BF', 'VM', 'TA', 'GM'],  # upper three + lower two
     'emg_2': ['RF', 'BF', 'TA', 'SL', 'GM'],  # upper two + lower three
     'emg_3': ['RF', 'BF', 'TA', 'GM'],  # upper two + lower two

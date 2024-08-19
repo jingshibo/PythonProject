@@ -134,8 +134,31 @@ def averageHdsemgResults(all_subjects):
     return hdsemg_results, hdsemg_accuracy, hdsemg_cm_recall
 
 
+## calculate the mean accuracy for each number of electrodes across all subjects
+def averageBipolarAccuracies(bipolar_accuracy):
+    # Initialize a dictionary to store the mean accuracy for each condition
+    mean_accuracies = {}
+
+    # Get the list of conditions based on one of the subjects
+    conditions = list(bipolar_accuracy['Number1'].keys())
+
+    # Calculate the mean accuracy for each condition across all subjects
+    for condition in conditions:
+        accuracies = []
+        for subject in bipolar_accuracy:
+            accuracies.append(bipolar_accuracy[subject][condition]['accuracy'])
+
+        # Compute the mean accuracy for the current condition
+        mean_accuracies[condition] = np.mean(accuracies)
+
+    return mean_accuracies
+
+
 ## plot HDsEMG accuracy values for each subject individually
 def plotHdsemgAccuracy(hdsemg_accuracy):
+    # Set global font size for the plot
+    plt.rcParams.update({'font.size': 20})
+
     # Assuming hdsemg_accuracy is your dictionary
     subjects = list(hdsemg_accuracy.keys())  # Get the list of subjects, including 'average'
     subjects.remove('average')  # Remove 'average' from the sorting process
@@ -165,13 +188,14 @@ def plotHdsemgAccuracy(hdsemg_accuracy):
         ax.bar(x + i * bar_width, accuracies, bar_width, label=legend_labels[i], color=color)
 
     # Set y-axis limits
-    ax.set_ylim(92, 100)
+    ax.set_ylim(93, 100)
 
     # Add labels and title
     ax.set_xlabel('Subjects')
     ax.set_ylabel('Classification Accuracy (%)')
+    xtick_labels = [f'S{i + 1}' for i in range(len(subjects) - 1)] + ['Average']
     ax.set_xticks(x + bar_width)
-    ax.set_xticklabels(subjects, rotation=0)
+    ax.set_xticklabels(xtick_labels, rotation=0)
     ax.legend()  # Display the custom legend
 
     # Show the plot
@@ -207,7 +231,6 @@ def plotDerivedBipolarBox(bipolar_accuracy):
     # Customization parameters
     fontsize = 30
     linewidth = 2
-    mpl.rcParams['font.family'] = 'Times New Roman'
 
     # Create the box plot
     plt.figure(figsize=(10, 6))
@@ -225,13 +248,17 @@ def plotDerivedBipolarBox(bipolar_accuracy):
     plt.xticks(range(1, len(labels) + 1), labels, fontsize=fontsize)
     plt.yticks(range(50, 105, 5), fontsize=fontsize)
     plt.xlabel('Number of Electrodes', fontsize=fontsize)
-    plt.ylabel('Accuracy (%)', fontsize=fontsize)
+    plt.ylabel('Classification Accuracy (%)', fontsize=fontsize)
     plt.title('')
 
     # Show the plot
     plt.tight_layout()
     plt.show()
 
+    # Extract median values
+    median_values = [median.get_ydata()[0] for median in box['medians']]
+
+    return median_values
 
 ## calculate mean and std values across subject under the electrode shift scenarios
 def calcuShiftMeanStd(shift_accuracy):
@@ -259,6 +286,9 @@ def calcuShiftMeanStd(shift_accuracy):
 
 ## plot the accuracy of derived bipolar EMG under electrode shift
 def plotShiftBipolarAccuracy(shift_mean_std):
+    # Set global font size for the plot
+    plt.rcParams.update({'font.size': 20})
+
     # Extract keys for the original, horizontal, and vertical shifts
     original_key = 'bipolar_original_0'
     h_keys = [key for key in shift_mean_std if 'bipolar_h' in key]
@@ -324,6 +354,9 @@ def plotShiftBipolarAccuracy(shift_mean_std):
 
 ## plot the accuracy of HDsEMG under electrode shift and recovery
 def plotShiftHdsemgAccuracy(shift_mean_std):
+    # Set global font size for the plot
+    plt.rcParams.update({'font.size': 20})
+
     # Extract the relevant keys
     keys_h_left = ['hdsemg_h_shift_0', 'aug_left_0']
     keys_v_up = ['hdsemg_v_shift_0', 'aug_up_0']

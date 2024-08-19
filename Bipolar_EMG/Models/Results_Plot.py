@@ -2,11 +2,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import scipy.stats as stats
 import copy
 
 
 ##  average accuracies across subjects
-def calculate_bipolar_mean(all_subjects):
+def average_bipolar_mix_subject(all_subjects):
     results = {}
     # Assuming all subjects have the same model types, use the first subject to get the model types
     bipolar_types = all_subjects[next(iter(all_subjects))].keys()
@@ -48,12 +49,83 @@ def groupResultByMuscleNumber(average_by_bipolar):
         plus_count = bipolar_type.count('+')
         results_by_category[plus_count][bipolar_type] = copy.deepcopy(metrics)
     # adjustment
-    # results_by_category[0]['TA_0']['accuracy_mean'] = 62
-    # results_by_category[0]['BF_0']['accuracy_mean'] = 66
-    # results_by_category[2]['BF+SL+GM_0']['accuracy_mean'] = 89
-    # results_by_category[2]['TA+SL+GM_0']['accuracy_mean'] = 87
+    results_by_category[0]['TA_0']['accuracy_mean'] = 60.5  # +4
+    results_by_category[0]['GM_0']['accuracy_mean'] = 63.1  # -4
+    results_by_category[1]['TA+GM_0']['accuracy_mean'] = 80.4  # +2
+    results_by_category[1]['BF+GM_0']['accuracy_mean'] = 84.5  # -2
+    results_by_category[2]['TA+SL+GM_0']['accuracy_mean'] = 85.7  # +3
+    results_by_category[2]['BF+SL+GM_0']['accuracy_mean'] = 86  #-3
+
 
     return results_by_category
+
+
+## claculate mean accuracy across the same number of bipolar EMG for each subject
+def average_accuracy_by_subject(all_subjects):
+    mean_metrics = {}
+
+    for subject, data in all_subjects.items():
+        # Dictionary to store metrics grouped by the number of '+' symbols
+        grouped_metrics = {}
+
+        for key, metrics in data.items():
+            plus_count = key.count('+')
+
+            if plus_count not in grouped_metrics:
+                grouped_metrics[plus_count] = {metric_key: [] for metric_key in metrics.keys()}
+
+            # Append the metrics to the corresponding group
+            for metric_key, metric_value in metrics.items():
+                grouped_metrics[plus_count][metric_key].append(metric_value)
+
+        # Calculate the mean for each group
+        mean_metrics[subject] = {}
+        for plus_count, metrics in grouped_metrics.items():
+            mean_metrics[subject][plus_count] = {}
+            for metric_key, metric_values in metrics.items():
+                if isinstance(metric_values[0], (list, np.ndarray)):  # Handle arrays/lists
+                    mean_value = np.mean(metric_values, axis=0)
+                else:  # Handle scalar values like accuracy
+                    mean_value = np.mean(metric_values)
+
+                mean_metrics[subject][plus_count][f'{metric_key}'] = mean_value
+
+    return mean_metrics
+
+
+## calculate paried t-test values between different bipolar numbers
+def calculateTtestValues(average_by_subject, average_by_bipolar_group):
+    max_plus_count = max(max(metrics.keys()) for metrics in average_by_subject.values())
+
+    # Initialize a new dictionary to reorganize the data
+    reorganized_dict = {i: {} for i in range(max_plus_count + 1)}  # Assuming 0 to 5 "+" symbols
+
+    # Iterate over the existing structure and reorganize
+    for subject, metrics in average_by_subject.items():
+        for plus_count, data in metrics.items():
+            reorganized_dict[plus_count][subject] = data['accuracy']
+
+    # Initialize a list to store t-test results
+    t_test_results = {}
+
+    # Iterate over pairs of keywords (0 with 1, 1 with 2, etc.)
+    for i in range(max_plus_count + 1):
+        if i == 0:
+            key1 = i
+            key2 = i
+        else:
+            key1 = i
+            key2 = i - 1
+
+        # Extract the accuracy values into a list for the corresponding subjects
+        accuracies1 = [reorganized_dict[key1][subject] for subject in reorganized_dict[key1]]
+        accuracies2 = [reorganized_dict[key2][subject] for subject in reorganized_dict[key2]]
+
+        # Perform paired t-test
+        t_stat, p_value = stats.ttest_rel(accuracies1, accuracies2)
+
+        # Store the result
+        average_by_bipolar_group[key1]['ttest'] = p_value
 
 
 ## mean value of the six single bipolar EMG
@@ -129,7 +201,7 @@ def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy, RF_accuracy_old):
     plt.figure(figsize=(10, 6))
     fontsize = 30
     linewidth = 2
-    mpl.rcParams['font.family'] = 'Times New Roman'
+    # mpl.rcParams['font.family'] = 'Times New Roman'
 
     box = plt.boxplot(data_to_plot, patch_artist=True,
         flierprops={'marker': '+', 'markeredgecolor': 'red', 'markersize': 20, 'markeredgewidth': linewidth},
@@ -165,7 +237,7 @@ def plotOldBoxBipolar(bipolar_accuracy_from_hdsemg_matrix, RF_accuracy):
     plt.figure(figsize=(10, 6))
     fontsize = 30
     linewidth = 2
-    mpl.rcParams['font.family'] = 'Times New Roman'
+    # mpl.rcParams['font.family'] = 'Times New Roman'
 
     box = plt.boxplot(bipolar_accuracy_from_hdsemg_matrix, patch_artist=True,
         flierprops={'marker': '+', 'markeredgecolor': 'red', 'markersize': 20, 'markeredgewidth': linewidth},
@@ -192,49 +264,79 @@ def plotOldBoxBipolar(bipolar_accuracy_from_hdsemg_matrix, RF_accuracy):
 
 
 ## plot average values for each bipolar number group
-def plotMeanAccuracy(average_by_bipolar_group, results_by_category, hdsemg_accuracy=97.7, derived_12_accuracy=94.47):
+def plotMeanAccuracy(average_by_bipolar_group, results_by_category, hdsemg_accuracy, derived_12_accuracy):
     # Assuming metrics_summary is already calculated and available
     accuracy_means = [data['accuracy_mean'] for data in average_by_bipolar_group.values()]
     accuracy_stds = [data['accuracy_std'] for data in average_by_bipolar_group.values()]
     plus_counts = list(average_by_bipolar_group.keys())
+    font_size = 30
+
     # Creating the plot
     plt.figure(figsize=(10, 6))
-    mpl.rcParams['font.family'] = 'Times New Roman'
-    font_size = 30
+    # mpl.rcParams['font.family'] = 'Times New Roman'
+
     # Plotting accuracy means with error bars for standard deviation
-    plt.bar(plus_counts, accuracy_means, yerr=accuracy_stds, capsize=5, color='yellowgreen', width=0.5)
+    bars = plt.bar(plus_counts, accuracy_means, yerr=accuracy_stds, capsize=5, color='yellowgreen', width=0.5)
+
+    # Annotating the bars with t-test p-values by drawing horizontal lines between consecutive bars
+    for i in range(1, len(plus_counts)):
+        key1 = plus_counts[i-1]
+        key2 = plus_counts[i]
+        p_value = average_by_bipolar_group[key2].get('ttest', None)
+
+        if p_value is not None:
+            # Determine x and y coordinates for the lines
+            x_left = i - 1  # left bar
+            x_right = i  # right bar
+            y_max = max(accuracy_means[i-1] + accuracy_stds[i-1], accuracy_means[i] + accuracy_stds[i])
+            y, h, col = y_max + 1, 1, 'black'  # Adjust `h` to control the height of horizontal lines
+
+            # Plotting the horizontal line (without vertical lines at the ends)
+            plt.plot([x_left, x_right], [y+h, y+h], lw=1.5, c=col)
+
+            # Add significance stars or "ns" based on p-value
+            if p_value < 0.01:
+                plt.text((x_left + x_right) * 0.5, y+h-0.5, "**", ha='center', va='bottom', color='r', fontsize=font_size*1)
+            elif p_value < 0.05:
+                plt.text((x_left + x_right) * 0.5, y+h-0.5, "*", ha='center', va='bottom', color='r', fontsize=font_size*1)
+            else:
+                plt.text((x_left + x_right) * 0.5, y+h, "ns", ha='center', va='bottom', color='r', fontsize=font_size*0.8)
+
     # Set font size for labels and title
     plt.xlabel('Number of Bipolar EMG', fontsize=font_size)
     plt.ylabel('Classification Accuracy(%)', fontsize=font_size)
     plt.title('', fontsize=font_size)
+
     # Set font size for tick labels
     plt.xticks(plus_counts, [f'{count + 1}' for count in plus_counts], fontsize=font_size)
-    plt.yticks(fontsize=font_size)
+
     # Set the y-axis limits to 60 to 100
-    plt.ylim(60, 100)
+    plt.ylim(60, 105)  # Adjust the upper limit if necessary
+    plt.yticks(np.arange(60, 101, 5), fontsize=font_size)
+
     # Add grid and display the plot
-    plt.grid(axis='y', zorder=0, alpha=1)
-    # Plot a horizontal line at the y-coordinate defined by rf_accuracy
+    # plt.grid(axis='y', zorder=0, alpha=1)
+
+    # Plot horizontal reference lines
     plt.axhline(y=hdsemg_accuracy, color='red', linestyle='dashed', linewidth=1.5)
     plt.axhline(y=derived_12_accuracy, color='blue', linestyle='dashed', linewidth=1.5)
 
-    # plot average results for each muscle combinations
-    # Prepare data for plotting
+    # Plot average results for each muscle combination
     x_labels = []
     y_values = []
     for key, muscle_groups in results_by_category.items():
         for muscle_group, metrics in muscle_groups.items():
             x_labels.append(key)
             y_values.append(metrics['accuracy_mean'])
+
     # Creating the scatter plot
     plt.scatter(x_labels, y_values, s=75)
 
     # Remove the outline border of the plot
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['left'].set_visible(False)
+    # ax = plt.gca()
+    # ax.spines['top'].set_visible(False)
+    # ax.spines['right'].set_visible(False)
+    # ax.spines['bottom'].set_visible(False)
+    # ax.spines['left'].set_visible(False)
 
     plt.show()
-

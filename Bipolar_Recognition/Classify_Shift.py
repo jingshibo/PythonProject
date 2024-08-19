@@ -1,3 +1,5 @@
+'''calculate hdsemg and derived bipolar emg classification performance under electrode shfit'''
+
 ##
 from Bipolar_Recognition.Utility_Functions import Manipulate_Channels, Model_Results
 from Bipolar_EMG.Models import Dataset_Model
