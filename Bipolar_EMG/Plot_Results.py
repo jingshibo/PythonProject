@@ -86,7 +86,7 @@ combined_by_bipolar_group = Results_Plot.aggregate_by_bipolar_number(combined_by
 Results_Plot.plotBipolarBoxAccuracy(combined_by_bipolar_group, RF_accuracy=rf_accuracy, RF_accuracy_old=68.1)
 
 ##  plot average accuracy grouped by number of bipolarEMG
-results_by_muscle_number = Results_Plot.groupResultByMuscleNumber(average_by_bipolar)
+results_by_muscle_number = Results_Plot.groupResultByMuscleNumber(average_by_bipolar, result_set)
 average_by_bipolar_group = Results_Plot.calculate_bipolar_group_mean(combined_by_bipolar_group)
 Results_Plot.calculateTtestValues(average_by_subject, average_by_bipolar_group)
 Results_Plot.plotMeanAccuracy(average_by_bipolar_group, results_by_muscle_number, hdsemg_accuracy=95.4, derived_12_accuracy=92.8)

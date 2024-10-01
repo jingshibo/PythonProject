@@ -5,6 +5,7 @@ from scipy.ndimage import shift
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing
 import copy
+import gc
 
 
 ## select derived bipolar channels
@@ -90,6 +91,14 @@ def shiftEmgImage(image, max_shift, direction):
     elif direction == 'right':
         shift_y = np.random.randint(0, max_shift + 1)
         shift_x = 0
+    elif direction == 'both':
+        # Randomly select whether to shift in x-axis or y-axis
+        if np.random.rand() < 0.5:
+            shift_x = -np.random.randint(0, max_shift + 1)  # Shift along x-axis
+            shift_y = 0  # No shift along y-axis
+        else:
+            shift_y = -np.random.randint(0, max_shift + 1)  # Shift along y-axis
+            shift_x = 0  # No shift along x-axis
     else:
         raise Exception('wrong direction!')
 
@@ -122,21 +131,38 @@ def multipleShifts(interp_emg_features, direction, max_shift, num_shifts, vertic
 def clipShiftimages(interp_emg_features, shift_direction, max_shift=8, num_shifts=3, vertical_channels=slice(8, 89),
         horizontal_channels=slice(0, 25)):
     # clip original images, keep only the central parts
-    clip_original_emg = {}  # no shift, only truncate
+    original_emg = {}  # no shift, only truncate
     for locomotion_mode, locomotion_values in interp_emg_features.items():
-        feature_values = locomotion_values[:, vertical_channels, horizontal_channels, :]
-        clip_original_emg[locomotion_mode] = [feature_values[i] for i in range(feature_values.shape[0])]  # convert to a list for later process
+        # feature_values = locomotion_values[:, vertical_channels, horizontal_channels, :]
+        original_emg[locomotion_mode] = [locomotion_values[i] for i in range(locomotion_values.shape[0])]  # convert to a list for later process
 
     # shift and clip emg feature images for multiple times
     clip_shift_emg = multipleShifts(interp_emg_features, direction=shift_direction, max_shift=max_shift, num_shifts=num_shifts,
         vertical_channels=vertical_channels, horizontal_channels=horizontal_channels)
 
-    return clip_original_emg, clip_shift_emg
+    return original_emg, clip_shift_emg
 
 
 ## construct cross validation set with augmented shift data
-def constructAugmentDataset(clip_original_emg, clip_shift_emg):
-    emg_cross_validation_original = Data_Preparation.crossValidationSet(5, clip_original_emg, shuffle=False)
+def constructAugmentDataset(original_emg, clip_shift_emg, test_shift_direction):
+    # create original emg dataset cross validation
+    emg_cross_validation_original = Data_Preparation.crossValidationSet(5, original_emg, shuffle=False)
+    # truncate original training set
+    train_vertical_channels = slice(8, 89)
+    train_horizontal_channels = slice(0, 25)
+    # truncate original test set (i.e., shift original test set for 8 pixels)
+    if test_shift_direction == 'up':
+        test_vertical_channels = slice(16, 97)
+        test_horizontal_channels = slice(0, 25)
+    elif test_shift_direction == 'left':
+        test_vertical_channels = slice(8, 89)
+        test_horizontal_channels = slice(8, 33)
+    else:
+        raise Exception('wrong direction!')
+    # Applying the slicing to the original dataset
+    sliceOriginalEmgData(emg_cross_validation_original, train_vertical_channels, train_horizontal_channels, test_vertical_channels, test_horizontal_channels)  # For train_set
+
+    # create random shift dataset cross validation
     emg_cross_validation_shift = {}
     for shift_repetition, shift_values in clip_shift_emg.items():
         emg_cross_validation_shift[shift_repetition] = Data_Preparation.crossValidationSet(5, shift_values, shuffle=False)
@@ -159,5 +185,20 @@ def constructAugmentDataset(clip_original_emg, clip_shift_emg):
         emg_cross_validation_shift[shift_key] = None
     # Finally, delete emg_cross_validation_shift to free up the memory
     del emg_cross_validation_shift
+    gc.collect()
 
     return emg_cross_validation_original
+
+
+## Function to apply slicing to train_set and test_set in original EMG dataset
+def sliceOriginalEmgData(emg_data, train_vertical_channels, train_horizontal_channels, test_vertical_channels, test_horizontal_channels):
+    for group_key, group_data in emg_data.items():
+        # Slicing train_set
+        for key, arr_list in group_data['train_set'].items():
+            group_data['train_set'][key] = [arr[train_vertical_channels, train_horizontal_channels, :] for arr in arr_list]
+
+        # Slicing test_set
+        for key, arr_list in group_data['test_set'].items():
+            group_data['test_set'][key] = [arr[test_vertical_channels, test_horizontal_channels, :] for arr in arr_list]
+
+

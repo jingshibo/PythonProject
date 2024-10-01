@@ -4,6 +4,7 @@ import numpy as np
 from scipy.ndimage import zoom
 from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing
 from Transition_Prediction.Pre_Processing.Utility_Functions import Feature_Calculation
+import matplotlib.pyplot as plt
 
 
 '''calculate emg features'''
@@ -57,15 +58,31 @@ for subject in subjects:
     Emg_Preprocessing.saveInterpFeatures(subject, emg_feature_interp, feature_set)
 
 
-## plot a single heatmap
-# selected_number = 0  # e.g., the first image
-# selected_channel = 0  # e.g., the first channel
-# matrix = emg_feature_interp['SA'][selected_number, :, :, selected_channel]
-# import matplotlib.pyplot as plt
-# plt.figure(figsize=(10, 8))
-# plt.imshow(matrix, cmap='viridis', aspect='auto')  # 'viridis' is a popular colormap
-# plt.colorbar(label='Intensity')
-# plt.title(f'Heatmap for Number {selected_number}, Channel {selected_channel}')
-# plt.xlabel('Width')
-# plt.ylabel('Length')
-# plt.show()
+## plot a single heatmap for interpolated emg features
+subject = 'Number1'
+emg_features_interp = Emg_Preprocessing.readInterpFeatures(subject, 'hdsemg')
+
+selected_number = 500  # e.g., the first image
+selected_channel = 7  # e.g., the first channel
+interp_matrix = emg_features_interp['LW'][selected_number, :, :, selected_channel]
+
+# Create the plot with increased figure size
+plt.figure(figsize=(5, 13))
+size = 30
+# Display the heatmap
+plt.imshow(interp_matrix, cmap='viridis', aspect='auto') # 'viridis' is a popular colormap
+# Add a colorbar and set its label size
+cbar = plt.colorbar(label='Intensity')
+cbar.ax.tick_params(labelsize=size)  # Increase colorbar tick label size
+# Set the title and axis labels with increased font sizes
+# plt.title(f'Heatmap for Number {selected_number}, Channel {selected_channel}', fontsize=18)
+# plt.xlabel('Width', fontsize=size)
+# plt.ylabel('Length', fontsize=size)
+# Set x-axis ticks at intervals of 10
+x_ticks = np.arange(0, interp_matrix.shape[1], 10)  # Change interp_matrix.shape[1] to the number of columns in the matrix
+plt.xticks(x_ticks, fontsize=size)
+# Increase the x and y tick label sizes
+plt.xticks(fontsize=size)
+plt.yticks(fontsize=size)
+# Show the plot
+plt.show()

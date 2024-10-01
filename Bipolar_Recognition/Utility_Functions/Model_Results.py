@@ -157,7 +157,7 @@ def averageBipolarAccuracies(bipolar_accuracy):
 ## plot HDsEMG accuracy values for each subject individually
 def plotHdsemgAccuracy(hdsemg_accuracy):
     # Set global font size for the plot
-    plt.rcParams.update({'font.size': 20})
+    plt.rcParams.update({'font.size': 30})
 
     # Assuming hdsemg_accuracy is your dictionary
     subjects = list(hdsemg_accuracy.keys())  # Get the list of subjects, including 'average'
@@ -229,7 +229,7 @@ def plotDerivedBipolarBox(bipolar_accuracy):
         accuracy_data.append(accuracies)
 
     # Customization parameters
-    fontsize = 30
+    fontsize = 35
     linewidth = 2
 
     # Create the box plot
@@ -417,7 +417,7 @@ def plotShiftHdsemgAccuracy(shift_mean_std):
 ## plot the accuracy of both bipolar EMG and HDsEMG under electrode shift in the same chart
 def plotElectrodeShiftResults(shift_mean_std):
     # Set global font size for the plot
-    plt.rcParams.update({'font.size': 20})
+    plt.rcParams.update({'font.size': 34})
 
     # Data preparation based on the specified order
     # Bipolar data
@@ -429,8 +429,8 @@ def plotElectrodeShiftResults(shift_mean_std):
     hdsemg_original_key = 'hdsemg_original_0'
     hdsemg_h_key = 'hdsemg_h_shift_0'
     hdsemg_v_key = 'hdsemg_v_shift_0'
-    aug_left_key = 'aug_left_0'
-    aug_up_key = 'aug_up_0'
+    aug_left_key = 'aug_both_left_0'
+    aug_up_key = 'aug_both_up_0'
 
     # Extract mean and std for bipolar original
     bipolar_original_mean = shift_mean_std[bipolar_original_key]['mean']
@@ -484,13 +484,14 @@ def plotElectrodeShiftResults(shift_mean_std):
     plt.ylabel('Classification Accuracy (%)')
 
     # Set the custom x-ticks with appropriate labels
-    x_labels = ['Original Bipolar ', '1 Bipolar Shift', '3 Bipolar Shift', '4 Bipolar Shift', '6 Bipolar Shift', 'Original HDsEMG',
-        'HDsEMG Shift', 'Data Augmentation']
+    x_labels = ['Original\nBipolar ', '1 Bipolar\nShift', '3 Bipolar\nShift', '4 Bipolar\nShift', '6 Bipolar\nShift', 'Original\nHDsEMG',
+        'HDsEMG\nShift', 'Data Aug-\nmentation']
     plt.xticks(index + bar_width / 2, x_labels, rotation=0, ha='center')
     plt.ylim(20, 100)
+    plt.yticks(np.arange(20, 101, 10))
 
     # Display a simplified legend
-    plt.legend(['Original Position', 'Horizontal Shift', 'Vertical Shift'], loc='upper center')
+    plt.legend(['Original Position', 'Transversal Shift', 'Longitudinal Shift'], loc='upper center', bbox_to_anchor=(0.5, 1.15))
 
     # Display the plot
     plt.tight_layout()

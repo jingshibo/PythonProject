@@ -12,7 +12,6 @@ feature_set = {'hdsemg_original': ['hdsemg_original', 'hdsemg_h_shift', 'hdsemg_
     'bipolar_original': ['bipolar_original', 'bipolar_h_shift_1', 'bipolar_h_shift_3', 'bipolar_h_shift_4', 'bipolar_h_shift_6',
         'bipolar_v_shift_1', 'bipolar_v_shift_3', 'bipolar_v_shift_4', 'bipolar_v_shift_6']}
 
-subjects = ['Number2', 'Number3']
 for subject in subjects:
     for original_features in feature_set.keys():
         for shift_features in feature_set[original_features]:

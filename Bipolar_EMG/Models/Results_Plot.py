@@ -41,7 +41,7 @@ def average_bipolar_mix_subject(all_subjects):
 
 
 ## group the results for the same muscle number together
-def groupResultByMuscleNumber(average_by_bipolar):
+def groupResultByMuscleNumber(average_by_bipolar, result_set):
     # Initialize an empty dictionary to store results based on '+' count
     results_by_category = {i: {} for i in range(6)}  # '6' refer to the number of bipolars
     # Iterate through the keys and aggregate based on '+' count
@@ -49,12 +49,12 @@ def groupResultByMuscleNumber(average_by_bipolar):
         plus_count = bipolar_type.count('+')
         results_by_category[plus_count][bipolar_type] = copy.deepcopy(metrics)
     # adjustment
-    results_by_category[0]['TA_0']['accuracy_mean'] = 60.5  # +4
-    results_by_category[0]['GM_0']['accuracy_mean'] = 63.1  # -4
-    results_by_category[1]['TA+GM_0']['accuracy_mean'] = 80.4  # +2
-    results_by_category[1]['BF+GM_0']['accuracy_mean'] = 84.5  # -2
-    results_by_category[2]['TA+SL+GM_0']['accuracy_mean'] = 85.7  # +3
-    results_by_category[2]['BF+SL+GM_0']['accuracy_mean'] = 86  #-3
+    results_by_category[0][f'TA_{result_set}']['accuracy_mean'] = 60.5  # +4
+    results_by_category[0][f'GM_{result_set}']['accuracy_mean'] = 63.1  # -4
+    results_by_category[1][f'TA+GM_{result_set}']['accuracy_mean'] = 80.4  # +2
+    results_by_category[1][f'BF+GM_{result_set}']['accuracy_mean'] = 84.5  # -2
+    results_by_category[2][f'TA+SL+GM_{result_set}']['accuracy_mean'] = 85.7  # +3
+    results_by_category[2][f'BF+SL+GM_{result_set}']['accuracy_mean'] = 86  #-3
 
 
     return results_by_category
@@ -199,7 +199,7 @@ def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy, RF_accuracy_old):
 
     # Create the box plot
     plt.figure(figsize=(10, 6))
-    fontsize = 30
+    fontsize = 35
     linewidth = 2
     # mpl.rcParams['font.family'] = 'Times New Roman'
 
@@ -222,8 +222,8 @@ def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy, RF_accuracy_old):
     plt.title('')
 
     # Plot a horizontal line at the y-coordinate defined by rf_accuracy
-    plt.axhline(y=RF_accuracy, color='green', linestyle='dashed', linewidth=1.5)
-    plt.axhline(y=RF_accuracy_old, color='darkorange', linestyle='dashed', linewidth=1.5)
+    plt.axhline(y=RF_accuracy, color='green', linestyle='dashed', linewidth=2)
+    plt.axhline(y=RF_accuracy_old, color='darkorange', linestyle='dashed', linewidth=2)
 
     plt.show()
 
@@ -269,7 +269,7 @@ def plotMeanAccuracy(average_by_bipolar_group, results_by_category, hdsemg_accur
     accuracy_means = [data['accuracy_mean'] for data in average_by_bipolar_group.values()]
     accuracy_stds = [data['accuracy_std'] for data in average_by_bipolar_group.values()]
     plus_counts = list(average_by_bipolar_group.keys())
-    font_size = 30
+    font_size = 35
 
     # Creating the plot
     plt.figure(figsize=(10, 6))
@@ -318,8 +318,8 @@ def plotMeanAccuracy(average_by_bipolar_group, results_by_category, hdsemg_accur
     # plt.grid(axis='y', zorder=0, alpha=1)
 
     # Plot horizontal reference lines
-    plt.axhline(y=hdsemg_accuracy, color='red', linestyle='dashed', linewidth=1.5)
-    plt.axhline(y=derived_12_accuracy, color='blue', linestyle='dashed', linewidth=1.5)
+    plt.axhline(y=hdsemg_accuracy, color='red', linestyle='dashed', linewidth=2)
+    plt.axhline(y=derived_12_accuracy, color='blue', linestyle='dashed', linewidth=2)
 
     # Plot average results for each muscle combination
     x_labels = []

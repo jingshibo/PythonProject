@@ -6,6 +6,7 @@ import datetime
 from collections import Counter
 from sklearn.metrics import confusion_matrix
 import json
+import gc
 import os
 
 
@@ -51,6 +52,10 @@ def combineNormalizedDataset(cross_validation_groups):
         # normalization
         train_norm_x = (train_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
         test_norm_x = (test_feature_x - np.mean(train_feature_x, axis=0)) / np.std(train_feature_x, axis=0)
+        # Free up space by deleting original unnormalized arrays
+        del train_feature_x, test_feature_x
+        gc.collect()
+
         # one-hot encode categories (according to the alphabetical order)
         train_int_y = LabelEncoder().fit_transform(train_feature_y)
         train_onehot_y = tf.keras.utils.to_categorical(train_int_y)
