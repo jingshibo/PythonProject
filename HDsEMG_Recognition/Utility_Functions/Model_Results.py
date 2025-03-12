@@ -134,6 +134,50 @@ def averageHdsemgResults(all_subjects):
     return hdsemg_results, hdsemg_accuracy, hdsemg_cm_recall
 
 
+## reorganize results from different subjects into classification models
+def reorganize_by_model(all_subjects):
+    # Initialize an empty dictionary to store data by model
+    reorganized_data = {}
+
+    # Iterate through each subject
+    for subject, models in all_subjects.items():
+        # Iterate through each model under the subject
+        for model, metrics in models.items():
+            # Initialize model entry if not present
+            if model not in reorganized_data:
+                reorganized_data[model] = {}
+
+            # Ensure each model contains accuracy, cm_recall, and cm_num per subject
+            reorganized_data[model][subject] = {
+                'accuracy': metrics.get('accuracy', []),
+                'cm_recall': metrics.get('cm_recall', []),
+                'cm_num': metrics.get('cm_num', [])
+            }
+
+    return reorganized_data
+
+
+## comput average accuracy and std values of different models
+def compute_model_accuracy_stats(model_accuracy):
+    model_stats = {}
+
+    for model_name, subjects in model_accuracy.items():
+        accuracies = []  # List to store accuracy lists from all subjects
+
+        for subject, metrics in subjects.items():
+            if 'accuracy' in metrics:
+                accuracies.append(metrics['accuracy'])
+
+        if accuracies:
+            accuracies = np.array(accuracies)  # Convert to numpy array for easy calculations
+            mean_accuracy = np.mean(accuracies, axis=0)
+            std_accuracy = np.std(accuracies, axis=0)
+
+            model_stats[model_name] = {'mean_accuracy': mean_accuracy.tolist(), 'std_accuracy': std_accuracy.tolist()}
+
+    return model_stats
+
+
 ## calculate the mean accuracy for each number of electrodes across all subjects
 def averageBipolarAccuracies(bipolar_accuracy):
     # Initialize a dictionary to store the mean accuracy for each condition
@@ -211,6 +255,71 @@ def plotHdsemgAccuracy(hdsemg_accuracy):
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
+
+
+## Plot a bar chart of mean accuracy values from different models with standard deviation error bars.
+def plotModelAccuracy(accuracy_statistics):
+    """
+    Plot a bar chart of mean accuracy values with standard deviation error bars.
+
+    Parameters:
+    accuracy_statistics (dict): A dictionary containing model names as keys and
+                                their mean and standard deviation accuracy values as lists.
+    """
+    # Set global font size for the plot
+    font_size = 35
+    plt.rcParams.update({'font.size': font_size})
+
+    # Define the custom order for models
+    custom_order = ['SVM_linear_0', 'QDA_0', 'LDA_0', 'SVM_rbf_0', 'hdsemg_0']
+
+    # Corresponding x-axis labels
+    x_labels = ['SVM_linear', 'QDA', 'LDA', 'SVM_rbf', 'MLP']
+
+    # Reorder the accuracy_statistics dictionary to match the custom order
+    accuracy_statistics_ordered = {key: accuracy_statistics[key] for key in custom_order if key in accuracy_statistics}
+
+    # Extract model names (in the custom order)
+    model_names = list(accuracy_statistics_ordered.keys())
+
+    # Extract mean accuracy and standard deviation values
+    mean_accuracies = [accuracy_statistics_ordered[model]['mean_accuracy'] for model in model_names]
+    std_accuracies = [accuracy_statistics_ordered[model]['std_accuracy'] for model in model_names]
+
+    # Convert to NumPy arrays for easier manipulation
+    mean_accuracies = np.array(mean_accuracies)
+    std_accuracies = np.array(std_accuracies)
+
+    # Define bar width and positions
+    num_groups = mean_accuracies.shape[1]  # Number of accuracy values per model
+    bar_width = 0.2
+    x = np.arange(len(model_names))  # X positions for groups
+
+    # Define colors and legend labels
+    colors = ['yellowgreen', 'pink', 'steelblue']
+    legend_labels = ['n=5', 'n=6', 'n=7']
+
+    # Create figure and axis
+    plt.figure(figsize=(12, 8))
+
+    # Plot bars with error bars
+    for i in range(num_groups):
+        plt.bar(x + i * bar_width, mean_accuracies[:, i], bar_width, yerr=std_accuracies[:, i], capsize=5, label=legend_labels[i],
+            color=colors[i])
+
+    # Formatting
+    plt.xticks(x + bar_width, x_labels, rotation=0, ha='center', fontsize=font_size)  # Updated x labels
+    plt.yticks(fontsize=font_size)
+    plt.xlabel('Models', fontsize=font_size)
+    plt.ylabel('Classification Accuracy (%)', fontsize=font_size)
+    plt.ylim(85, 100)  # Set Y-axis limits
+    plt.legend(fontsize=font_size)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+
 
 
 ## plot the box accuracy for the bipolar derived from HDsEMG
@@ -429,8 +538,8 @@ def plotElectrodeShiftResults(shift_mean_std):
     hdsemg_original_key = 'hdsemg_original_0'
     hdsemg_h_key = 'hdsemg_h_shift_0'
     hdsemg_v_key = 'hdsemg_v_shift_0'
-    aug_left_key = 'aug_both_left_0'
-    aug_up_key = 'aug_both_up_0'
+    aug_left_key = 'aug_left_0'
+    aug_up_key = 'aug_up_0'
 
     # Extract mean and std for bipolar original
     bipolar_original_mean = shift_mean_std[bipolar_original_key]['mean']

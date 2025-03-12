@@ -1,13 +1,15 @@
 ''' plot classification results without electrode shift'''
 
 ##
-from Bipolar_Recognition.Utility_Functions import Model_Results
+from HDsEMG_Recognition.Utility_Functions import Model_Results
 from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 
 
 ## load results
-subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']
-feature_set = ['hdsemg', 'bipolar_1', 'bipolar_2', 'bipolar_3', 'bipolar_4', 'bipolar_5', 'bipolar_6', 'bipolar_7', 'bipolar_8', 'bipolar_9']
+# subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']  # bipolar plot
+subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7']  # hdsemg plot
+feature_set = ['hdsemg', 'LDA', 'QDA', 'RF', 'SVM_linear', 'SVM_rbf', 'bipolar_1', 'bipolar_2', 'bipolar_3', 'bipolar_4', 'bipolar_5',
+    'bipolar_6', 'bipolar_7', 'bipolar_8', 'bipolar_9']
 result_set = 0
 
 all_subjects = {}  # save all subject results
@@ -18,10 +20,14 @@ for subject in subjects:
     all_subjects[subject] = subject_results
 
 
-## plot HDsEMG results
+## plot HDsEMG classification accuracy
+model_accuracy = Model_Results.reorganize_by_model(all_subjects)
+model_accuracy_statistics = Model_Results.compute_model_accuracy_stats(model_accuracy)
+Model_Results.plotModelAccuracy(model_accuracy_statistics)
+
 # plot HDsEMG accuracy for each subject (n=5,6,7)
 hdsemg_results, hdsemg_accuracy, hdsemg_cm_recall = Model_Results.averageHdsemgResults(all_subjects)
-Model_Results.plotHdsemgAccuracy(hdsemg_accuracy)
+# Model_Results.plotHdsemgAccuracy(hdsemg_accuracy)
 
 # plot HDsEMG confusion matrix when n=5
 cm_call = hdsemg_cm_recall['average'][0]
@@ -40,7 +46,5 @@ bipolar_accuracy = {
 }
 median_accuracy = Model_Results.plotDerivedBipolarBox(bipolar_accuracy)
 mean_accuracy = Model_Results.averageBipolarAccuracies(bipolar_accuracy)
-
-
 
 

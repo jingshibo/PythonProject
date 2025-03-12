@@ -1,7 +1,7 @@
 '''calculate hdsemg and derived bipolar emg classification performance at original position without electrode shfit'''
 
 ##
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Model_Results
+from HDsEMG_Recognition.Utility_Functions import Emg_Preprocessing, Model_Results
 from Bipolar_EMG.Models import Dataset_Model
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
 from Transition_Prediction.Models.ANN.Functions import Ann_Dataset
@@ -27,7 +27,7 @@ for subject in subjects:
         average_accuracies = []
         average_cm_numbers = []
         average_cm_recalls = []
-        for mv_number in [5, 6, 7]:
+        for mv_number in [4, 5, 6]:
             predict_mv_results = [{mode: Dataset_Model.majority_vote(value, n=mv_number) for mode, value in group_result.items()} for group_result in predict_results]
             average_accuracy, average_cm_number, average_cm_recall = Dataset_Model.calculateAccuracy(predict_mv_results, true_labels)
             average_accuracies.append(average_accuracy)

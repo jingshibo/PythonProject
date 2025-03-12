@@ -49,13 +49,6 @@ def groupResultByMuscleNumber(average_by_bipolar, result_set):
         plus_count = bipolar_type.count('+')
         results_by_category[plus_count][bipolar_type] = copy.deepcopy(metrics)
     # adjustment
-    results_by_category[0][f'TA_{result_set}']['accuracy_mean'] = 60.5  # +4
-    results_by_category[0][f'GM_{result_set}']['accuracy_mean'] = 63.1  # -4
-    results_by_category[1][f'TA+GM_{result_set}']['accuracy_mean'] = 80.4  # +2
-    results_by_category[1][f'BF+GM_{result_set}']['accuracy_mean'] = 84.5  # -2
-    results_by_category[2][f'TA+SL+GM_{result_set}']['accuracy_mean'] = 85.7  # +3
-    results_by_category[2][f'BF+SL+GM_{result_set}']['accuracy_mean'] = 86  #-3
-
 
     return results_by_category
 
@@ -191,7 +184,7 @@ def aggregate_by_bipolar_number(aggregated_results):
 
 
 ## plot the box accuracy for each bipolar number
-def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy, RF_accuracy_old):
+def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy_experiment, RF_accuracy_derived):
     # Extracting the accuracies for plotting
     data_to_plot = [metrics['accuracies'] for plus_count, metrics in sorted(combined_by_bipolar.items())]
     # Create labels for the x-axis based on plus_count
@@ -209,7 +202,7 @@ def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy, RF_accuracy_old):
         whiskerprops={'linestyle': 'dashed', 'color': 'black', 'linewidth': linewidth, 'dashes': (5, 5)},
         medianprops={'color': 'red', 'linewidth': linewidth},
         capprops={'linewidth': linewidth},
-        whis=1.8)
+        whis=2)
 
     # Setting the colors for the median lines
     for median in box['medians']:
@@ -222,11 +215,15 @@ def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy, RF_accuracy_old):
     plt.title('')
 
     # Plot a horizontal line at the y-coordinate defined by rf_accuracy
-    plt.axhline(y=RF_accuracy, color='green', linestyle='dashed', linewidth=2)
-    plt.axhline(y=RF_accuracy_old, color='darkorange', linestyle='dashed', linewidth=2)
+    plt.axhline(y=RF_accuracy_experiment, color='green', linestyle='dashed', linewidth=2)
+    plt.axhline(y=RF_accuracy_derived, color='darkorange', linestyle='dashed', linewidth=2)
 
     plt.show()
 
+    # Extract median values
+    median_values = [median.get_ydata()[0] for median in box['medians']]
+
+    return median_values
 
 ## plot the box accuracy for the bipolar derived from HDsEMG
 def plotOldBoxBipolar(bipolar_accuracy_from_hdsemg_matrix, RF_accuracy):

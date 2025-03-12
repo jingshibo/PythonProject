@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.ndimage import shift
 from Transition_Prediction.Models.Utility_Functions import Data_Preparation
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing
+from HDsEMG_Recognition.Utility_Functions import Emg_Preprocessing
 import copy
 import gc
 

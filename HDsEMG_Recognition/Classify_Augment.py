@@ -1,7 +1,7 @@
 '''calculate hdsemg classification performance under electrode shfit with the help of data augmentation'''
 
 ##
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Manipulate_Channels, Model_Results
+from HDsEMG_Recognition.Utility_Functions import Emg_Preprocessing, Manipulate_Channels, Model_Results
 from Bipolar_EMG.Models import Dataset_Model
 from Transition_Prediction.Models.ANN.Functions import Ann_Dataset
 import gc
@@ -20,7 +20,7 @@ for subject in subjects:
         ## construct augmented cross validation dataset
         random_shift_direction = 'both'  # shift electrode randomly on both horizontal and vertical direction
         original_emg, clip_shift_emg = Manipulate_Channels.clipShiftimages(interp_emg_features, shift_direction=random_shift_direction,
-            max_shift=8, num_shifts=4, vertical_channels=slice(8, 89), horizontal_channels=slice(0, 25))
+            max_shift=8, num_shifts=3, vertical_channels=slice(8, 89), horizontal_channels=slice(0, 25))
         del interp_emg_features
         gc.collect()
         # combine the shifted data into the training set for augmentation

@@ -8,6 +8,10 @@ from sklearn.metrics import confusion_matrix
 import json
 import gc
 import os
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
 
 
 ## select the input dataset
@@ -138,6 +142,72 @@ def classifyUsingAnnModel(shuffled_groups):
             "predict_accuracy": test_accuracy})
         models.append(model)
     return models, results
+
+
+## Multiple Machine Learning models
+def classifyUsingMultipleModels(shuffled_groups, model_type="LDA"):
+    """
+    A unified function for LDA, QDA, RF (Random Forest), and SVM classification.
+
+    Parameters:
+    - shuffled_groups: dictionary containing training and test data
+    - model_type: "LDA", "QDA", "RF", "SVM_linear", or "SVM_rbf"
+
+    Returns:
+    - models: List of trained models
+    - results: List of dictionaries containing true values, predictions, and accuracy
+    """
+
+    # Ensure model_type is valid
+    valid_models = ["LDA", "QDA", "RF", "SVM_linear", "SVM_rbf"]
+    if model_type not in valid_models:
+        raise ValueError(f"Invalid model_type! Choose from {valid_models}")
+
+    models = []
+    results = []
+
+    for group_number, group_value in shuffled_groups.items():
+        # Input data
+        train_set_x = group_value['train_feature_x']
+        train_set_y = group_value['train_int_y']  # Integer labels
+        test_set_x = group_value['test_feature_x']
+        test_set_y = group_value['test_int_y']  # Integer labels
+
+        # Select the appropriate model with default parameters
+        if model_type == "LDA":
+            model = LinearDiscriminantAnalysis()
+        elif model_type == "QDA":
+            model = QuadraticDiscriminantAnalysis(reg_param=0.5)
+        elif model_type == "RF":
+            model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+        elif model_type == "SVM_linear":
+            model = SVC(kernel="linear", probability=True, C=1.0)
+        elif model_type == "SVM_rbf":
+            model = SVC(kernel="rbf", probability=True, C=1.0, gamma="scale")
+
+        # Train the model
+        model.fit(train_set_x, train_set_y)
+
+        # Predict probabilities and class labels
+        predictions = model.predict_proba(test_set_x) if hasattr(model, "predict_proba") else None
+        predict_y = model.predict(test_set_x)  # Class predictions
+
+        # Calculate accuracy
+        test_accuracy = accuracy_score(test_set_y, predict_y)
+
+        # Store results
+        results.append({
+            "true_value": test_set_y,
+            "predict_softmax": predictions,  # Probability estimates (if available)
+            "predict_value": predict_y,  # Predicted labels
+            "predict_accuracy": test_accuracy
+        })
+
+        models.append(model)
+
+    return models, results
+
+
 
 
 ## reorganize prediction results into separate lists in dicts

@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import numpy as np
 from Transition_Prediction.RawData.Utility_Functions import Upsampling_Filtering, Insole_Data_Splition
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing
+from HDsEMG_Recognition.Utility_Functions import Emg_Preprocessing
 from Transition_Prediction.Pre_Processing.Utility_Functions import Data_Reshaping
 
 

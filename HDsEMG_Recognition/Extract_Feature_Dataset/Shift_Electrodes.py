@@ -1,6 +1,6 @@
 ##
 import numpy as np
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing, Manipulate_Channels
+from HDsEMG_Recognition.Utility_Functions import Emg_Preprocessing, Manipulate_Channels
 from Transition_Prediction.Pre_Processing.Utility_Functions import Feature_Calculation
 
 

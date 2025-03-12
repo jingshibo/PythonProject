@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from scipy.ndimage import zoom
-from Bipolar_Recognition.Utility_Functions import Emg_Preprocessing
+from HDsEMG_Recognition.Utility_Functions import Emg_Preprocessing
 from Transition_Prediction.Pre_Processing.Utility_Functions import Feature_Calculation
 import matplotlib.pyplot as plt
 

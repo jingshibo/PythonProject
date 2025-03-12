@@ -1,17 +1,16 @@
 ''' plot classification results under electrode shift and data augmentation'''
 
 ##
-from Bipolar_Recognition.Utility_Functions import Model_Results
+from HDsEMG_Recognition.Utility_Functions import Model_Results
 
 
 ''' plot bipolar shift results '''
 ## load shift results
 subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number8', 'Number9']
-subjects = ['Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Number6', 'Number7', 'Number9']
 shift_feature_set = ['hdsemg_original', 'hdsemg_h_shift', 'hdsemg_v_shift', 'bipolar_original', 'bipolar_h_shift_1', 'bipolar_h_shift_3',
     'bipolar_h_shift_4', 'bipolar_h_shift_6', 'bipolar_v_shift_1', 'bipolar_v_shift_3', 'bipolar_v_shift_4', 'bipolar_v_shift_6']
-augment_feature_set = ['aug_both_left', 'aug_both_up']  # results after data augmentation
-# augment_feature_set = ['aug_left', 'aug_up']  # results after data augmentation
+# augment_feature_set = ['aug_both_left', 'aug_both_up']  # results after data augmentation
+augment_feature_set = ['aug_left', 'aug_up']  # results after data augmentation
 
 # Combine the feature sets
 all_feature_set = shift_feature_set + augment_feature_set

@@ -62,7 +62,8 @@ sensor_sets = {
 
 ##
 # subjects = ['Number1', 'Number2', 'Number3', 'Number5', 'Number7', 'Number9', 'Number10', 'Number4', 'Number8']  # Add 'Number4' and 'Number8' if needed
-subjects = ['Number2', 'Number3', 'Number5', 'Number7']
+# subjects = ['Number2', 'Number3', 'Number5', 'Number7']  # plot bar chart
+subjects = ['Number2', 'Number3', 'Number5', 'Number7', 'Number9']  # plot box chart
 result_set = 0
 
 all_subjects = {} # save all subject results
@@ -83,11 +84,11 @@ average_by_subject = Results_Plot.average_accuracy_by_subject(all_subjects)
 combined_by_bipolar = Results_Plot.aggregate_results(subjects_data)
 rf_accuracy = average_by_bipolar[f'RF_{result_set}']['accuracy_mean']  # accuracy of rectus femoris bipolar EMG
 combined_by_bipolar_group = Results_Plot.aggregate_by_bipolar_number(combined_by_bipolar)
-Results_Plot.plotBipolarBoxAccuracy(combined_by_bipolar_group, RF_accuracy=rf_accuracy, RF_accuracy_old=68.1)
+median_accuracy = Results_Plot.plotBipolarBoxAccuracy(combined_by_bipolar_group, RF_accuracy_experiment=rf_accuracy, RF_accuracy_derived=68.1)
 
 ##  plot average accuracy grouped by number of bipolarEMG
 results_by_muscle_number = Results_Plot.groupResultByMuscleNumber(average_by_bipolar, result_set)
 average_by_bipolar_group = Results_Plot.calculate_bipolar_group_mean(combined_by_bipolar_group)
 Results_Plot.calculateTtestValues(average_by_subject, average_by_bipolar_group)
-Results_Plot.plotMeanAccuracy(average_by_bipolar_group, results_by_muscle_number, hdsemg_accuracy=95.4, derived_12_accuracy=92.8)
+Results_Plot.plotMeanAccuracy(average_by_bipolar_group, results_by_muscle_number, hdsemg_accuracy=95.3, derived_12_accuracy=91.3)
 

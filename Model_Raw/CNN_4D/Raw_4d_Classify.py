@@ -13,10 +13,10 @@ import numpy as np
 subject = 'Shibo'
 version = 1  # the data from which experiment version to process
 modes = ['up_down', 'down_up']
-up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
-# up_down_session = [10, 11]
-# down_up_session = [10, 11]
+# up_down_session = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+# down_up_session = [10, 11, 12, 13, 19, 24, 25, 26, 27, 28, 20]
+up_down_session = [10, 11]
+down_up_session = [10, 11]
 sessions = [up_down_session, down_up_session]
 
 
