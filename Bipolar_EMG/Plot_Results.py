@@ -61,9 +61,9 @@ sensor_sets = {
 
 
 ##
-# subjects = ['Number1', 'Number2', 'Number3', 'Number5', 'Number7', 'Number9', 'Number10', 'Number4', 'Number8']  # Add 'Number4' and 'Number8' if needed
+subjects = ['Number1', 'Number2', 'Number3', 'Number5', 'Number7', 'Number9', 'Number10', 'Number4', 'Number8']  # Add 'Number4' and 'Number8' if needed
 # subjects = ['Number2', 'Number3', 'Number5', 'Number7']  # plot bar chart
-subjects = ['Number2', 'Number3', 'Number5', 'Number7', 'Number9']  # plot box chart
+# subjects = ['Number2', 'Number3', 'Number5', 'Number7', 'Number9']  # plot box chart
 result_set = 0
 
 all_subjects = {} # save all subject results

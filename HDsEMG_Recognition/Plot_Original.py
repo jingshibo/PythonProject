@@ -48,3 +48,38 @@ median_accuracy = Model_Results.plotDerivedBipolarBox(bipolar_accuracy)
 mean_accuracy = Model_Results.averageBipolarAccuracies(bipolar_accuracy)
 
 
+##
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# First dataset: 10 groups
+data1 = [np.random.normal(loc=0, scale=1, size=100) for _ in range(10)]
+# Second dataset: only first 6 groups
+data2 = [np.random.normal(loc=1, scale=1, size=100) for _ in range(6)]
+
+# Positions
+positions1 = [i * 2 for i in range(10)]             # 0, 2, 4, ..., 18
+positions2 = [i * 2 + 1 for i in range(6)]          # 1, 3, 5, ..., 11
+
+# Plot
+plt.boxplot(data1, positions=positions1, widths=0.6, patch_artist=True,
+            boxprops=dict(facecolor="skyblue"))
+plt.boxplot(data2, positions=positions2, widths=0.6, patch_artist=True,
+            boxprops=dict(facecolor="lightgreen"))
+
+# Create x-ticks centered for each x group
+xtick_positions = positions1[:6]  # x-ticks for shared data
+xtick_positions.extend(positions1[6:])  # x-ticks only for data1
+
+xtick_labels = [f'Group {i+1}' for i in range(10)]
+plt.xticks(positions1, xtick_labels)
+
+# Labels and legend
+plt.xlabel('Groups')
+plt.ylabel('Values')
+plt.title('Mixed Boxplot: 10 vs. 6 X-Ticks')
+plt.legend(['Data1 (All)', 'Data2 (Partial)'], loc='upper right')
+
+plt.tight_layout()
+plt.show()

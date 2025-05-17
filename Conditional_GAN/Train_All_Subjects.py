@@ -115,7 +115,7 @@ for subject_number, data_selection in subjects.items():
     # '''
     #     train classifier (basic scenarios), training and testing using data from the same and different time
     # '''
-    # ## train classifier (basic scenarios), training and testing data from the same and different time
+    ## train classifier (basic scenarios), training and testing data from the same and different time
     # models_basis, accuracy_basis, cm_recall_basis, accuracy_best, cm_recall_best, accuracy_worst, cm_recall_worst, accuracy_tf, \
     #     cm_recall_tf = train_classifier.trainClassifierBasicScenarios(
     #     old_emg_classify_normalized, new_emg_classify_normalized)

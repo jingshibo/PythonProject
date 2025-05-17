@@ -121,7 +121,7 @@ class ModelTraining():
         self.disc.train(True)
 
         batch_count = 0  # Counter to keep track of the number of batches
-        for gen_data, disc_data in tqdm(self.train_loader):
+        for gen_data, disc_data in tqdm(self.train_loader):  # tqdm: display a progress bar
             # image_width = image.shape [3]
 
             batch_count += 1  # first train discriminator multiple times, then start to train generator

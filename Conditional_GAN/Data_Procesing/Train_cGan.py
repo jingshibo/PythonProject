@@ -12,14 +12,13 @@ feature_window_ms = start_before_toeoff_ms + endtime_after_toeoff_ms
 predict_window_ms = start_before_toeoff_ms + endtime_after_toeoff_ms
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=start_before_toeoff_ms,
     endtime_after_toeoff_ms=endtime_after_toeoff_ms, feature_window_ms=feature_window_ms, predict_window_ms=predict_window_ms)
-lower_limit = 20
-higher_limit = 400
-envelope_cutoff = 400
-envelope = True  # the output will always be rectified if set True
 
 
 ## read and filter emg data
-def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_down_session_t1, down_up_session_t1, grid):
+def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_down_session_t1, down_up_session_t1, grid, envelope_cutoff=400,
+        envelope=True, reordering=True, lower_limit=20, higher_limit=400):
+    # the output will always be rectified if envelope is set True
+
     # read and filter old data
     modes = ['up_down_t0', 'down_up_t0']
     sessions = [up_down_session_t0, down_up_session_t0]
@@ -27,7 +26,7 @@ def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_dow
     # old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
     #     envelope_cutoff=envelope_cutoff, envelope=envelope)
     old_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid=grid, include_standing=False)
+        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid=grid, include_standing=False, reordering=reordering)
     # read and filter new data
     modes = ['up_down_t1', 'down_up_t1']
     sessions = [up_down_session_t1, down_up_session_t1]

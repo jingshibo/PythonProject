@@ -7,9 +7,14 @@
 from EMG_Example_Plot.Utility_Functions import Save_Results
 import matplotlib.pyplot as plt
 import numpy as np
+import copy
 
 ##  read sensor data and filtering
 # basic information
+from Model_Raw.CNN_2D.Functions import Raw_Cnn2d_Dataset
+from Transition_Prediction.Models.Utility_Functions import Data_Preparation
+from Transition_Prediction.Pre_Processing import Preprocessing
+
 subject = 'Number1'
 version = 0  # the data from which experiment version to process
 modes = ['up_down', 'down_up']

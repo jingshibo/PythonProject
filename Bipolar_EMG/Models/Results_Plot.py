@@ -210,7 +210,7 @@ def plotBipolarBoxAccuracy(combined_by_bipolar, RF_accuracy_experiment, RF_accur
 
     plt.xticks(range(1, len(labels) + 1), labels, fontsize=fontsize)
     plt.yticks(range(50, 105, 5), fontsize=fontsize)
-    plt.xlabel('Number of Bipolar EMG', fontsize=fontsize)
+    plt.xlabel('Number of Muscles', fontsize=fontsize)
     plt.ylabel('Classification Accuracy(%)', fontsize=fontsize)
     plt.title('')
 
@@ -300,7 +300,7 @@ def plotMeanAccuracy(average_by_bipolar_group, results_by_category, hdsemg_accur
                 plt.text((x_left + x_right) * 0.5, y+h, "ns", ha='center', va='bottom', color='r', fontsize=font_size*0.8)
 
     # Set font size for labels and title
-    plt.xlabel('Number of Bipolar EMG', fontsize=font_size)
+    plt.xlabel('Number of Muscles', fontsize=font_size)
     plt.ylabel('Classification Accuracy(%)', fontsize=font_size)
     plt.title('', fontsize=font_size)
 

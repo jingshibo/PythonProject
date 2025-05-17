@@ -14,14 +14,14 @@ import cv2
 
 
 ## load raw data and filter them
-def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400, envelope_cutoff=10, envelope=False,
+def readFilterEmgData(data_source, window_parameters, lower_limit=20, higher_limit=400, envelope_cutoff=10, envelope=False, reordering=True,
         project='Insole_Emg', selected_grid='all', include_standing=True):
     split_parameters = Preprocessing.readSplitParameters(data_source['subject'], data_source['version'], project=project)
     emg_filtered_data = Preprocessing.labelFilteredData(data_source['subject'], data_source['modes'],
         data_source['sessions'], data_source['version'], split_parameters, project=project,
-        start_position=-int(window_parameters['start_before_toeoff_ms'] * (2 / window_parameters['sample_rate'])),
+        start_position=-int(window_parameters['start_before_toeoff_ms'] * (2 / window_parameters['sample_rate'])), # this formala may be wrong when sample_rate = 2
         end_position=int(window_parameters['endtime_after_toeoff_ms'] * (2 / window_parameters['sample_rate'])), lower_limit=lower_limit,
-        higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, envelope=envelope, notchEMG=False, median_filtering=True, reordering=True)
+        higher_limit=higher_limit, envelope_cutoff=envelope_cutoff, envelope=envelope, notchEMG=False, median_filtering=True, reordering=reordering)
     emg_preprocessed = Data_Preparation.removeSomeSamples(emg_filtered_data, is_down_sampling=window_parameters['down_sampling'],
         standing=include_standing)
     for key in emg_preprocessed.keys():    # Convert all float64 arrays to float32
