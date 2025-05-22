@@ -24,28 +24,38 @@ range_limit = 1500
 spatial_filter_kernel = (2, 1)
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'], 'emg_SDLW': ['emg_SDSD', 'emg_LWLW', 'emg_SDLW']} # The order in each list is important, corresponding to gen_data_1 and gen_data_2.
+condition_encoding = {"emg_LWSA": 0, "emg_LWSD": 1, "emg_SALW": 2, "emg_SDLW": 3}  # encode the conditions into integer
 length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtime_after_toeoff_ms']  # the length of data in each repetition
 old_emg_normalized, new_emg_normalized, _, _ = Process_Raw_Data.normalizeFilterEmgData(old_emg_data, new_emg_data, range_limit,
     normalize='(0,1)', spatial_filter=False, kernel=spatial_filter_kernel)
 time_length = 500  # select only 1200ms data around toe-off
 classify_old_emg, classify_new_emg, train_gan_data = Preprocessing.extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normalized, time_length)
-fold_number = 5
-cross_validation_indices, cross_validation_dataset = Preprocessing.crossValidationSet(fold_number, classify_old_emg)
+
+
+## generate transition mode data
+
+
+
+
+
+
+
+
+
+
 
 
 ##  classify using a single cnn 2d model
 num_epochs = 50
-batch_size = 64
+batch_size = 32
 decay_epochs = 20
 now = datetime.datetime.now()
+fold_number = 5
+cross_validation_indices, cross_validation_dataset = Preprocessing.crossValidationSet(fold_number, classify_old_emg)
 # train_model = Raw_Cnn2d_Model.ModelTraining(num_epochs, batch_size)
 train_model = Classification_Model.ModelTraining(num_epochs, batch_size, report_period=10)
 models, model_results = train_model.trainModel(classify_old_emg, cross_validation_indices, decay_epochs)
 print(datetime.datetime.now() - now)
-
-
-##
 accuracy, cm_recall = Results.getAccuracyCm(model_results)
-
 # class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 # Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)

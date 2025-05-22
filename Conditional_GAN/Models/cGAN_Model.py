@@ -145,7 +145,7 @@ class Generator_UNet(nn.Module):
 
 
 ## model summary
-# model = Generator_UNet(81, 13, 10, 2).to('cpu')  # move the model to GPU
+# model = Generator_UNet(81, 13, 10, 2, 200).to('cpu')  # move the model to GPU
 # summary(model, input_size=(64, 81))
 
 

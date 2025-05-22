@@ -10,7 +10,7 @@ from Conditional_GAN.Data_Procesing import Process_Fake_Data
 from scipy.ndimage import gaussian_filter
 import numpy as np
 import copy
-import cv2
+
 
 
 ## load raw data and filter them
