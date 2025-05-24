@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils import spectral_norm
 from torchinfo import summary
-import math
+
 
 class ConditionalBatchNorm2d(nn.Module):
     def __init__(self, num_channels, cond_embed_dim, use_adain=False):
@@ -118,29 +118,35 @@ class Additive2DSinusoidalPositionalEncoding(nn.Module):
 
 class EMGFusionGenerator(nn.Module):
     def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
-            activation=nn.ReLU):
+            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}, initial_cond_map_channels=1):
         super().__init__()
+
+        if activation_params:
+            act_fn = activation_class(**activation_params)
+        else:
+            act_fn = activation_class()
         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
+        self.initial_cond_projector = nn.Linear(cond_embed_dim, initial_cond_map_channels)
 
         # reduce time dim to a smaller number while incresing the CNN channel dim
-        self.encoder1 = ConvCBNBlock(2 + 1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=activation)
-        self.encoder2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=activation)
-        self.encoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=activation)
-        self.encoder4 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=activation)
+        self.encoder1 = ConvCBNBlock(2 + initial_cond_map_channels, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        self.encoder2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        self.encoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        self.encoder4 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
 
         self.d_model = hidden_channels * 8 + cond_embed_dim
         self.transformer = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=self.d_model, nhead=4, dim_feedforward=self.d_model * 2, batch_first=True, dropout=0.1),
-            num_layers=2)
+            nn.TransformerEncoderLayer(d_model=self.d_model, nhead=4, dim_feedforward=self.d_model * 2, batch_first=True, dropout=0.1,
+                activation=nn.GELU()), num_layers=4)
 
-        self.decoder1 = ConvCBNBlock(hidden_channels * 8 + cond_embed_dim, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=activation)
+        self.decoder1 = ConvCBNBlock(self.d_model, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=True, activation=act_fn)
         self.decoder2 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=activation)
+            transpose=True, activation=act_fn)
         self.decoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=activation)
+            transpose=True, activation=act_fn)
         self.decoder4 = ConvCBNBlock(hidden_channels, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=nn.Tanh)
+            transpose=True, activation=act_fn)
 
         self.sig = torch.nn.Sigmoid()  # convert values to the range of [0, 1]
         self.pos_encoder = None  # will be initialized in the first forward pass
@@ -149,7 +155,8 @@ class EMGFusionGenerator(nn.Module):
         B_, _, C, T = A.shape
 
         cond_embed = self.condition_embedding(condition)  # Shape: [B, cond_embed_dim] (B: batch size)
-        cond_for_cat = cond_embed.mean(dim=1, keepdim=True).unsqueeze(-1).unsqueeze(-1).expand(-1, -1, C, T)  # to create shape: [B, 1, C, T]
+        initial_cond_map_feats = self.initial_cond_projector(cond_embed)  # project condition embed vector to [B, initial_cond_map_channels]
+        cond_for_cat = initial_cond_map_feats.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, C, T) # to create shape: [B, initial_cond_map_channels, C, T]
         x = torch.cat([A, B, cond_for_cat], dim=1)  # [B, 3, C, T]
 
         x = self.encoder1(x, cond_embed)
@@ -179,89 +186,56 @@ class EMGFusionGenerator(nn.Module):
         return x
 
 
-import torch
-import torch.nn as nn
-from torch.nn.utils import spectral_norm  # Assuming this is at the top of your file
-
-
 # ConditionalBatchNorm2d and ConvCBNBlock remain the same as you defined them
 # (assuming ConvCBNBlock uses stride=(1,2) for downsampling in time)
 
+
+# Conceptual EMGFusionPatchDiscriminator with Projection Principle
 class EMGFusionPatchDiscriminator(nn.Module):
-    def __init__(self, num_conditions, cond_embed_dim=64, use_cbn_in_blocks=False,  # Typically False for D unless specific reason
-            use_adain_in_blocks=False, use_spectral_norm=True, hidden_channels=64, activation_class=nn.LeakyReLU,
-            activation_params={'negative_slope': 0.2}):
+    def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=False, use_adain=False, use_spectral_norm=True, hidden_channels=32,
+            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.2}):
         super().__init__()
-        self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
 
         if activation_params:
             act_fn = activation_class(**activation_params)
         else:
             act_fn = activation_class()
+        self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
+        C_phi = hidden_channels * 8  # Output channels of the backbone
 
-        # Input channels to first block is 3 (A_ref, B_ref, C_sample each 1 channel)
-        # Let's define the blocks with consistent naming for clarity
-        self.block1 = ConvCBNBlock(3, hidden_channels, cond_embed_dim, use_cbn=use_cbn_in_blocks, use_adain=use_adain_in_blocks,
-            use_spectral_norm=use_spectral_norm, activation=act_fn, transpose=False)
-        # Output H_out = H_in, W_out = W_in / 2
-        # e.g., (B, 64, 65, 600)
+        # --- Backbone ---
+        self.block1 = ConvCBNBlock(3, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        self.block2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        self.block3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        self.block4 = ConvCBNBlock(hidden_channels * 4, C_phi, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
 
-        self.block2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn=use_cbn_in_blocks,
-            use_adain=use_adain_in_blocks, use_spectral_norm=use_spectral_norm, activation=act_fn, transpose=False)
-        # e.g., (B, 128, 65, 300)
-
-        self.block3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn=use_cbn_in_blocks,
-            use_adain=use_adain_in_blocks, use_spectral_norm=use_spectral_norm, activation=act_fn, transpose=False)
-        # e.g., (B, 256, 65, 150)
-
-        self.block4 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn=use_cbn_in_blocks,
-            use_adain=use_adain_in_blocks, use_spectral_norm=use_spectral_norm, activation=act_fn, transpose=False)
-        # e.g., (B, 512, 65, 75)
-
-        # Final convolutional layer to produce the patch scores.
-        # It does not downsample further with stride=1.
-        # The number of input channels is (hidden_channels * 8) + cond_embed_dim
-        # if we concatenate the condition embedding spatially.
-        # A common PatchGAN approach is to NOT concatenate the global condition embedding
-        # spatially before this last conv, but rather let the CBN layers handle conditioning,
-        # or make the final conv layer itself conditional if needed, or simply output
-        # a grid of scores and the loss function handles the condition matching.
-
-        # Option 1: Simpler final layer (no spatial condition concatenation here)
-        # The conditioning is handled by CBN if active, or by the loss function's targets.
-        # Output channels = 1 (for real/fake score per patch)
-        last_conv_in_channels = hidden_channels * 8
-        self.final_conv = nn.Conv2d(last_conv_in_channels, 1, kernel_size=(3, 3), stride=1, padding=1)
-        # You might use spectral_norm here too:  # self.final_conv = spectral_norm(nn.Conv2d(last_conv_in_channels, 1,
-        # kernel_size=4, stride=1, padding=1))  # Kernel size 4, stride 1, padding 1 is common in some PatchGANs (e.g., Pix2Pix)  # Let's
-        # stick to 3x3 padding 1 for now to maintain dimensions.
-
-        # No Sigmoid here if using BCEWithLogitsLoss or a least-squares GAN loss.
+        # --- Unconditional Patch Score Head ---
+        final_conv_unconditional_layer = nn.Conv2d(C_phi, 1, kernel_size=(3, 3), stride=1, padding=1)
+        self.final_conv_unconditional = spectral_norm(
+            final_conv_unconditional_layer) if use_spectral_norm else final_conv_unconditional_layer
+        # --- For Conditional Projection Term ---
+        self.cond_projector_for_phi = nn.Linear(cond_embed_dim, C_phi)  # Project condition to match feature channels
 
     def forward(self, C_sample, A_ref, B_ref, condition_label):
-        current_device = C_sample.device
-        A_ref = A_ref.to(current_device)
-        B_ref = B_ref.to(current_device)
-        condition_label = condition_label.to(current_device)
-
         cond_embed = self.condition_embedding(condition_label)  # [B, cond_embed_dim]
+        x = torch.cat([A_ref, B_ref, C_sample], dim=1)  # [B, 3, H, W]
 
-        x = torch.cat([A_ref, B_ref, C_sample], dim=1)  # [B, 3, C_spatial_orig, T_orig]
+        phi_features = self.block1(x, cond_embed)
+        phi_features = self.block2(phi_features, cond_embed)
+        phi_features = self.block3(phi_features, cond_embed)
+        phi_features = self.block4(phi_features, cond_embed)  # [B, C_phi, Patch_H, Patch_W]
 
-        x = self.block1(x, cond_embed)
-        x = self.block2(x, cond_embed)
-        x = self.block3(x, cond_embed)
-        x = self.block4(x, cond_embed)  # Output: [B, hidden_channels*8, C_spatial_reduced, T_reduced]
-        # e.g., [B, 512, 65, 75]
+        # Unconditional part
+        unconditional_patch_logits = self.final_conv_unconditional(phi_features)  # [B, 1, Patch_H, Patch_W]
+        # Conditional part (Projection)
+        projected_cond_embed = self.cond_projector_for_phi(cond_embed)  # [B, C_phi]
+        projected_cond_embed_spatial = projected_cond_embed.unsqueeze(-1).unsqueeze(-1).expand_as(phi_features)  # [B, C_phi, Patch_H, Patch_W]
 
-        # The output of self.block4 is a feature map.
-        # Now, apply the final convolution to get a grid of scores.
-        patch_scores = self.final_conv(x)
-        # Output shape: [B, 1, C_spatial_reduced, T_reduced]
-        # e.g., [B, 1, 65, 75]
-        # Each element in the 65x75 grid is a logit predicting if that corresponding patch is real or fake.
+        # Inner product for each patch: element-wise product then sum over channels
+        conditional_term_values = (phi_features * projected_cond_embed_spatial).sum(dim=1, keepdim=True)  # [B, 1, Patch_H, Patch_W]
+        final_patch_logits = unconditional_patch_logits + conditional_term_values
 
-        return patch_scores
+        return final_patch_logits
 
 
 # class ModelConfig:
@@ -278,153 +252,36 @@ class EMGFusionPatchDiscriminator(nn.Module):
 #         self.transformer_layers = transformer_layers
 
 
-# model summary
-device = "cuda" if torch.cuda.is_available() else "cpu"
-num_conditions_example = 4
+## model summary
+if __name__ == '__main__':
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    num_conditions_example = 4
+    batch_size_example = 64
+    dummy_A = torch.randn(batch_size_example, 1, 65, 1200).to(device)
+    dummy_B = torch.randn(batch_size_example, 1, 65, 1200).to(device)
+    dummy_C = torch.randn(batch_size_example, 1, 65, 1200).to(device)
+    dummy_condition = torch.randint(0, num_conditions_example, (batch_size_example,), dtype=torch.long).to(device)
+    model = EMGFusionGenerator(num_conditions=num_conditions_example).to(device)
 
-model = EMGFusionGenerator(num_conditions=num_conditions_example).to(device)
+    # Keras-like summary primarily shows Layer Name, Output Shape, and Param #
+    print(f"--- Model Summary (Keras-like: Layer Name, Output Shape, Param #) ---")
+    # 'input_size' is useful but not standard in Keras summary per layer, rather it's shown for the overall model.
+    # 'kernel_size' is also not typically in the main Keras summary table per row.
+    model_summary_obj = summary(model, input_data=(dummy_A, dummy_B, dummy_condition),
+        col_names=["output_size", "num_params", "trainable"],  # We can also add "trainable" to distinguish trainable params
+        # `row_settings=["var_names"]` will show variable names for layers if they have them (e.g. self.encoder1)
+        row_settings=["var_names", "depth"],  # Adding depth can help with structure
+        depth=3,  # Adjust depth to control nesting. For very nested models, a higher depth is informative.
+        # For a Keras-like flat view, you might use depth=1 or 2 if top-level modules are simple.
+        verbose=0  # Set to 0 to only return the object
+    )
+    print(model_summary_obj)
 
-batch_size_example = 64
-
-dummy_A = torch.randn(batch_size_example, 1, 65, 1200).to(device)
-dummy_B = torch.randn(batch_size_example, 1, 65, 1200).to(device)
-dummy_condition = torch.randint(0, num_conditions_example, (batch_size_example,), dtype=torch.long).to(device)
-
-print(f"--- Model Summary (Keras-like: Layer Name, Output Shape, Param #) ---")
-
-# Keras-like summary primarily shows Layer Name, Output Shape, and Param #
-# 'input_size' is useful but not standard in Keras summary per layer,
-# rather it's shown for the overall model.
-# 'kernel_size' is also not typically in the main Keras summary table per row.
-
-model_summary_obj = summary(model, input_data=(dummy_A, dummy_B, dummy_condition), # To get closer to Keras, we focus on these columns:
-    col_names=["output_size", "num_params"], # We can also add "trainable" to distinguish trainable params
-    # col_names=["output_size", "num_params", "trainable"],
-
-    # `row_settings=["var_names"]` will show variable names for layers if they have them (e.g. self.encoder1)
-    # Default already shows layer type.
-    row_settings=["var_names", "depth"],  # Adding depth can help with structure
-
-    depth=3,  # Adjust depth to control nesting. Keras summary is usually flatter.
-    # For very nested models, a higher depth is informative.
-    # For a Keras-like flat view, you might use depth=1 or 2 if top-level modules are simple.
-    # But your ConvCBNBlock is a module, so depth=2 or 3 is good.
-    verbose=0  # Set to 0 to only return the object
-)
-
-print(model_summary_obj)
-
-# Print total parameters separately, as Keras does at the end
-print("================================================================")
-print(f"Total params: {model_summary_obj.total_params:,}")
-print(f"Trainable params: {model_summary_obj.trainable_params:,}")
-print(f"Non-trainable params: {model_summary_obj.total_params - model_summary_obj.trainable_params:,}")
-print("----------------------------------------------------------------")
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-# model = EMGFusionGenerator(num_conditions=4).to(device)
-# batch_size = 16
-# summary(
-#     model,
-#     input_data=(
-#         torch.randn(batch_size, 1, 65, 1200).to(device),
-#         torch.randn(batch_size, 1, 65, 1200).to(device),
-#         torch.randint(0, 4, (batch_size,), dtype=torch.long).to(device)
-#     ),
-#     device=device, col_names=["input_size", "output_size", "num_params"], depth=3
-# )
+    # Print total parameters separately, as Keras does at the end
+    print("================================================================")
+    print(f"Total params: {model_summary_obj.total_params:,}")
+    print(f"Trainable params: {model_summary_obj.trainable_params:,}")
+    print(f"Non-trainable params: {model_summary_obj.total_params - model_summary_obj.trainable_params:,}")
+    print("----------------------------------------------------------------")
 
 
-
-# class ConvCBNBlock(nn.Module):
-#     def __init__(self, in_channels, out_channels, cond_embed_dim, use_cbn=True, use_adain=False, use_spectral_norm=False, transpose=False,
-#             activation=nn.ReLU):
-#         super().__init__()
-#         conv_layer = nn.ConvTranspose2d if transpose else nn.Conv2d
-#         conv_kwargs = dict(kernel_size=(3, 9), stride=(1, 2), padding=(1, 4))
-#         if transpose:  # use ConvTranspose2d to increase spatial resolution
-#             conv_kwargs['output_padding'] = (0, 1)
-#         conv = conv_layer(in_channels, out_channels, **conv_kwargs)
-#         self.conv = spectral_norm(conv) if use_spectral_norm else conv
-#
-#         self.use_cbn = use_cbn
-#         if use_cbn:
-#             self.norm = ConditionalBatchNorm2d(out_channels, cond_embed_dim, use_adain=use_adain)
-#         else:
-#             self.norm = nn.BatchNorm2d(out_channels)
-#
-#         self.activation = activation() if isinstance(activation, type) else activation
-#
-#     def forward(self, x, cond_embed):
-#         x = self.conv(x)
-#         x = self.norm(x, cond_embed) if self.use_cbn else self.norm(x)
-#         x = self.activation(x)
-#         return x
-
-
-# # The positional encoding is additive and separable. Treats time and space independently
-# class Sinusoidal2dPositionalEncoding(nn.Module):
-#     def __init__(self, height, width, d_model):
-#         super().__init__()
-#         self.height = height
-#         self.width = width
-#         self.d_model = d_model
-#
-#         pe_h = torch.zeros(height, d_model // 2)
-#         pe_w = torch.zeros(width, d_model // 2)
-#
-#         position_h = torch.arange(0, height).unsqueeze(1)
-#         position_w = torch.arange(0, width).unsqueeze(1)
-#
-#         div_term = torch.exp(torch.arange(0, d_model // 2, 2) * -(torch.log(torch.tensor(10000.0)) / (d_model // 2)))
-#
-#         pe_h[:, 0::2] = torch.sin(position_h * div_term)
-#         pe_h[:, 1::2] = torch.cos(position_h * div_term)
-#         pe_w[:, 0::2] = torch.sin(position_w * div_term)
-#         pe_w[:, 1::2] = torch.cos(position_w * div_term)
-#
-#         pe = pe_h.unsqueeze(1) + pe_w.unsqueeze(0)  # [H, W, d_model//2]
-#         pe = pe.reshape(height * width, d_model)
-#         self.register_buffer('pe', pe.unsqueeze(1))  # [H*W, 1, d_model]
-#
-#     def forward(self, x):
-#         return x + self.pe[:x.size(0)]
-
-# class EMGFusionGenerator(nn.Module):
-#     def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
-#             activation=nn.ReLU):
-#         super().__init__()
-#         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)  # embed 4 conditions into a 64 dimension vector
-#
-#         self.encoder1 = ConvCBNBlock(2, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=activation)
-#         self.encoder2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=activation)
-#
-#         d_model = hidden_channels * 2 + cond_embed_dim
-#         self.transformer = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=d_model, nhead=4, dim_feedforward=d_model * 2),
-#             num_layers=2)
-#
-#         self.decoder1 = ConvCBNBlock(hidden_channels * 2, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-#             transpose=True, activation=activation)
-#         self.decoder2 = ConvCBNBlock(hidden_channels, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-#             transpose=True, activation=nn.Tanh)
-#
-#     def forward(self, A, B, condition):
-#         # In this generator architecture, the condition is not directly concatenated to the input or feature maps.
-#         # Instead, it's passed through an embedding and used exclusively as input to the conditional normalization layers.
-#         cond_embed = self.condition_embedding(condition)
-#         x = torch.cat([A, B], dim=1)  # [B, 2, C, T]
-#
-#         x = self.encoder1(x, cond_embed)
-#         x = self.encoder2(x, cond_embed)
-#
-#         B_, C_enc, C, T_red = x.shape
-#         x = x.permute(3, 0, 2, 1).reshape(T_red, B_, C * C_enc)  # (time length * batch size * features per time step)
-#
-#         cond_seq = cond_embed.unsqueeze(0).repeat(T_red, 1, 1)
-#         x = torch.cat([x, cond_seq], dim=-1)
-#         x = self.transformer(x)
-#
-#         x = x[:, :, :C * C_enc].reshape(T_red, B_, C, C_enc).permute(1, 3, 2, 0)
-#         x = self.decoder1(x, cond_embed)
-#         x = self.decoder2(x)
-#         return x
-#

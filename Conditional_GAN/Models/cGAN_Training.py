@@ -12,6 +12,7 @@ import datetime
 import numpy as np
 from Conditional_GAN.Models import cGAN_Model, cGAN_Loss, Model_Storage, cGAN_DataSet
 
+
 ## training process
 class ModelTraining():
     def __init__(self, num_epochs, batch_size, sampling_repetition, gen_update_interval, disc_update_interval, decay_epochs, noise_dim, blending_factor_dim):
