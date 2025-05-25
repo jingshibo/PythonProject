@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
 from torchinfo import summary
 
@@ -20,39 +21,6 @@ class ConditionalBatchNorm2d(nn.Module):
         gamma = self.gamma(cond_embed).unsqueeze(2).unsqueeze(3)
         beta = self.beta(cond_embed).unsqueeze(2).unsqueeze(3)
         return gamma * out + beta
-
-
-class ConvCBNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, cond_embed_dim, use_cbn=True, use_adain=False, use_spectral_norm=False, transpose=False,
-            activation=nn.ReLU):
-        super().__init__()
-        self.use_cbn = use_cbn
-        self.transpose = transpose  # still used to indicate upsampling intent
-
-        # If transpose, use Upsample + Conv2d instead of ConvTranspose2d to increase spatial resolution
-        if transpose:
-            self.upsample = nn.Upsample(scale_factor=(1, 2), mode='bilinear')
-            conv = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 9), stride=1, padding=(1, 4))  # can only use stride=1, not stride=(1, 2)
-        else:
-            self.upsample = None
-            conv = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 9), stride=(1, 2), padding=(1, 4))
-
-        self.conv = spectral_norm(conv) if use_spectral_norm else conv
-
-        if use_cbn:
-            self.norm = ConditionalBatchNorm2d(out_channels, cond_embed_dim, use_adain=use_adain)
-        else:
-            self.norm = nn.BatchNorm2d(out_channels)
-
-        self.activation = activation() if isinstance(activation, type) else activation
-
-    def forward(self, x, cond_embed):
-        if self.transpose:
-            x = self.upsample(x)
-        x = self.conv(x)
-        x = self.norm(x, cond_embed) if self.use_cbn else self.norm(x)
-        x = self.activation(x)
-        return x
 
 
 class Additive2DSinusoidalPositionalEncoding(nn.Module):
@@ -116,9 +84,64 @@ class Additive2DSinusoidalPositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
+class ConvCBNBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, cond_embed_dim, use_cbn=True, use_adain=False, use_spectral_norm=False, transpose=False,
+            activation=nn.ReLU, pooling=None):
+        super().__init__()
+        self.use_cbn = use_cbn
+        self.transpose = transpose
+
+        # Upsample if transpose
+        if transpose:
+            self.upsample = nn.Upsample(scale_factor=(1, 2), mode='bilinear', align_corners=False)
+            conv = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 5), stride=1, padding=(1, 2))
+        else:
+            self.upsample = None
+            conv = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 5), stride=(1, 2), padding=(1, 2))
+
+        self.conv = spectral_norm(conv) if use_spectral_norm else conv
+
+        if use_cbn:
+            self.norm = ConditionalBatchNorm2d(out_channels, cond_embed_dim, use_adain=use_adain)
+        else:
+            self.norm = nn.BatchNorm2d(out_channels)
+
+        self.activation = activation() if isinstance(activation, type) else activation
+
+        # Initialize pooling layer if specified
+        if pooling == 'max':
+            self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        elif pooling == 'avg':
+            self.pool = nn.AvgPool2d(kernel_size=2, stride=2)
+        else:
+            self.pool = None
+
+    def forward(self, x_input, cond_embed):
+        processed_x = x_input  # Start with the input
+
+        # If input is a tuple (previous_decoder_layer_output, encoder_skip_feature), there is residual connection
+        if isinstance(x_input, (tuple, list)) and len(x_input) == 2:
+            x_prev, x_skip = x_input
+            if self.transpose and self.upsample:
+                x_prev_upsampled = self.upsample(x_prev)  # upsampling first and then concatenate
+            else:
+                x_prev_upsampled = x_prev  # No upsampling if not transpose or no self.upsample
+            processed_x = torch.cat([x_prev_upsampled, x_skip], dim=1)  # Concatenate the skip connection feature
+        elif self.transpose and self.upsample:  # If not a tuple, upsample the single input
+            processed_x = self.upsample(x_input)
+
+        # If not a tuple (no residual connection) and not transpose/upsample, processed_x remains x_input
+        out = self.conv(processed_x)
+        out = self.norm(out, cond_embed) if self.use_cbn else self.norm(out)
+        out = self.activation(out)
+        if self.pool is not None:  # Typically for encoder blocks
+            out = self.pool(out)
+        return out
+
+
 class EMGFusionGenerator(nn.Module):
     def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
-            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}, initial_cond_map_channels=1):
+            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
         super().__init__()
 
         if activation_params:
@@ -126,68 +149,67 @@ class EMGFusionGenerator(nn.Module):
         else:
             act_fn = activation_class()
         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
-        self.initial_cond_projector = nn.Linear(cond_embed_dim, initial_cond_map_channels)
 
-        # reduce time dim to a smaller number while incresing the CNN channel dim
-        self.encoder1 = ConvCBNBlock(2 + initial_cond_map_channels, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
-        self.encoder2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
-        self.encoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
-        self.encoder4 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        # Encoder
+        self.encoder1 = ConvCBNBlock(2, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn, transpose=False)
+        self.encoder2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn, transpose=False)
+        self.encoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn, transpose=False)
 
-        self.d_model = hidden_channels * 8 + cond_embed_dim
-        self.transformer = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=self.d_model, nhead=4, dim_feedforward=self.d_model * 2, batch_first=True, dropout=0.1,
-                activation=nn.GELU()), num_layers=4)
+        # Transformer
+        self.d_model_transformer = hidden_channels * 4
+        self.memory_projector = nn.Linear(cond_embed_dim, self.d_model_transformer)
+        transformer_decoder_layer = nn.TransformerDecoderLayer(d_model=self.d_model_transformer, nhead=4,
+            dim_feedforward=self.d_model_transformer * 2, dropout=0.1, activation=nn.GELU(), batch_first=True)
+        self.transformer = nn.TransformerDecoder(transformer_decoder_layer, num_layers=4)
+        self.transformer_output_norm = nn.LayerNorm(self.d_model_transformer)
+        self.pos_encoder = None
 
-        self.decoder1 = ConvCBNBlock(self.d_model, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=act_fn)
-        self.decoder2 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=act_fn)
-        self.decoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=act_fn)
-        self.decoder4 = ConvCBNBlock(hidden_channels, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=act_fn)
+        # Decoder with skip connections
+        self.decoder1 = ConvCBNBlock(self.d_model_transformer + hidden_channels * 2, hidden_channels * 2, cond_embed_dim, use_cbn,
+            use_adain, use_spectral_norm, transpose=True, activation=act_fn)
+        self.decoder2 = ConvCBNBlock(hidden_channels * 2 + hidden_channels, hidden_channels, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn)
+        self.decoder3 = ConvCBNBlock(hidden_channels + 2, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=True,
+            activation=act_fn)
 
-        self.sig = torch.nn.Sigmoid()  # convert values to the range of [0, 1]
-        self.pos_encoder = None  # will be initialized in the first forward pass
+        self.sig = torch.nn.Sigmoid()
+
+    def _init_pos_encoder(self, C_spatial_reduced, T_time_reduced, device):
+        if self.pos_encoder is None or self.pos_encoder.pe.shape[1] != C_spatial_reduced * T_time_reduced or \
+                self.pos_encoder.pe.shape[2] != self.d_model_transformer:
+            self.pos_encoder = Additive2DSinusoidalPositionalEncoding(self.d_model_transformer, C_spatial_reduced, T_time_reduced,
+                dropout=0.0).to(device)
 
     def forward(self, A, B, condition):
-        B_, _, C, T = A.shape
+        cond_embed = self.condition_embedding(condition)
+        x = torch.cat([A, B], dim=1)
 
-        cond_embed = self.condition_embedding(condition)  # Shape: [B, cond_embed_dim] (B: batch size)
-        initial_cond_map_feats = self.initial_cond_projector(cond_embed)  # project condition embed vector to [B, initial_cond_map_channels]
-        cond_for_cat = initial_cond_map_feats.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, C, T) # to create shape: [B, initial_cond_map_channels, C, T]
-        x = torch.cat([A, B, cond_for_cat], dim=1)  # [B, 3, C, T]
+        # Encoder
+        e1_out = self.encoder1(x, cond_embed)
+        e2_out = self.encoder2(e1_out, cond_embed)
+        e3_out = self.encoder3(e2_out, cond_embed)
+        B_batch, C_encoder, C_spatial_reduced, T_time_reduced = e3_out.shape
+        assert C_encoder == self.d_model_transformer
 
-        x = self.encoder1(x, cond_embed)
-        x = self.encoder2(x, cond_embed)
-        x = self.encoder3(x, cond_embed)
-        x = self.encoder4(x, cond_embed)
+        transformer_input = e3_out.permute(0, 2, 3, 1).reshape(B_batch, C_spatial_reduced * T_time_reduced, C_encoder)
+        self._init_pos_encoder(C_spatial_reduced, T_time_reduced, transformer_input.device)
+        transformer_input_pos_encoded = self.pos_encoder(transformer_input)
+        projected_cond_embed = self.memory_projector(cond_embed)
+        memory = projected_cond_embed.unsqueeze(1)
 
-        B_, C_encoder, C_spatial, T_reduced = x.shape
-        x = x.permute(0, 2, 3, 1).reshape(B_, C_spatial * T_reduced, C_encoder)  # [batch, time_step, encoder_channels]
-        cond_embed_seq = cond_embed.unsqueeze(1).expand(-1, C_spatial * T_reduced, -1)  # [batch, time_step, cond_embed_dim]
-        x = torch.cat([x, cond_embed_seq], dim=-1)  # [batch, time_step, d_model=encoder_channels+cond_embed_dim]
+        transformed_features = self.transformer(tgt=transformer_input_pos_encoded, memory=memory)
+        transformer_output = transformer_input_pos_encoded + transformed_features
+        transformer_output = self.transformer_output_norm(transformer_output)
+        decoder_input_from_transformer = transformer_output.reshape(B_batch, C_spatial_reduced, T_time_reduced,
+            self.d_model_transformer).permute(0, 3, 1, 2)
 
-        if self.pos_encoder is None:
-            self.pos_encoder = Additive2DSinusoidalPositionalEncoding(self.d_model, C_spatial, T_reduced, dropout=0.0)
-            self.pos_encoder = self.pos_encoder.to(x.device)  # <<< CRITICAL: Move to device
-        x = self.pos_encoder(x)
-        x = self.transformer(x)  # transformer input: [Batch, time_step, d_model]
+        # Pass a tuple: (previous_decoder_layer_output, encoder_skip_feature)
+        d1_out = self.decoder1((decoder_input_from_transformer, e2_out), cond_embed)
+        d2_out = self.decoder2((d1_out, e1_out), cond_embed)
+        d3_out = self.decoder3((d2_out, x), cond_embed)  # x is the original input cat(A,B)
+        final_output = self.sig(d3_out)
 
-        # Transformer typically has the same shape as its input [Batch, time_step, d_model]
-        B_, time_step, d_model = x.shape
-        x = x.reshape(B_, C_spatial, T_reduced, d_model).permute(0, 3, 1, 2)
-        x = self.decoder1(x, cond_embed)
-        x = self.decoder2(x, cond_embed)
-        x = self.decoder3(x, cond_embed)
-        x = self.decoder4(x, cond_embed)
-        x = self.sig(x)
-        return x
-
-
-# ConditionalBatchNorm2d and ConvCBNBlock remain the same as you defined them
-# (assuming ConvCBNBlock uses stride=(1,2) for downsampling in time)
+        return final_output
 
 
 # Conceptual EMGFusionPatchDiscriminator with Projection Principle
@@ -201,13 +223,13 @@ class EMGFusionPatchDiscriminator(nn.Module):
         else:
             act_fn = activation_class()
         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
-        C_phi = hidden_channels * 8  # Output channels of the backbone
 
         # --- Backbone ---
-        self.block1 = ConvCBNBlock(3, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
-        self.block2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
-        self.block3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
-        self.block4 = ConvCBNBlock(hidden_channels * 4, C_phi, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        C_phi = hidden_channels  # Output channels of the backbone
+        self.block1 = ConvCBNBlock(1, C_phi, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn, pooling='avg')
+        # self.block2 = ConvCBNBlock(hidden_channels, C_phi, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn, pooling='avg')
+        # self.block3 = ConvCBNBlock(hidden_channels, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
+        # self.block4 = ConvCBNBlock(hidden_channels, C_phi, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, activation=act_fn)
 
         # --- Unconditional Patch Score Head ---
         final_conv_unconditional_layer = nn.Conv2d(C_phi, 1, kernel_size=(3, 3), stride=1, padding=1)
@@ -216,40 +238,26 @@ class EMGFusionPatchDiscriminator(nn.Module):
         # --- For Conditional Projection Term ---
         self.cond_projector_for_phi = nn.Linear(cond_embed_dim, C_phi)  # Project condition to match feature channels
 
-    def forward(self, C_sample, A_ref, B_ref, condition_label):
+    def forward(self, C_sample, condition_label):
         cond_embed = self.condition_embedding(condition_label)  # [B, cond_embed_dim]
-        x = torch.cat([A_ref, B_ref, C_sample], dim=1)  # [B, 3, H, W]
+        x = C_sample
 
         phi_features = self.block1(x, cond_embed)
-        phi_features = self.block2(phi_features, cond_embed)
-        phi_features = self.block3(phi_features, cond_embed)
-        phi_features = self.block4(phi_features, cond_embed)  # [B, C_phi, Patch_H, Patch_W]
+        # phi_features = self.block2(phi_features, cond_embed)
+        # phi_features = self.block3(phi_features, cond_embed)
+        # phi_features = self.block4(phi_features, cond_embed)  # [B, C_phi, Patch_H, Patch_W]
+        unconditional_patch_logits = self.final_conv_unconditional(phi_features)  #  Unconditional part, [B, 1, Patch_H, Patch_W]
 
-        # Unconditional part
-        unconditional_patch_logits = self.final_conv_unconditional(phi_features)  # [B, 1, Patch_H, Patch_W]
-        # Conditional part (Projection)
+        # Conditional Projection
         projected_cond_embed = self.cond_projector_for_phi(cond_embed)  # [B, C_phi]
         projected_cond_embed_spatial = projected_cond_embed.unsqueeze(-1).unsqueeze(-1).expand_as(phi_features)  # [B, C_phi, Patch_H, Patch_W]
 
         # Inner product for each patch: element-wise product then sum over channels
         conditional_term_values = (phi_features * projected_cond_embed_spatial).sum(dim=1, keepdim=True)  # [B, 1, Patch_H, Patch_W]
+        # The final discriminator output (logit) is the sum of the unconditional score and this conditional inner product term.
         final_patch_logits = unconditional_patch_logits + conditional_term_values
 
         return final_patch_logits
-
-
-# class ModelConfig:
-#     def __init__(self, num_conditions, cond_embed_dim=64, hidden_channels_gen=32, hidden_channels_disc=64, use_cbn=True, use_adain=False,
-#             use_spectral_norm=True, transformer_nhead=4, transformer_layers=2):
-#         self.num_conditions = num_conditions
-#         self.cond_embed_dim = cond_embed_dim
-#         self.hidden_channels_gen = hidden_channels_gen
-#         self.hidden_channels_disc = hidden_channels_disc
-#         self.use_cbn = use_cbn
-#         self.use_adain = use_adain
-#         self.use_spectral_norm = use_spectral_norm
-#         self.transformer_nhead = transformer_nhead
-#         self.transformer_layers = transformer_layers
 
 
 ## model summary
@@ -257,9 +265,9 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     num_conditions_example = 4
     batch_size_example = 64
-    dummy_A = torch.randn(batch_size_example, 1, 65, 1200).to(device)
-    dummy_B = torch.randn(batch_size_example, 1, 65, 1200).to(device)
-    dummy_C = torch.randn(batch_size_example, 1, 65, 1200).to(device)
+    dummy_A = torch.randn(batch_size_example, 1, 65, 400).to(device)
+    dummy_B = torch.randn(batch_size_example, 1, 65, 400).to(device)
+    dummy_C = torch.randn(batch_size_example, 1, 65, 400).to(device)
     dummy_condition = torch.randint(0, num_conditions_example, (batch_size_example,), dtype=torch.long).to(device)
     model = EMGFusionGenerator(num_conditions=num_conditions_example).to(device)
 
@@ -283,5 +291,11 @@ if __name__ == '__main__':
     print(f"Trainable params: {model_summary_obj.trainable_params:,}")
     print(f"Non-trainable params: {model_summary_obj.total_params - model_summary_obj.trainable_params:,}")
     print("----------------------------------------------------------------")
+
+
+
+
+
+
 
 

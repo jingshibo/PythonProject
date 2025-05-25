@@ -1,5 +1,6 @@
 ##
 import torch
+import torch.nn as nn
 from tqdm.auto import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torch.amp import autocast, GradScaler
@@ -37,6 +38,7 @@ class GanTraining():
         self.lr_gen_opt = None
         self.lr_disc_opt = None
         self.train_loader = None
+        self.criterion = nn.MSELoss()
 
     def trainModel(self, train_gan_data, condition_encoding, training_parameters, storage_parameters):
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -50,15 +52,15 @@ class GanTraining():
         # training parameters
         gen_lr = 0.0003
         disc_lr = 0.0002
-        gen_lr_decay_rate = 0.8
-        disc_lr_decay_rate = 0.8
-        decay_epochs = [50, 75]
+        gen_lr_decay_rate = 0.75
+        disc_lr_decay_rate = 0.75
+        decay_epochs = [25, 45]
         self.critic_iterations = 3  # Number of critic updates per generator update
         self.gp_lambda = 10.0  # GP weight
 
         # For WGAN, Adam with these betas is common, or RMSprop
-        self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.7, 0.999))
-        self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=disc_lr, weight_decay=0.0001, betas=(0.7, 0.999))
+        self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.6, 0.999))
+        self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=disc_lr, weight_decay=0.0001, betas=(0.6, 0.999))
         self.lr_gen_opt = torch.optim.lr_scheduler.MultiStepLR(optimizer=self.gen_opt, milestones=decay_epochs, gamma=gen_lr_decay_rate)
         self.lr_disc_opt = torch.optim.lr_scheduler.MultiStepLR(optimizer=self.critic_opt, milestones=decay_epochs, gamma=disc_lr_decay_rate)
         models = {'gen': self.gen, 'disc': self.critic}
@@ -71,13 +73,13 @@ class GanTraining():
                 f"Epoch [{epoch_number + 1}/{self.num_epochs}] Avg Gen Loss: {avg_gen_loss:.4f}, Avg Critic Loss: {avg_critic_loss:.4f}, "
                 f"gen_lr: {self.lr_gen_opt.get_last_lr()}, disc_lr: {self.lr_disc_opt.get_last_lr()}")
             # set the checkpoints to save models
-            if (epoch_number + 1) % 2 == 0:
+            if (epoch_number + 1) % 10 == 0:
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
                 Storage.saveCheckPointModels(models, storage_parameters, epoch_number + 1)
 
         # save the final model
         Storage.saveGanModels(models, storage_parameters)
-        return self.gen
+        return models
 
     def trainOneEpoch(self, epoch_number):
         self.gen.train()
@@ -98,16 +100,20 @@ class GanTraining():
             self.critic_opt.zero_grad()
             with torch.amp.autocast(device_type=self.device.type, enabled=(self.device.type == 'cuda')):
                 fake_C = self.gen(A, B, cond_label).detach()
+                critic_real_scores = self.critic(real_C, cond_label)
+                critic_fake_scores = self.critic(fake_C, cond_label)
 
-                critic_real_scores = self.critic(real_C, A, B, cond_label)
-                critic_fake_scores = self.critic(fake_C, A, B, cond_label)
-
-                # WGAN loss for critic: E[D(fake)] - E[D(real)]
-                # We want to MAXIMIZE D(real) - D(fake), so we MINIMIZE D(fake) - D(real)
+                # WGAN loss for critic: E[D(fake)] - E[D(real)], We want to MAXIMIZE D(real) - D(fake), so we MINIMIZE D(fake) - D(real)
                 loss_critic_adv = torch.mean(critic_fake_scores) - torch.mean(critic_real_scores)
-
-                gp = compute_gradient_penalty(self.critic, real_C, fake_C, A, B, cond_label, self.device)
+                gp = compute_gradient_penalty(self.critic, real_C, fake_C, cond_label, self.device)
                 critic_loss = loss_critic_adv + self.gp_lambda * gp
+
+                # BCEWithLogitsLoss for critic
+                # real_labels = torch.full_like(critic_real_scores, 1, device=self.device)
+                # loss_disc_real = self.criterion(critic_real_scores, real_labels)
+                # fake_labels = torch.full_like(critic_fake_scores, 0, device=self.device)
+                # loss_disc_fake = self.criterion(critic_fake_scores, fake_labels)
+                # critic_loss = loss_disc_real + loss_disc_fake
 
             self.critic_scaler.scale(critic_loss).backward()
             self.critic_scaler.step(self.critic_opt)
@@ -121,12 +127,15 @@ class GanTraining():
                 self.gen_opt.zero_grad()
                 with torch.amp.autocast(device_type=self.device.type, enabled=(self.device.type == 'cuda')):
                     fake_C_for_G = self.gen(A, B, cond_label)
-                    gen_fake_scores = self.critic(fake_C_for_G, A, B, cond_label)
+                    gen_fake_scores = self.critic(fake_C_for_G, cond_label)
 
-                    # WGAN loss for generator: -E[D(fake_C)]
-                    # We want to MAXIMIZE D(fake_C), so we MINIMIZE -D(fake_C)
+                    # WGAN loss for generator: -E[D(fake_C)], We want to MAXIMIZE D(fake_C), so we MINIMIZE -D(fake_C)
                     loss_gen_adv = -torch.mean(gen_fake_scores)
                     gen_loss = loss_gen_adv
+
+                    # BCEWithLogitsLoss for generator. Generator wants to classify fakes as REAL, so the target labels are real_labels
+                    # real_labels_for_gen = torch.full_like(gen_fake_scores, 1, device=self.device)
+                    # gen_loss = self.criterion(gen_fake_scores, real_labels_for_gen)
 
                 self.gen_scaler.scale(gen_loss).backward()
                 self.gen_scaler.step(self.gen_opt)
@@ -148,13 +157,13 @@ class GanTraining():
 
 
 ## Calculates the gradient penalty loss for WGAN GP
-def compute_gradient_penalty(critic, real_samples, fake_samples, A_ref, B_ref, condition_label, device):
+def compute_gradient_penalty(critic, real_samples, fake_samples, condition_label, device):
     # Random weight term for interpolation between real and fake samples
     alpha = torch.randn(real_samples.size(0), 1, 1, 1, device=device)
     # Get random interpolation between real and fake samples
     interpolates_C = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
     # For conditional GANs, you might also want to interpolate conditioning factors if they vary per sample,
-    d_interpolates = critic(interpolates_C, A_ref, B_ref, condition_label)
+    d_interpolates = critic(interpolates_C, condition_label)
 
     # Create a tensor of ones with the same shape as d_interpolates
     fake = torch.ones_like(d_interpolates, requires_grad=False, device=device)

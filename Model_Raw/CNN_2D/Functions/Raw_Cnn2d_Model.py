@@ -127,8 +127,8 @@ class ModelTraining():
         for group_number, group_value in shuffled_groups.items():
         # for group_number, group_value in {'group_1': shuffled_groups['group_1'], 'group_3': shuffled_groups['group_3']}.items():
             # initialize the tensorboard writer
-            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
+            # timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            # self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
             # extract the dataset
             input_size = group_value['train_feature_x'].shape[2]
@@ -155,7 +155,7 @@ class ModelTraining():
                 if (epoch_number + 1) % self.report_period == 0:
                     test_true_labels, test_predict_softmax, test_predict_labels = self.predictTestResults(group_number, epoch_number)
             # log the model structure
-            self.writer.add_graph(self.model, next(iter(self.train_loader))[0].to(self.device))
+            # self.writer.add_graph(self.model, next(iter(self.train_loader))[0].to(self.device))
 
             # output the final test results
             test_true_labels, test_predict_softmax, test_predict_labels = self.predictTestResults(group_number, self.num_epochs-1)
@@ -187,9 +187,9 @@ class ModelTraining():
 
             print(f"group: {int(group_number[-1])}, epoch: {epoch_number + 1}, train accuracy: {training_accuracy:>7f}, train loss: {train_loss.item():>7f}")
             # Log the average training accuracy and loss per epoch
-            self.writer.add_scalars('Accuracy', {f'{group_number}_train accuracy': training_accuracy}, epoch_number)
-            self.writer.add_scalars('Loss', {f'{group_number}_train loss': train_loss}, epoch_number )
-            self.writer.flush()
+            # self.writer.add_scalars('Accuracy', {f'{group_number}_train accuracy': training_accuracy}, epoch_number)
+            # self.writer.add_scalars('Loss', {f'{group_number}_train loss': train_loss}, epoch_number )
+            # self.writer.flush()
         else:
             print(f"group: {int(group_number[-1])}, epoch: {epoch_number + 1}, batch: {len(self.train_loader) * (epoch_number + 1)}, "
                 f"learning rate: {self.lr_scheduler.get_last_lr()}")
@@ -231,9 +231,9 @@ class ModelTraining():
             print(f"group: {int(group_number[-1])}, epoch: {epoch_number + 1}, test accuracy: {test_accuracy:>7f}, test loss: {test_loss.item():>7f}")
 
             # Log the average test accuracy per epoch
-            self.writer.add_scalars('Accuracy', {f'{group_number}_test accuracy': test_accuracy}, epoch_number)
-            self.writer.add_scalars('Loss', {f'{group_number}_test loss': test_loss}, epoch_number)
-            self.writer.flush()
+            # self.writer.add_scalars('Accuracy', {f'{group_number}_test accuracy': test_accuracy}, epoch_number)
+            # self.writer.add_scalars('Loss', {f'{group_number}_test loss': test_loss}, epoch_number)
+            # self.writer.flush()
 
         return np.array(test_true_labels), np.array(test_predict_softmax), np.array(test_predict_labels)
 

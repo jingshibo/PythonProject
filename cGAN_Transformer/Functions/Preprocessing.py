@@ -7,26 +7,42 @@ import numpy as np
 
 
 ## build classification datasets and extract the relevent modes for data generation
-def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normalized, time_length):
-    # build classification dataset
-    all_labels = sorted(set(old_emg_normalized.keys()) | set(new_emg_normalized.keys()))
-    label_map = {label: idx for idx, label in enumerate(all_labels)}
+def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normalized, time_range):
 
     # select only the central part data for training
-    def slice_center_time(emg_dict, desired_length):
+    def slice_center_time(emg_dict, selected_range):
         new_emg_dict = {}
         for label, samples in emg_dict.items():
             new_emg_dict[label] = []
             for sample in samples:
                 total_length = sample.shape[0]
-                start = (total_length - desired_length) // 2
-                end = start + desired_length
+                start = total_length // 2 + time_range[0]
+                end = total_length // 2 + time_range[1]
                 new_emg_dict[label].append(sample[start:end, :])  # Slice time axis
         return new_emg_dict
-    old_emg_central = slice_center_time(old_emg_normalized, time_length)
-    new_emg_central = slice_center_time(new_emg_normalized, time_length)
+    old_emg_central = slice_center_time(old_emg_normalized, time_range)
+    new_emg_central = slice_center_time(new_emg_normalized, time_range)
 
-    # build the paired x and y dataset
+    # build gan generation dataset
+    train_gan_data = {}
+    data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is critical, corresponding to the locomotion modes
+
+    for transition_type, modes in modes_generation.items():
+        # Initialize transition_type key in real_emg and train_gan_data dictionaries
+        train_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
+        for idx, mode in enumerate(modes):
+            # Assign values using the new structure
+            train_gan_data[transition_type][data_keys[idx]] = old_emg_central[mode]
+
+    return old_emg_central, new_emg_central, train_gan_data
+
+
+# build the paired x and y dataset
+def buildClassifyDataset(emg_central):
+    # build classification dataset
+    all_labels = sorted(set(emg_central.keys()))
+    label_map = {label: idx for idx, label in enumerate(all_labels)}
+
     def classifier_dataset(emg_dict, label_map, all_labels):
         data = []
         labels_categorical = []
@@ -45,21 +61,9 @@ def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normali
 
         return {'data_x': data, 'int_y': labels_categorical.flatten(), 'onehot_y': labels_onehot, 'label_map': label_map}
 
-    classify_old_emg = classifier_dataset(old_emg_central, label_map, all_labels)
-    classify_new_emg = classifier_dataset(new_emg_central, label_map, all_labels)
+    classify_emg = classifier_dataset(emg_central, label_map, all_labels)
 
-    # build gan generation dataset
-    train_gan_data = {}
-    data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is critical, corresponding to the locomotion modes
-
-    for transition_type, modes in modes_generation.items():
-        # Initialize transition_type key in real_emg and train_gan_data dictionaries
-        train_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
-        for idx, mode in enumerate(modes):
-            # Assign values using the new structure
-            train_gan_data[transition_type][data_keys[idx]] = old_emg_central[mode]
-
-    return classify_old_emg, classify_new_emg, train_gan_data
+    return classify_emg
 
 
 ## build cross validation datset for classification

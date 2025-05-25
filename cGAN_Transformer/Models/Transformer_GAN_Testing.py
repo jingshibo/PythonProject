@@ -2,10 +2,11 @@
 import torch
 import itertools # For creating all pairs
 import numpy as np
+import random
 
 
 ## Generates EMG signals for a given condition using ALL combinations of A and B.
-def generateDataPerCondition(generator_model, condition_label, gen_data_1, gen_data_2, generation_batch_size):
+def generateDataPerCondition(generator_model, condition_label, gen_data_1, gen_data_2, sample_number, generation_batch_size):
     """
     Each A, B is a NumPy array of shape (Time, Features), e.g., (1200, 65).
     Output of generator is (Batch, 1, Features, Time), e.g., (Batch, 1, 65, 1200).
@@ -16,10 +17,13 @@ def generateDataPerCondition(generator_model, condition_label, gen_data_1, gen_d
     all_pair_indices = list(itertools.product(range(num_A), range(num_B)))  # Create iterators for all combinations of A and B indices
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    actual_num_to_generate = min(sample_number, len(all_pair_indices))
+    selected_pair_indices = random.sample(all_pair_indices, actual_num_to_generate)
+
     # We prepare data for one full batch at a time
-    all_generated_C_for_condition = []
-    for i in range(0, total_pairs, generation_batch_size):
-        current_batch_indices = all_pair_indices[i: i + generation_batch_size]
+    generated_C_for_condition = []
+    for i in range(0, actual_num_to_generate, generation_batch_size):
+        current_batch_indices = selected_pair_indices[i: i + generation_batch_size]
         if not current_batch_indices:
             continue
 
@@ -41,25 +45,26 @@ def generateDataPerCondition(generator_model, condition_label, gen_data_1, gen_d
         generator.train(False)
         with torch.no_grad():
             fake_C_batch = generator(batch_A, batch_B, batch_conditions)
-        all_generated_C_for_condition.append(fake_C_batch.cpu().numpy())
+        generated_C_for_condition.append(fake_C_batch.cpu().numpy())
         print(f"  Generate {condition_label} batch {i // generation_batch_size + 1}/"
-              f"{(total_pairs + generation_batch_size - 1) // generation_batch_size}, "
+              f"{(actual_num_to_generate + generation_batch_size - 1) // generation_batch_size}, "
               f"Output shape for this batch: {fake_C_batch.shape}")
 
-    if all_generated_C_for_condition:
-        return np.concatenate(all_generated_C_for_condition, axis=0)
+    if generated_C_for_condition:
+        return np.concatenate(generated_C_for_condition, axis=0)
     else:
         return np.array([])
 
 
 ## Generates EMG signals for all transition types
-def generateTransitionData(model, train_gan_data, condition_encoding, batch_size):
+def generateTransitionData(model, train_gan_data, condition_encoding, sample_number, batch_size):
     all_generated_data_dict = {}  # To store all generated arrays keyed by condition name
     for condition_name_str, condition_label_int in condition_encoding.items():
         current_condition_input_data = train_gan_data[condition_name_str]
 
         gen_data_1 = current_condition_input_data['gen_data_1']
         gen_data_2 = current_condition_input_data['gen_data_2']
-        all_generated_data_dict[condition_name_str] = generateDataPerCondition(model, condition_label_int, gen_data_1, gen_data_2, batch_size)
+        all_generated_data_dict[condition_name_str] = generateDataPerCondition(model, condition_label_int, gen_data_1, gen_data_2,
+            sample_number, batch_size)
 
     return all_generated_data_dict

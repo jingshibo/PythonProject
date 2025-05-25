@@ -18,6 +18,7 @@ def saveGanModels(models, storage_parameters, project='cGAN_Model'):
         # save model
         torch.save(models[name].to("cpu"), model_path)
 
+
 ##
 def loadGanModels(storage_parameters, project='cGAN_Model'):
     models = {}

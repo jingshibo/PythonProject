@@ -49,4 +49,5 @@ def plotConfusionMatrix(cm, classes, normalize=False, title='', cmap=plt.cm.Blue
     plt.tight_layout()
     plt.ylabel('True label', fontsize=font_size)
     plt.xlabel('Predicted label', fontsize=font_size)
+    plt.show()
     return cm_values
