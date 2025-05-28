@@ -47,10 +47,10 @@ def labelFilteredData(subject, modes, sessions, version, split_parameters, start
             left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_reordered, emg_envelope = \
                 Upsampling_Filtering.preprocessSensorData(
                 left_insole_aligned, right_insole_aligned, emg_aligned, lower_limit=lower_limit, higher_limit=higher_limit,
-                envelope_cutoff=envelope_cutoff, notchEMG=notchEMG, median_filtering=median_filtering)
-            if envelope == True:  # if emg envelope is needed
+                envelope_cutoff=envelope_cutoff, notchEMG=notchEMG, median_filtering=median_filtering, reordering=reordering)
+            if envelope:  # if emg envelope is needed
                 emg_preprocessed = emg_envelope
-            elif reordering == True:  # if reordering emg is needed
+            elif reordering:  # if reordering emg is needed
                 emg_preprocessed = emg_reordered
             else:  # if only filtering
                 emg_preprocessed = emg_filtered

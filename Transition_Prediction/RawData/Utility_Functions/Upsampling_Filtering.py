@@ -92,7 +92,7 @@ def getEmgRectEnvelope(emg_reordered, cutoff=10):
 
 ## preprocess all sensor data
 def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned, lower_limit=20, higher_limit=400, envelope_cutoff=10,
-        insoleFiltering=False, notchEMG=False, median_filtering=True, quality_factor=10):
+        reordering=False, insoleFiltering=False, notchEMG=False, median_filtering=True, quality_factor=10):
     # upsampling insole data
     left_insole_preprocessed, right_insole_preprocessed = upsampleInsole(left_insole_aligned, right_insole_aligned, emg_aligned)
     if insoleFiltering:
@@ -102,7 +102,10 @@ def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned,
         emg_filtered = filterEmg(emg_aligned.iloc[:, 3:67], lower_limit, higher_limit, notchEMG, median_filtering, quality_factor) # extract only emg data
         emg_filtered = Data_Reshaping.insertElectrode(emg_filtered)
         emg_reordered = Data_Reshaping.reorderElectrodes(emg_filtered)
-        emg_envelope = getEmgRectEnvelope(emg_reordered, cutoff=envelope_cutoff)  # rectify and envelope EMG
+        if reordering: # get emg envelope
+            emg_envelope = getEmgRectEnvelope(emg_reordered, cutoff=envelope_cutoff)  # rectify and envelope EMG
+        else:
+            emg_envelope = getEmgRectEnvelope(emg_filtered, cutoff=envelope_cutoff)  # rectify and envelope EMG
     elif emg_aligned.shape[1] >= 128 and emg_aligned.shape[1] < 192:  # if two sessantaquattro data
         emg1_filtered = filterEmg(emg_aligned.iloc[:, 3:67], lower_limit, higher_limit, notchEMG, median_filtering, quality_factor)
         emg2_filtered = filterEmg(emg_aligned.iloc[:, 73:137], lower_limit, higher_limit, notchEMG, median_filtering, quality_factor)
@@ -113,10 +116,14 @@ def preprocessSensorData(left_insole_aligned, right_insole_aligned, emg_aligned,
         emg1_reordered = Data_Reshaping.reorderElectrodes(emg1_filtered)
         emg2_reordered = Data_Reshaping.reorderElectrodes(emg2_filtered)
         emg_reordered = pd.concat([emg1_reordered, emg2_reordered], axis=1, ignore_index=True)
-        # get emg envelope
-        emg1_envelope = getEmgRectEnvelope(emg1_reordered, cutoff=envelope_cutoff)
-        emg2_envelope = getEmgRectEnvelope(emg2_reordered, cutoff=envelope_cutoff)
-        emg_envelope = pd.concat([emg1_envelope, emg2_envelope], axis=1, ignore_index=True)
+        if reordering: # get emg envelope
+            emg1_envelope = getEmgRectEnvelope(emg1_reordered, cutoff=envelope_cutoff)
+            emg2_envelope = getEmgRectEnvelope(emg2_reordered, cutoff=envelope_cutoff)
+            emg_envelope = pd.concat([emg1_envelope, emg2_envelope], axis=1, ignore_index=True)
+        else:
+            emg1_envelope = getEmgRectEnvelope(emg1_filtered, cutoff=envelope_cutoff)
+            emg2_envelope = getEmgRectEnvelope(emg2_filtered, cutoff=envelope_cutoff)
+            emg_envelope = pd.concat([emg1_envelope, emg2_envelope], axis=1, ignore_index=True)
     else:
         raise Exception('the number of EMG columns is wrong')
     return left_insole_preprocessed, right_insole_preprocessed, emg_filtered, emg_reordered, emg_envelope

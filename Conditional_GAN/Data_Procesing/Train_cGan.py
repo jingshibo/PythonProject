@@ -6,8 +6,8 @@ from Conditional_GAN.Data_Procesing import Process_Raw_Data, Plot_Emg_Data
 
 '''train generative model'''
 ##  define windows
-start_before_toeoff_ms = 1000
-endtime_after_toeoff_ms = 1000
+start_before_toeoff_ms = 0
+endtime_after_toeoff_ms = 1200
 feature_window_ms = start_before_toeoff_ms + endtime_after_toeoff_ms
 predict_window_ms = start_before_toeoff_ms + endtime_after_toeoff_ms
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=start_before_toeoff_ms,
@@ -34,7 +34,7 @@ def realEmgData(subject, version, up_down_session_t0, down_up_session_t0, up_dow
     # new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
     #     envelope_cutoff=envelope_cutoff, envelope=envelope)
     new_emg_data = Process_Raw_Data.readFilterEmgData(data_source, window_parameters, lower_limit=lower_limit, higher_limit=higher_limit,
-        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid=grid, include_standing=False)
+        envelope_cutoff=envelope_cutoff, envelope=envelope, project='cGAN_Model', selected_grid=grid, include_standing=False, reordering=reordering)
     return old_emg_data, new_emg_data, window_parameters, start_before_toeoff_ms
 
 
