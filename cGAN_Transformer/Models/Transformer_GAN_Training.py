@@ -66,7 +66,7 @@ class GanTraining():
         gen_lr_decay_rate = 0.8
         disc_lr_decay_rate = 0.8
         decay_epochs = [10, 20]
-        self.critic_iterations = 3  # Number of critic updates per generator update
+        self.critic_iterations = 1  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
         self.lambda_l1_decay_epochs = 2
