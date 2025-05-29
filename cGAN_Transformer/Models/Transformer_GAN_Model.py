@@ -94,7 +94,8 @@ class ConvCBNBlock(nn.Module):
 
         # Default stride and padding if not specified
         stride = stride if stride is not None else ((1, 2) if not transpose else (1, 1))
-        padding = padding if padding is not None else ((kernel_size[0] // 2, kernel_size[1] // 2))
+        if padding is None:
+            padding = ((dilation[0] * (kernel_size[0] - 1)) // 2, (dilation[1] * (kernel_size[1] - 1)) // 2,)
 
         # Upsample only for transpose=True
         if transpose:
@@ -103,7 +104,8 @@ class ConvCBNBlock(nn.Module):
             self.upsample = None
 
         # Conv layer
-        conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation)
+        conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
+            padding_mode='reflect')
         self.conv = spectral_norm(conv) if use_spectral_norm else conv
 
         # Normalization
@@ -141,7 +143,6 @@ class ConvCBNBlock(nn.Module):
         return out
 
 
-
 class EMGFusionGenerator(nn.Module):
     def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
             activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
@@ -154,17 +155,14 @@ class EMGFusionGenerator(nn.Module):
         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
 
         # Encoder
-        self.encoder1 = ConvCBNBlock(in_channels=2, out_channels=hidden_channels, cond_embed_dim=cond_embed_dim, use_cbn=use_cbn,
-            use_adain=use_adain, use_spectral_norm=use_spectral_norm, transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2),
-            padding=(2, 4), dilation=(1, 1))
-
-        self.encoder2 = ConvCBNBlock(in_channels=hidden_channels, out_channels=hidden_channels * 2, cond_embed_dim=cond_embed_dim,
-            use_cbn=use_cbn, use_adain=use_adain, use_spectral_norm=use_spectral_norm, transpose=False, activation=act_fn,
-            kernel_size=(5, 9), stride=(1, 2), padding=(2, 4), dilation=(1, 1))
-
-        self.encoder3 = ConvCBNBlock(in_channels=hidden_channels * 2, out_channels=hidden_channels * 4, cond_embed_dim=cond_embed_dim,
-            use_cbn=use_cbn, use_adain=use_adain, use_spectral_norm=use_spectral_norm, transpose=False, activation=act_fn,
-            kernel_size=(5, 9), stride=(1, 2), padding=(2, 4), dilation=(1, 1))
+        self.encoder1 = ConvCBNBlock(2, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
+            activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
+        self.encoder2 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
+        self.encoder3 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
+        self.encoder4 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
 
         # Transformer
         self.d_model_transformer = hidden_channels * 4
@@ -176,24 +174,14 @@ class EMGFusionGenerator(nn.Module):
         self.pos_encoder = None
 
         # Decoder with skip connections
-        # self.decoder1 = ConvCBNBlock(hidden_channels * 4 + hidden_channels * 2, hidden_channels * 3, cond_embed_dim, use_cbn,
-        #     use_adain, use_spectral_norm, transpose=True, activation=act_fn)
-        # self.decoder2 = ConvCBNBlock(hidden_channels * 3 + hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
-        #     use_spectral_norm, transpose=True, activation=act_fn)
-        # self.decoder3 = ConvCBNBlock(hidden_channels * 2 + 2, 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=True,
-        #     activation=act_fn)
-        self.decoder1 = ConvCBNBlock(in_channels=hidden_channels * 4, out_channels=hidden_channels * 2, cond_embed_dim=cond_embed_dim,
-            use_cbn=use_cbn, use_adain=use_adain, use_spectral_norm=use_spectral_norm, transpose=True, activation=act_fn,
-            kernel_size=(5, 9), stride=(1, 1),  # since you're using upsample, stride is typically 1
-            padding=(2, 4), dilation=(1, 1), upsample_scale=(1, 2))
-
-        self.decoder2 = ConvCBNBlock(in_channels=hidden_channels * 2, out_channels=hidden_channels * 1, cond_embed_dim=cond_embed_dim,
-            use_cbn=use_cbn, use_adain=use_adain, use_spectral_norm=use_spectral_norm, transpose=True, activation=act_fn,
-            kernel_size=(5, 9), stride=(1, 1), padding=(2, 4), dilation=(1, 1), upsample_scale=(1, 2))
-
-        self.decoder3 = ConvCBNBlock(in_channels=hidden_channels * 1, out_channels=2, cond_embed_dim=cond_embed_dim, use_cbn=use_cbn,
-            use_adain=use_adain, use_spectral_norm=use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1),
-            padding=(2, 4), dilation=(1, 1), upsample_scale=(1, 2))
+        self.decoder0 = ConvCBNBlock(hidden_channels * 8 + hidden_channels * 4, hidden_channels * 6, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
+        self.decoder1 = ConvCBNBlock(hidden_channels * 6 + hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
+        self.decoder2 = ConvCBNBlock(hidden_channels * 4 + hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
+        self.decoder3 = ConvCBNBlock(hidden_channels * 2 + 2, 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=True,
+            activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
 
         self.sig = torch.nn.Sigmoid()
 
@@ -211,28 +199,27 @@ class EMGFusionGenerator(nn.Module):
         e1_out = self.encoder1(x, cond_embed)
         e2_out = self.encoder2(e1_out, cond_embed)
         e3_out = self.encoder3(e2_out, cond_embed)
+        e4_out = self.encoder4(e3_out, cond_embed)
         B_batch, C_encoder, C_spatial_reduced, T_time_reduced = e3_out.shape
         assert C_encoder == self.d_model_transformer
 
-        transformer_input = e3_out.permute(0, 2, 3, 1).reshape(B_batch, C_spatial_reduced * T_time_reduced, C_encoder)
-        self._init_pos_encoder(C_spatial_reduced, T_time_reduced, transformer_input.device)
-        transformer_input_pos_encoded = self.pos_encoder(transformer_input)
-        projected_cond_embed = self.memory_projector(cond_embed)
-        memory = projected_cond_embed.unsqueeze(1)
-
-        transformed_features = self.transformer(tgt=transformer_input_pos_encoded, memory=memory)
-        transformer_output = transformer_input_pos_encoded + transformed_features
-        transformer_output = self.transformer_output_norm(transformer_output)
-        transformer_output = transformer_output.reshape(B_batch, C_spatial_reduced, T_time_reduced,
-            self.d_model_transformer).permute(0, 3, 1, 2)
+        # transformer_input = e3_out.permute(0, 2, 3, 1).reshape(B_batch, C_spatial_reduced * T_time_reduced, C_encoder)
+        # self._init_pos_encoder(C_spatial_reduced, T_time_reduced, transformer_input.device)
+        # transformer_input_pos_encoded = self.pos_encoder(transformer_input)
+        # projected_cond_embed = self.memory_projector(cond_embed)
+        # memory = projected_cond_embed.unsqueeze(1)
+        #
+        # transformed_features = self.transformer(tgt=transformer_input_pos_encoded, memory=memory)
+        # transformer_output = transformer_input_pos_encoded + transformed_features
+        # transformer_output = self.transformer_output_norm(transformer_output)
+        # transformer_output = transformer_output.reshape(B_batch, C_spatial_reduced, T_time_reduced,
+        #     self.d_model_transformer).permute(0, 3, 1, 2)
 
         # Pass a tuple: (previous_decoder_layer_output, encoder_skip_feature)
-        # d1_out = self.decoder1((transformer_output, e2_out), cond_embed)
-        # d2_out = self.decoder2((d1_out, e1_out), cond_embed)
-        # d3_out = self.decoder3((d2_out, x), cond_embed)  # x is the original input cat(A,B)
-        d1_out = self.decoder1(transformer_output, cond_embed)
-        d2_out = self.decoder2(d1_out, cond_embed)
-        d3_out = self.decoder3(d2_out, cond_embed)  # x is the original input cat(A,B)
+        d0_out = self.decoder0((e4_out, e3_out), cond_embed)
+        d1_out = self.decoder1((d0_out, e2_out), cond_embed)
+        d2_out = self.decoder2((d1_out, e1_out), cond_embed)
+        d3_out = self.decoder3((d2_out, x), cond_embed)  # x is the original input cat(A,B)
         blending_factors = self.sig(d3_out)
         generated_image = torch.mean(blending_factors * x, 1, keepdim=True)
 
@@ -255,17 +242,17 @@ class EMGFusionPatchDiscriminator(nn.Module):
         C_phi = hidden_channels  # Output channels of the backbone
 
         self.block1 = ConvCBNBlock(in_channels=1, out_channels=hidden_channels, cond_embed_dim=cond_embed_dim, use_cbn=use_cbn,
-            use_adain=use_adain, use_spectral_norm=use_spectral_norm, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), padding=(2, 4),
-            dilation=(1, 1), pooling='max', transpose=False)
+            use_adain=use_adain, use_spectral_norm=use_spectral_norm, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1),
+            pooling='max', transpose=False)
 
         self.block2 = ConvCBNBlock(in_channels=hidden_channels, out_channels=hidden_channels * 2, cond_embed_dim=cond_embed_dim,
             use_cbn=use_cbn, use_adain=use_adain, use_spectral_norm=use_spectral_norm, activation=act_fn, kernel_size=(5, 9), stride=(1, 2),
-            padding=(2, 4), dilation=(1, 1), pooling='max', transpose=False)
+            dilation=(1, 1), pooling='max', transpose=False)
 
-        self.block3 = ConvCBNBlock(in_channels=hidden_channels * 2, out_channels=C_phi, cond_embed_dim=cond_embed_dim,
-            use_cbn=use_cbn, use_adain=use_adain, use_spectral_norm=use_spectral_norm, activation=act_fn, kernel_size=(5, 9), stride=(1, 2),
-            padding=(2, 4), dilation=(1, 1), pooling='max', transpose=False)
-        #
+        self.block3 = ConvCBNBlock(in_channels=hidden_channels * 2, out_channels=C_phi, cond_embed_dim=cond_embed_dim, use_cbn=use_cbn,
+            use_adain=use_adain, use_spectral_norm=use_spectral_norm, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1),
+            pooling='max', transpose=False)
+
         # self.block4 = ConvCBNBlock(in_channels=hidden_channels * 4, out_channels=C_phi, cond_embed_dim=cond_embed_dim, use_cbn=use_cbn,
         #     use_adain=use_adain, use_spectral_norm=use_spectral_norm, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), padding=(2, 4),
         #     dilation=(1, 1), pooling='max', transpose=False)
@@ -285,7 +272,7 @@ class EMGFusionPatchDiscriminator(nn.Module):
         phi_features = self.block2(phi_features, cond_embed)
         phi_features = self.block3(phi_features, cond_embed)
         # phi_features = self.block4(phi_features, cond_embed)  # [B, C_phi, Patch_H, Patch_W]
-        unconditional_patch_logits = self.final_conv_unconditional(phi_features)  #  Unconditional part, [B, 1, Patch_H, Patch_W]
+        unconditional_patch_logits = self.final_conv_unconditional(phi_features)  # Unconditional part, [B, 1, Patch_H, Patch_W]
 
         # Conditional Projection
         projected_cond_embed = self.cond_projector_for_phi(cond_embed)  # [B, C_phi]
@@ -302,19 +289,20 @@ class EMGFusionPatchDiscriminator(nn.Module):
 ## model summary
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    num_conditions_example = 20
-    batch_size_example = 64
-    dummy_A = torch.randn(batch_size_example, 1, 65, 400).to(device)
-    dummy_B = torch.randn(batch_size_example, 1, 65, 400).to(device)
-    dummy_C = torch.randn(batch_size_example, 1, 65, 400).to(device)
+    num_conditions_example = 4
+    batch_size_example = 20
+    dummy_A = torch.randn(batch_size_example, 1, 65, 1200).to(device)
+    dummy_B = torch.randn(batch_size_example, 1, 65, 1200).to(device)
+    dummy_C = torch.randn(batch_size_example, 1, 65, 1200).to(device)
     dummy_condition = torch.randint(0, num_conditions_example, (batch_size_example,), dtype=torch.long).to(device)
     model = EMGFusionGenerator(num_conditions=num_conditions_example).to(device)
+    # model = EMGFusionPatchDiscriminator(num_conditions=num_conditions_example).to(device)
 
     # Keras-like summary primarily shows Layer Name, Output Shape, and Param #
     print(f"--- Model Summary (Keras-like: Layer Name, Output Shape, Param #) ---")
     # 'input_size' is useful but not standard in Keras summary per layer, rather it's shown for the overall model.
     # 'kernel_size' is also not typically in the main Keras summary table per row.
-    model_summary_obj = summary(model, input_data=(dummy_A, dummy_B, dummy_condition),
+    model_summary_obj = summary(model, input_data=(dummy_C, dummy_C, dummy_condition),
         col_names=["output_size", "num_params", "trainable"],  # We can also add "trainable" to distinguish trainable params
         # `row_settings=["var_names"]` will show variable names for layers if they have them (e.g. self.encoder1)
         row_settings=["var_names", "depth"],  # Adding depth can help with structure

@@ -16,7 +16,7 @@ down_up_session_t0 = [1, 2, 3, 4, 5]
 up_down_session_t1 = [0, 1, 2, 3, 4]
 down_up_session_t1 = [1, 2, 3, 4, 5]
 old_emg_data, new_emg_data, window_parameters, start_before_toeoff_ms = Train_cGan.realEmgData(subject, version, up_down_session_t0,
-    down_up_session_t0, up_down_session_t1, down_up_session_t1, grid=grid, envelope=True, envelope_cutoff=400, reordering=False)
+    down_up_session_t0, up_down_session_t1, down_up_session_t1, grid=grid, envelope=True, envelope_cutoff=50, reordering=False)
 
 
 ## parameters for normalize emg data to train models
@@ -30,37 +30,38 @@ length = window_parameters['start_before_toeoff_ms'] + window_parameters['endtim
 old_emg_normalized, new_emg_normalized, _, _ = Process_Raw_Data.normalizeFilterEmgData(old_emg_data, new_emg_data, amplitude_limit,
     normalize='(0,1)', spatial_filter=False, kernel=spatial_filter_kernel)
 old_emg_aligned, old_lags_butter = Preprocessing.align_by_cross_correlation(old_emg_normalized, max_lag=100, num_iterations=3,
-    initial_reference_method='average', verbose=True, butter_cutoff_freq=20, butter_filter_order=4)
+    initial_reference_method='average', verbose=False, butter_cutoff_freq=20, butter_filter_order=4)
 new_emg_aligned, new_lags_butter = Preprocessing.align_by_cross_correlation(new_emg_normalized, max_lag=100, num_iterations=3,
-    initial_reference_method='average', verbose=True, butter_cutoff_freq=20, butter_filter_order=4)
+    initial_reference_method='average', verbose=False, butter_cutoff_freq=20, butter_filter_order=4)
 
 
 ## parameters for extracting emg data to train models
-window_length = 1100  # preferable 256
+window_length = 1200  # preferable 256
 window_increment = 100
 num_window_per_transition = 1
-window_shift = 50
+window_shift = 0
 channel_shift = 15
 start = 500 - window_length - window_shift  # 500 is at around heel-contact
 end = 500 + window_increment * num_window_per_transition + window_shift
-time_range = [50, 1150]  # select data starting from toe-off
+time_range = [0, 1200]  # select data starting from toe-off
 old_emg_central, new_emg_central, train_gan_data = Preprocessing.extractGanTrainingData(modes_generation, old_emg_aligned,
     new_emg_aligned, time_range)
 classify_old_emg = Preprocessing.buildClassifyDataset(old_emg_central)
 
 
 ## plot raw data
-transition_type = 'emg_SASA'
-time_point = 2
+transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
+transition_type = 'emg_LWSD'
+time_point = 0
 time_slice_start = window_shift + time_point * window_increment
 time_slice_end = time_slice_start + window_length
 # Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central)
 # Plot_Raw_Data.plot_time_series_and_heatmaps(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
 # key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
-# Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
+# Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=60, y_limit=(0, 0.4))
-Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-    key_label=transition_type, num_samples=60, y_limit=(0, 0.4))
+# Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
 
 
 ## train gan model
@@ -81,24 +82,26 @@ model = trainer.trainModel(train_gan_data, transition_encoding, training_paramet
 
 
 ## generate transition data
-epoch_number = 10
+epoch_number = 30
 model = Storage.loadCheckPointModels(storage_parameters, epoch_number)
 generated_transition_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
-    num_window_per_transition, window_length, window_increment, window_shift, sample_number=30, batch_size=120)
-
+    num_window_per_transition, window_length, window_increment, window_shift, sample_number=30, batch_size=5)
 
 
 
 ## print image
-transition_type = 'emg_SALW'
-time_point = 1
+transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
+transition_type = 'emg_SDLW'
+time_point = 0
 generated_image = generated_transition_data[transition_type][time_point]['generated_images']
-blending_factor = generated_transition_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
-# Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=19, y_limit=(0, 0.4))
-Plot_Raw_Data.plot_time_series_samples(generated_image.squeeze(1), key_label=transition_type, num_samples=19, y_limit=(0, 1))
+blending_factor = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
+# Plot_Raw_Data.plot_heatmaps_samples(generated_image.squeeze(1), key_label=transition_type, num_samples=19, y_limit=(0, 0.4))
+Plot_Raw_Data.plot_time_series_samples(generated_image.squeeze(1), key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
+# Plot_Raw_Data.plot_time_series_samples(blending_factor, key_label=transition_type, num_samples=5, y_limit=(0, 1))
 
 
-
+Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
 
 
 
@@ -116,3 +119,5 @@ Plot_Raw_Data.plot_time_series_samples(generated_image.squeeze(1), key_label=tra
 # class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 # Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
 
+import winsound
+winsound.Beep(frequency=2000, duration=1000)

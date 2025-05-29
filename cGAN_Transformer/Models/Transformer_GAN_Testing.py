@@ -69,7 +69,7 @@ def generateDataPerCondition(generator_model, transition_label_int, gen_data_1, 
 
             generated_batches.append(fake_C.cpu().numpy())
             blending_factor_batches.append(blending_factors.cpu().numpy())
-            print(f"  Time slice {time_slice}, batch {i // generation_batch_size + 1}: {fake_C.shape}")
+            print(f" Transition {transition_label_int}, Time slice {time_slice}, batch {i // generation_batch_size + 1}: {fake_C.shape}")
 
         generated_data_by_time_slice[time_slice]['generated_images'] = np.concatenate(generated_batches, axis=0).transpose(0, 1, 3, 2)
         generated_data_by_time_slice[time_slice]['blending_factors'] = np.concatenate(blending_factor_batches, axis=0).transpose(0, 1, 3, 2)

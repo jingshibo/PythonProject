@@ -14,6 +14,7 @@ from cGAN_Transformer.Models import Transformer_GAN_Model
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.models as models
 import torchvision.transforms as transforms
+from cGAN_Transformer.Functions import Plot_Raw_Data
 
 
 ##
@@ -42,9 +43,9 @@ class GanTraining():
         self.lr_gen_opt = None
         self.lr_disc_opt = None
         self.train_loader = None
-        self.criterion = nn.MSELoss()
-        self.reconstruction_loss = nn.L1Loss()
-        self.perceptual_loss_calculator = VGG19PerceptualLoss(feature_layers={'relu2_1': 6, 'relu4_1': 20}, device='cuda')
+        self.mse_loss = nn.MSELoss()
+        self.l1_loss = nn.L1Loss()
+        self.perceptual_loss_calculator = VGG19PerceptualLoss(feature_layers={'relu2_1': 6}, device='cuda')
 
     def trainModel(self, train_gan_data, transition_encoding, training_parameters, storage_parameters):
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -64,11 +65,11 @@ class GanTraining():
         disc_lr = 0.0002
         gen_lr_decay_rate = 0.8
         disc_lr_decay_rate = 0.8
-        decay_epochs = [25, 50, 75]
+        decay_epochs = [10, 20]
         self.critic_iterations = 3  # Number of critic updates per generator update
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
-        self.lambda_l1_decay_epochs = 5
+        self.lambda_l1_decay_epochs = 2
 
         # For WGAN, Adam with these betas is common, or RMSprop
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.5, 0.999))
@@ -84,7 +85,7 @@ class GanTraining():
             print(f"Epoch [{epoch_number + 1}/{self.num_epochs}], gen_lr: {self.lr_gen_opt.get_last_lr()}, "
                 f"disc_lr: {self.lr_disc_opt.get_last_lr()}, Avg Gen Loss: {avg_gen_loss:.4f}, Avg Critic Loss: {avg_critic_loss:.4f}")
             # set the checkpoints to save models
-            if (epoch_number + 1) % 10 == 0:
+            if (epoch_number + 1) % 5 == 0:
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
                 Storage.saveCheckPointModels(models, storage_parameters, epoch_number + 1)
 
@@ -124,9 +125,9 @@ class GanTraining():
 
                 # BCEWithLogitsLoss for critic
                 real_labels = torch.full_like(critic_real_scores, 0.9, device=self.device)
-                loss_disc_real = self.criterion(critic_real_scores, real_labels)
+                loss_disc_real = self.mse_loss(critic_real_scores, real_labels)
                 fake_labels = torch.full_like(critic_fake_scores, 0.1, device=self.device)
-                loss_disc_fake = self.criterion(critic_fake_scores, fake_labels)
+                loss_disc_fake = self.mse_loss(critic_fake_scores, fake_labels)
                 critic_loss = loss_disc_real + loss_disc_fake
 
             self.critic_scaler.scale(critic_loss).backward()
@@ -150,9 +151,11 @@ class GanTraining():
 
                     # BCEWithLogitsLoss for generator. Generator wants to classify fakes as REAL, so the target labels are real_labels
                     real_labels_for_gen = torch.full_like(gen_fake_scores, 1, device=self.device)
-                    gen_adv = self.criterion(gen_fake_scores, real_labels_for_gen)
-                    # recon_loss = self.reconstruction_loss(fake_C_for_G, real_C)
-                    recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='VGG19Loss')
+                    gen_adv = self.mse_loss(gen_fake_scores, real_labels_for_gen)
+                    # recon_loss = self.mse_loss(fake_C_for_G, real_C)
+                    recon_loss = self.l1_loss(fake_C_for_G, real_C)
+                    # recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
+                    # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='VGG19Loss')
                     gen_loss = gen_adv + self.lambda_L1 * recon_loss
 
                 self.gen_scaler.scale(gen_loss).backward()
@@ -164,8 +167,8 @@ class GanTraining():
 
             # Log the average training loss per 10 batches
             if batch_idx % (self.critic_iterations * 3) == 0:
-                print(f"Batch [{batch_number}] gene_adv: {gen_adv.item():.4f}，recon_loss: {recon_loss.item():.4f},"
-                      f"Gen Loss: {gen_loss.item():.4f}, Critic Loss: {critic_loss.item():.4f}, lambda: {self.lambda_L1}")
+                print(f"gene_adv: {gen_adv.item():.4f}, recon_loss: {recon_loss.item():.4f}, "
+                      f"Critic Loss: {critic_loss.item():.4f}, Gen Loss: {gen_loss.item():.4f}, lambda: {self.lambda_L1}")
 
                 self.writer.add_scalars('Loss', {'Generator Loss': gen_loss.item()}, batch_number)
                 self.writer.add_scalars('Loss', {'Discriminator Loss': critic_loss.item()}, batch_number)
@@ -196,12 +199,12 @@ class GanTraining():
         # Construct batch of condition-averaged real targets
         avg_real_targets = torch.stack([avg_real_by_condition[int(c.item())] for c in conditions])  # shape: [B, 1, C, T]
 
-        #
-        from cGAN_Transformer.Functions import Plot_Raw_Data
-        data = avg_real_targets.to("cpu").numpy()
-        Plot_Raw_Data.plot_time_series_samples(data.squeeze(1), key_label='emg_SALW', num_samples=60, y_limit=(0, 1))
-
-
+        # average_value = avg_real_targets.to("cpu").numpy()
+        # Plot_Raw_Data.plot_time_series_samples(average_value.squeeze(1).transpose(0, 2, 1), key_label='mean', num_samples=60, y_limit=(0, 0.4))
+        # real_value = real.to("cpu").numpy()
+        # Plot_Raw_Data.plot_time_series_samples(real_value.squeeze(1).transpose(0, 2, 1), key_label='real', num_samples=60, y_limit=(0, 0.4))
+        # fake_value = generated.detach().to("cpu").numpy()
+        # Plot_Raw_Data.plot_time_series_samples(fake_value.squeeze(1).transpose(0, 2, 1), key_label='fake', num_samples=60, y_limit=(0, 0.4))
 
         # Compute full batch reconstruction_loss
         if loss_fn == 'mse':
@@ -297,7 +300,10 @@ class EMGFusionDataset(Dataset):
         def sample_shift(std, max_shift):
             """Sample a truncated normal shift between [-max_shift, +max_shift]."""
             return int(truncnorm.rvs(-max_shift / std, max_shift / std, loc=0, scale=std))
-        time_shift = sample_shift(std=shift_range//2, max_shift=shift_range)
+        if shift_range > 0:
+            time_shift = sample_shift(std=shift_range//2, max_shift=shift_range)
+        else:
+            time_shift = 0
 
         # Compute slice window
         start_A = base_start + time_shift
