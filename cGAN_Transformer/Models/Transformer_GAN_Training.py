@@ -146,15 +146,17 @@ class GanTraining():
 
                     # WGAN loss for generator: -E[D(fake_C)], We want to MAXIMIZE D(fake_C), so we MINIMIZE -D(fake_C)
                     # gen_adv = -torch.mean(gen_fake_scores)
-                    # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='l1')
+                    # # recon_loss = self.l1_loss(fake_C_for_G, real_C)
+                    # recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
+                    # # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='VGG19Loss')
                     # gen_loss = gen_adv + self.lambda_L1 * recon_loss
 
                     # BCEWithLogitsLoss for generator. Generator wants to classify fakes as REAL, so the target labels are real_labels
                     real_labels_for_gen = torch.full_like(gen_fake_scores, 1, device=self.device)
                     gen_adv = self.mse_loss(gen_fake_scores, real_labels_for_gen)
                     # recon_loss = self.mse_loss(fake_C_for_G, real_C)
-                    recon_loss = self.l1_loss(fake_C_for_G, real_C)
-                    # recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
+                    # recon_loss = self.l1_loss(fake_C_for_G, real_C)
+                    recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
                     # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='VGG19Loss')
                     gen_loss = gen_adv + self.lambda_L1 * recon_loss
 
