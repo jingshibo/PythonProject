@@ -85,13 +85,13 @@ model = trainer.trainModel(train_gan_data, transition_encoding, training_paramet
 epoch_number = 30
 model = Storage.loadCheckPointModels(storage_parameters, epoch_number)
 generated_transition_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
-    num_window_per_transition, window_length, window_increment, window_shift, sample_number=30, batch_size=30)
+    num_window_per_transition, window_length, window_increment, window_shift, sample_number=30, batch_size=5)
 
 
 
 ## print image
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
-transition_type = 'emg_LWSA'
+transition_type = 'emg_SDLW'
 time_point = 0
 generated_image = generated_transition_data[transition_type][time_point]['generated_images']
 blending_factor = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
