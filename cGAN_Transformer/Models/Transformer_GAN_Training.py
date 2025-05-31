@@ -8,6 +8,7 @@ from torch.amp import autocast, GradScaler
 import os
 import datetime
 import numpy as np
+from scipy.signal import butter, sosfiltfilt
 from scipy.stats import truncnorm
 from cGAN_Transformer.Functions import Storage
 from cGAN_Transformer.Models import Transformer_GAN_Model
@@ -72,7 +73,7 @@ class GanTraining():
         self.critic_iterations = 3  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
-        self.lambda_l1_decay_epochs = 3
+        self.lambda_l1_decay_epochs = 10
 
         # For WGAN, Adam with these betas is common, or RMSprop
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.5, 0.999))
@@ -82,9 +83,9 @@ class GanTraining():
         models = {'gen': self.gen, 'disc': self.critic}
 
         for epoch_number in range(self.num_epochs):
+            avg_gen_loss, avg_critic_loss = self.trainOneEpoch(epoch_number)
             self.lr_disc_opt.step()  # update the learning rate
             self.lr_gen_opt.step()  # update the learning rate
-            avg_gen_loss, avg_critic_loss = self.trainOneEpoch(epoch_number)
             print(f"Epoch [{epoch_number + 1}/{self.num_epochs}], gen_lr: {self.lr_gen_opt.get_last_lr()}, "
                 f"disc_lr: {self.lr_disc_opt.get_last_lr()}, Avg Gen Loss: {avg_gen_loss:.4f}, Avg Critic Loss: {avg_critic_loss:.4f}")
             # set the checkpoints to save models
@@ -159,8 +160,8 @@ class GanTraining():
                     gen_adv = self.mse_loss(gen_fake_scores, real_labels_for_gen)
                     # recon_loss = self.mse_loss(fake_C_for_G, real_C)
                     # recon_loss = self.l1_loss(fake_C_for_G, real_C)
-                    recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
-                    # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='l1')
+                    # recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
+                    recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='VGG19Loss')
                     gen_loss = gen_adv + self.lambda_L1 * recon_loss
 
                 self.gen_scaler.scale(gen_loss).backward()
@@ -198,11 +199,19 @@ class GanTraining():
         for cond in unique_conditions:
             mask = (conditions == cond)
             real_cond = real[mask]
-            avg_real = real_cond.max(dim=0, keepdim=False).values  # shape: [1, C, T]
+            # avg_real = real_cond.mean(dim=0, keepdim=False)  # shape: [1, C, T]
+            avg_real = real_cond.max(dim=0, keepdim=False).values
             avg_real_by_condition[int(cond.item())] = avg_real.to(device)
 
         # Construct batch of condition-averaged real targets
         avg_real_targets = torch.stack([avg_real_by_condition[int(c.item())] for c in conditions])  # shape: [B, 1, C, T]
+
+        # low pass filtering
+        data_np = avg_real_targets.cpu().numpy()
+        sos = butter(4, 10, fs=1000, btype='lowpass', output='sos')
+        filtered = sosfiltfilt(sos, data_np[:, 0, :, :], axis=-1)
+        filtered_safe = filtered.copy()
+        avg_real_targets = torch.tensor(filtered_safe[:, np.newaxis, :, :], dtype=avg_real_targets.dtype, device=avg_real_targets.device)
 
         # average_value = avg_real_targets.to("cpu").numpy()
         # Plot_Raw_Data.plot_time_series_samples(average_value.squeeze(1).transpose(0, 2, 1), key_label='mean', num_samples=60, y_limit=(0, 0.4))

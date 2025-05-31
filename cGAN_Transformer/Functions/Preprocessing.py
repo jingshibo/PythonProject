@@ -5,7 +5,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 from scipy.signal import correlate, correlation_lags, butter, filtfilt
-from scipy.ndimage import uniform_filter1d # Kept for alternative smoothing
+from scipy.ndimage import uniform_filter1d  # Kept for alternative smoothing
 
 
 
@@ -17,11 +17,9 @@ def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normali
         for label, samples in emg_dict.items():
             new_emg_dict[label] = []
             for sample in samples:
-                # total_length = sample.shape[0]
-                # start = total_length // 2 + selected_range[0]
-                # end = total_length // 2 + selected_range[1]
-                start = selected_range[0]
-                end = selected_range[1]
+                total_length = sample.shape[0]
+                start = total_length // 2 + selected_range[0]
+                end = total_length // 2 + selected_range[1]
                 new_emg_dict[label].append(sample[start:end, :])  # Slice time axis
         return new_emg_dict
     old_emg_central = slice_center_time(old_emg_normalized, time_range)

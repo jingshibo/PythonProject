@@ -36,14 +36,14 @@ new_emg_aligned, new_lags_butter = Preprocessing.align_by_cross_correlation(new_
 
 
 ## parameters for extracting emg data to train models
-window_length = 1200  # preferable 256
+window_length = 1200
 window_increment = 100
 num_window_per_transition = 1
 window_shift = 0
 channel_shift = 15
-start = 500 - window_length - window_shift  # 500 is at around heel-contact
-end = 500 + window_increment * num_window_per_transition + window_shift
-time_range = [0, 1200]  # select data starting from toe-off
+start = - window_length - window_shift
+end = window_increment * num_window_per_transition + window_shift
+time_range = [-600, 600]  # select data centered around toe-off
 old_emg_central, new_emg_central, train_gan_data = Preprocessing.extractGanTrainingData(modes_generation, old_emg_aligned,
     new_emg_aligned, time_range)
 classify_old_emg = Preprocessing.buildClassifyDataset(old_emg_central)
@@ -51,7 +51,7 @@ classify_old_emg = Preprocessing.buildClassifyDataset(old_emg_central)
 
 ## plot raw data
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
-transition_type = 'emg_SDLW'
+transition_type = 'emg_SASA'
 time_point = 0
 time_slice_start = window_shift + time_point * window_increment
 time_slice_end = time_slice_start + window_length
@@ -59,12 +59,24 @@ time_slice_end = time_slice_start + window_length
 # Plot_Raw_Data.plot_time_series_and_heatmaps(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
 # key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
+#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 # Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+#     key_label=transition_type, num_samples=30, y_limit=(0, 0.4), random_sampling=False, stata='mean')
+
+
+## Stack and reshape
+# import numpy as np
+# from scipy.signal import butter, sosfiltfilt
+# data_list = old_emg_central['emg_SDLW']  # List of 60 arrays, each of shape (1200, 65)
+# data_4d = np.stack([sample.T for sample in data_list], axis=0)  # Now shape (60, 65, 1200)
+# data_4d = data_4d[:, np.newaxis, :, :]  # Add channel dim → shape (60, 1, 65, 1200)
+#
+# sos = butter(4, 10, fs=1000, btype='lowpass', output='sos')
+# data = data_4d[:, 0, :, :]  # Reshape: (60, 1, 65, 1200) → (60, 65, 1200)
+# filtered = sosfiltfilt(sos, data, axis=-1)  # Apply along axis=-1 (time)
+#
+# Plot_Raw_Data.plot_time_series_samples(np.transpose(filtered, (0, 2, 1)), time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
-
-
-
 
 
 ## train gan model
@@ -97,10 +109,12 @@ transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
 transition_type = 'emg_SDLW'
 time_point = 0
 generated_image = generated_transition_data[transition_type][time_point]['generated_images'].squeeze(1)
-blending_factor = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
+blending_factor_A = generated_transition_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
+blending_factor_B = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
 # Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
 Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(blending_factor, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+# Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+# Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
 
 
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,

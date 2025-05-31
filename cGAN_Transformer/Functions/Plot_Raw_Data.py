@@ -5,7 +5,7 @@ import random
 
 
 
-def plot_time_series_samples(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, stata='max'):
+def plot_time_series_samples(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, stata='mean'):
     """
     Plot random samples' average across channels and their overall average.
 
@@ -34,6 +34,8 @@ def plot_time_series_samples(data, time_start=0, time_end='end', key_label=None,
         overall_avg = np.max(np.stack(avg_curves, axis=0), axis=0)
     elif stata == 'mean':
         overall_avg = np.mean(np.stack(avg_curves, axis=0), axis=0)
+    elif stata == 'median':
+        overall_avg = np.median(np.stack(avg_curves, axis=0), axis=0)
 
     # Subplot config
     total_plots = num_samples + 1
@@ -69,7 +71,7 @@ def plot_time_series_samples(data, time_start=0, time_end='end', key_label=None,
     plt.show()
 
 
-def plot_heatmaps_samples(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, cmap='viridis', stata='max'):
+def plot_heatmaps_samples(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, cmap='viridis', stata='mean'):
     """
     Plot random heatmaps and their overall average from EMG data.
 
@@ -98,6 +100,8 @@ def plot_heatmaps_samples(data, time_start=0, time_end='end', key_label=None, nu
         avg_matrix = np.mean(stacked, axis=0)
     elif stata == 'max':
         avg_matrix = np.max(stacked, axis=0)
+    elif stata == 'median':
+        avg_matrix = np.median(np.stack(stacked, axis=0), axis=0)
 
     # Layout for N + 1 subplots
     total_plots = num_samples + 1
