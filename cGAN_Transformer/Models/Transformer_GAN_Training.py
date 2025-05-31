@@ -57,7 +57,10 @@ class GanTraining():
             training_parameters['window_length'], training_parameters['window_increment'], training_parameters['window_shift'],
             self.num_sample_per_condition, self.num_batch_per_epoch)
         self.train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=0)
-        self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions=num_conditions).to(self.device)
+        channel_number = dataset[0][0].shape[1]
+        time_steps = dataset[0][0].shape[2]
+        self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions).to(self.device)
+        # self.gen = Transformer_GAN_Model.EMGFusionTransformerGenerator(num_conditions, input_h=channel_number, input_w=time_steps).to(self.device)
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions=num_conditions).to(self.device)
 
         # training parameters
@@ -69,7 +72,7 @@ class GanTraining():
         self.critic_iterations = 3  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
-        self.lambda_l1_decay_epochs = 2
+        self.lambda_l1_decay_epochs = 3
 
         # For WGAN, Adam with these betas is common, or RMSprop
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.5, 0.999))
@@ -157,7 +160,7 @@ class GanTraining():
                     # recon_loss = self.mse_loss(fake_C_for_G, real_C)
                     # recon_loss = self.l1_loss(fake_C_for_G, real_C)
                     recon_loss = self.perceptual_loss_calculator(fake_C_for_G, real_C)
-                    # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='VGG19Loss')
+                    # recon_loss = self.condition_average_reconstruction_loss(fake_C_for_G, real_C, cond_label, loss_fn='l1')
                     gen_loss = gen_adv + self.lambda_L1 * recon_loss
 
                 self.gen_scaler.scale(gen_loss).backward()
@@ -195,7 +198,7 @@ class GanTraining():
         for cond in unique_conditions:
             mask = (conditions == cond)
             real_cond = real[mask]
-            avg_real = real_cond.mean(dim=0, keepdim=False)  # shape: [1, C, T]
+            avg_real = real_cond.max(dim=0, keepdim=False).values  # shape: [1, C, T]
             avg_real_by_condition[int(cond.item())] = avg_real.to(device)
 
         # Construct batch of condition-averaged real targets

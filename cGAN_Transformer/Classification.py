@@ -51,7 +51,7 @@ classify_old_emg = Preprocessing.buildClassifyDataset(old_emg_central)
 
 ## plot raw data
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
-transition_type = 'emg_LWSD'
+transition_type = 'emg_SDLW'
 time_point = 0
 time_slice_start = window_shift + time_point * window_increment
 time_slice_end = time_slice_start + window_length
@@ -59,9 +59,12 @@ time_slice_end = time_slice_start + window_length
 # Plot_Raw_Data.plot_time_series_and_heatmaps(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
 # key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=60, y_limit=(0, 0.4))
+#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
 # Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
+
+
+
 
 
 ## train gan model
@@ -93,15 +96,17 @@ generated_transition_data = Transformer_GAN_Testing.generateTransitionData(model
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
 transition_type = 'emg_SDLW'
 time_point = 0
-generated_image = generated_transition_data[transition_type][time_point]['generated_images']
+generated_image = generated_transition_data[transition_type][time_point]['generated_images'].squeeze(1)
 blending_factor = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
-# Plot_Raw_Data.plot_heatmaps_samples(generated_image.squeeze(1), key_label=transition_type, num_samples=19, y_limit=(0, 0.4))
-Plot_Raw_Data.plot_time_series_samples(generated_image.squeeze(1), key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
+# Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
+Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
 # Plot_Raw_Data.plot_time_series_samples(blending_factor, key_label=transition_type, num_samples=5, y_limit=(0, 1))
 
 
-Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-    key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
+# Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
+# Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 
 
 
@@ -119,5 +124,5 @@ Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_st
 # class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 # Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
 
-import winsound
-winsound.Beep(frequency=2000, duration=1000)
+# import winsound
+# winsound.Beep(frequency=1000, duration=1000)
