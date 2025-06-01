@@ -106,21 +106,21 @@ generated_transition_data = Transformer_GAN_Testing.generateTransitionData(model
 
 ## print image
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
-transition_type = 'emg_SDLW'
+transition_type = 'emg_LWSA'
 time_point = 0
 generated_image = generated_transition_data[transition_type][time_point]['generated_images'].squeeze(1)
 blending_factor_A = generated_transition_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
 blending_factor_B = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
 # Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
 Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
-# Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
 
 
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
+Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 
 
 

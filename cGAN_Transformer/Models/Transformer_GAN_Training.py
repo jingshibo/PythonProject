@@ -61,7 +61,7 @@ class GanTraining():
         channel_number = dataset[0][0].shape[1]
         time_steps = dataset[0][0].shape[2]
         self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions).to(self.device)
-        # self.gen = Transformer_GAN_Model.EMGFusionTransformerGenerator(num_conditions, input_h=channel_number, input_w=time_steps).to(self.device)
+        # self.gen = Transformer_GAN_Model.EMGFusionSeparateGenerator(num_conditions, input_h=channel_number, input_w=time_steps).to(self.device)
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions=num_conditions).to(self.device)
 
         # training parameters

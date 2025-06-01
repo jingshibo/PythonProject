@@ -295,77 +295,62 @@ class EMGFusionPatchDiscriminator(nn.Module):
 
 
 
-
 class EMGFusionSeparateGenerator(nn.Module):
-    def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False,
-            initial_encoder_channels=32, hidden_channels=32, activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
+    def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
+            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
         super().__init__()
 
-        if activation_params:
-            act_fn = activation_class(**activation_params)
-        else:
-            act_fn = activation_class()
+        act_fn = activation_class(**activation_params) if activation_params else activation_class()
         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
 
-        # Encoder
-        self.encoder1_A = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
-        self.encoder2_A = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
-        self.encoder3_A = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
+        # Separate initial feature extractors for A and B
+        self.A_feat = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
+            activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
+        self.B_feat = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
+            activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
 
-        self.encoder1_B = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
-        self.encoder2_B = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
-        self.encoder3_B = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2), dilation=(1, 1))
+        # Shared encoder
+        self.encoder1 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
+        self.encoder2 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
 
         # Decoder with skip connections
-        self.decoder1_A = ConvCBNBlock(hidden_channels * 4 + hidden_channels * 2, hidden_channels * 3, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
-        self.decoder2_A = ConvCBNBlock(hidden_channels * 3 + hidden_channels * 1, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
-        self.decoder3_A = ConvCBNBlock(hidden_channels * 2 + 1, 1, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
+        self.decoder0 = ConvCBNBlock(hidden_channels * 8 + hidden_channels * 4, hidden_channels * 5, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        self.decoder1 = ConvCBNBlock(hidden_channels * 5 + hidden_channels * 2, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
 
-        self.decoder1_B = ConvCBNBlock(hidden_channels * 4 + hidden_channels * 2, hidden_channels * 3, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
-        self.decoder2_B = ConvCBNBlock(hidden_channels * 3 + hidden_channels * 1, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
-        self.decoder3_B = ConvCBNBlock(hidden_channels * 2 + 1, 1, cond_embed_dim, use_cbn, use_adain,
-            use_spectral_norm, transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), dilation=(1, 1), upsample_scale=(1, 2))
-
-        self.sig = torch.nn.Sigmoid()
+        # Separate branches for mask generation
+        self.branch_A = ConvCBNBlock(hidden_channels * 2 + 1, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        self.branch_B = ConvCBNBlock(hidden_channels * 2 + 1, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, A, B, condition):
         cond_embed = self.condition_embedding(condition)
-        x = torch.cat([A, B], dim=1)
+
+        # Separate feature extraction
+        A_feat = self.A_feat(A, cond_embed)
+        B_feat = self.B_feat(B, cond_embed)
+        x = torch.cat([A_feat, B_feat], dim=1)
 
         # Encoder
-        e1_out_A = self.encoder1_A(A, cond_embed)
-        e2_out_A = self.encoder2_A(e1_out_A, cond_embed)
-        e3_out_A = self.encoder3_A(e2_out_A, cond_embed)
-        e1_out_B = self.encoder1_B(B, cond_embed)
-        e2_out_B = self.encoder2_B(e1_out_B, cond_embed)
-        e3_out_B = self.encoder3_B(e2_out_B, cond_embed)
+        e1 = self.encoder1(x, cond_embed)
+        e2 = self.encoder2(e1, cond_embed)
 
-        # Pass a tuple: (previous_decoder_layer_output, encoder_skip_feature)
-        d1_out_A = self.decoder1_A((e3_out_A, e2_out_A), cond_embed)
-        d2_out_A = self.decoder2_A((d1_out_A, e1_out_A), cond_embed)
-        d3_out_A = self.decoder3_A((d2_out_A, A), cond_embed)  # x is the original input cat(A,B)
-        d1_out_B = self.decoder1_B((e3_out_B, e2_out_B), cond_embed)
-        d2_out_B = self.decoder2_B((d1_out_B, e1_out_B), cond_embed)
-        d3_out_B = self.decoder3_B((d2_out_B, B), cond_embed)  # x is the original input cat(A,B)
+        # Decoder with skip connections
+        d0 = self.decoder0((e2, e1), cond_embed)
+        d1 = self.decoder1((d0, x), cond_embed)
 
-        blending_factor_A = self.sig(d3_out_A)
-        blending_factor_B = self.sig(d3_out_B)
-        generated_image = blending_factor_A * A + blending_factor_B * B
+        # Branches
+        mask_A = self.sigmoid(self.branch_A((d1, A), cond_embed))  # [B, 1, C, T]
+        mask_B = self.sigmoid(self.branch_B((d1, B), cond_embed))
 
-        return generated_image, torch.cat([blending_factor_A, blending_factor_B], dim=1)
-
-
+        # Blend
+        out = mask_A * A + mask_B * B
+        return out, torch.cat([mask_A, mask_B], dim=1)
 
 
 
@@ -458,7 +443,7 @@ class EMGFusionGFUGenerator(nn.Module):
         d3_out = self.decoder3((d2_out, original_AB_concat), cond_embed)
 
         blending_factors = self.sig(d3_out)
-        generated_image = torch.mean(blending_factors * original_AB_concat, 1, keepdim=True)
+        generated_image = torch.mean(blending_factors * original_AB_concat, 1, keepdim=True) * 2
 
         return generated_image, blending_factors
 
@@ -531,6 +516,7 @@ class GatedFusionUnit_Conv(nn.Module):
         return fused_output
 
 
+
 ## model summary
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -540,7 +526,7 @@ if __name__ == '__main__':
     dummy_B = torch.randn(batch_size_example, 1, 65, 1200).to(device)
     dummy_C = torch.randn(batch_size_example, 1, 65, 1200).to(device)
     dummy_condition = torch.randint(0, num_conditions_example, (batch_size_example,), dtype=torch.long).to(device)
-    model = EMGFusionGenerator(num_conditions=num_conditions_example).to(device)
+    model = EMGFusionSeparateGenerator(num_conditions=num_conditions_example).to(device)
     # model = EMGFusionPatchDiscriminator(num_conditions=num_conditions_example).to(device)
 
     # Keras-like summary primarily shows Layer Name, Output Shape, and Param #
@@ -570,70 +556,6 @@ if __name__ == '__main__':
 
 
 
-
-
-# class EMGFusionGenerator(nn.Module):
-#     def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
-#             activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
-#         super().__init__()
-#
-#         act_fn = activation_class(**activation_params) if activation_params else activation_class()
-#         self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
-#
-#         # Separate initial feature extractors for A and B
-#         self.A_feat = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
-#             activation=act_fn, kernel_size=(5, 9), stride=(1, 1))
-#         self.B_feat = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
-#             activation=act_fn, kernel_size=(5, 9), stride=(1, 1))
-#
-#         # Shared encoder
-#         self.encoder1 = ConvCBNBlock(hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-#             transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
-#         self.encoder2 = ConvCBNBlock(hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-#             transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
-#         self.encoder3 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-#             transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
-#
-#         # Decoder with skip connections
-#         self.decoder0 = ConvCBNBlock(hidden_channels * 8 + hidden_channels * 4, hidden_channels * 6, cond_embed_dim, use_cbn, use_adain,
-#             use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
-#         self.decoder1 = ConvCBNBlock(hidden_channels * 6 + hidden_channels * 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain,
-#             use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
-#         self.decoder2 = ConvCBNBlock(hidden_channels * 4 + hidden_channels, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
-#             use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
-#
-#         # Separate branches for mask generation
-#         self.branch_A = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
-#             activation=None, kernel_size=(5, 9), stride=(1, 1))
-#         self.branch_B = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
-#             activation=None, kernel_size=(5, 9), stride=(1, 1))
-#         self.sigmoid = nn.Sigmoid()
-#
-#     def forward(self, A, B, condition):
-#         cond_embed = self.condition_embedding(condition)
-#
-#         # Separate feature extraction
-#         A_feat = self.A_feat(A, cond_embed)
-#         B_feat = self.B_feat(B, cond_embed)
-#         x = torch.cat([A_feat, B_feat], dim=1)
-#
-#         # Encoder
-#         e1 = self.encoder1(x, cond_embed)
-#         e2 = self.encoder2(e1, cond_embed)
-#         e3 = self.encoder3(e2, cond_embed)
-#
-#         # Decoder with skip connections
-#         d0 = self.decoder0((e3, e2), cond_embed)
-#         d1 = self.decoder1((d0, e1), cond_embed)
-#         d2 = self.decoder2((d1, x), cond_embed)
-#
-#         # Branches
-#         mask_A = self.sigmoid(self.branch_A(d2))  # [B, 1, C, T]
-#         mask_B = self.sigmoid(self.branch_B(d2))
-#
-#         # Blend
-#         out = mask_A * A + mask_B * B
-#         return out, torch.cat([mask_A, mask_B], dim=1)
 
 
 
