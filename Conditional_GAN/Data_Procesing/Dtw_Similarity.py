@@ -26,7 +26,7 @@ class Dtw_Distance:
             time_series_matrix = np.vstack([fake, reference]).astype(np.double)
             # compute the distance between each fake data and each reference data
             ds = dtw.distance_matrix_fast(time_series_matrix, block=((0, fake_sample_number), (fake_sample_number, len(time_series_matrix))),
-                window=250)  # a traditional Euclidean distance is obtained by setting window=1.
+                window=100)  # a traditional Euclidean distance is obtained by setting window=1.
             # compute the distance within reference data
             ds_reference = dtw.distance_matrix_fast(reference)
             # only retain valid distance values in the sparse matrix
@@ -116,6 +116,7 @@ class Dtw_Distance:
         return select_fake_index
 
 
+##
 def extractFakeData(synthetic_data, real_data, modes_generation, envelope_frequency, num_sample, num_reference, method='select',
         random_reference=False, split_grids=True):
     # low pass filtering to get the envelope of emg
@@ -130,15 +131,13 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
     real_average = Plot_Emg_Data.calcuAverageEmgValues(real_emg_envelope, split=split_grids)
 
     # create dtw distance object for calculation
-    dtw_distance = Dtw_Distance(modes_generation, num_sample=num_sample, num_reference=num_reference)
+    dtw_distance = Dtw_Distance(modes_generation, num_sample, num_reference)
     extracted_data = {}
     for grid_key in fake_average['emg_repetition_list'].keys():  # Assuming keys like 'grid_1', 'grid_2', etc for emg grid 1, emg grid 2,etc.
         # calculate the dtw distance based on each EMG grid
-        dtw_results = dtw_distance.calcuDtwDistance(fake_average['emg_repetition_list'][grid_key],
-            real_average['emg_repetition_list'][grid_key])
+        dtw_results = dtw_distance.calcuDtwDistance(fake_average['emg_repetition_list'][grid_key], real_average['emg_repetition_list'][grid_key])
         if method == 'select':  # select fake data closet to selected references
-            selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data,
-                random_reference=random_reference)
+            selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.selectFakeData(dtw_results, synthetic_data, random_reference)
         elif method == 'best':  # select fake data closet to all references
             selected_fake_data, selected_fake_index, selected_reference_index = dtw_distance.bestFakeData(dtw_results, synthetic_data)
         elif method == 'random':  # randomly select fake data without using references
@@ -158,6 +157,7 @@ def extractFakeData(synthetic_data, real_data, modes_generation, envelope_freque
     return extracted_data
 
 
+##
 def plotDtwPath(fake_curve, real_curve, fake_index, reference_index):
     s1 = fake_curve[:, fake_index]
     s2 = real_curve[:, reference_index]

@@ -3,6 +3,8 @@ from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, 
 from cGAN_Transformer.Functions import Preprocessing, Results, Storage, Plot_Raw_Data
 from cGAN_Transformer.Models import Classification_Model, Transformer_GAN_Training, Transformer_GAN_Testing
 from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
+from Conditional_GAN.Data_Procesing import Dtw_Similarity
+import numpy as np
 import datetime
 import copy
 
@@ -16,7 +18,9 @@ down_up_session_t0 = [1, 2, 3, 4, 5]
 up_down_session_t1 = [0, 1, 2, 3, 4]
 down_up_session_t1 = [1, 2, 3, 4, 5]
 old_emg_data, new_emg_data, window_parameters, start_before_toeoff_ms = Train_cGan.realEmgData(subject, version, up_down_session_t0,
-    down_up_session_t0, up_down_session_t1, down_up_session_t1, grid=grid, envelope=True, envelope_cutoff=50, reordering=False)
+    down_up_session_t0, up_down_session_t1, down_up_session_t1, grid=grid, envelope=True, envelope_cutoff=400, reordering=False)
+
+
 
 
 ## parameters for normalize emg data to train models
@@ -50,7 +54,7 @@ classify_old_emg = Preprocessing.buildClassifyDataset(old_emg_central)
 
 
 ## plot raw data
-transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
+transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW', 'emg_LWLW', 'emg_SASA', 'emg_SDSD']
 transition_type = 'emg_SASA'
 time_point = 0
 time_slice_start = window_shift + time_point * window_increment
@@ -62,21 +66,6 @@ time_slice_end = time_slice_start + window_length
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 # Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=30, y_limit=(0, 0.4), random_sampling=False, stata='mean')
-
-
-## Stack and reshape
-# import numpy as np
-# from scipy.signal import butter, sosfiltfilt
-# data_list = old_emg_central['emg_SDLW']  # List of 60 arrays, each of shape (1200, 65)
-# data_4d = np.stack([sample.T for sample in data_list], axis=0)  # Now shape (60, 65, 1200)
-# data_4d = data_4d[:, np.newaxis, :, :]  # Add channel dim → shape (60, 1, 65, 1200)
-#
-# sos = butter(4, 10, fs=1000, btype='lowpass', output='sos')
-# data = data_4d[:, 0, :, :]  # Reshape: (60, 1, 65, 1200) → (60, 65, 1200)
-# filtered = sosfiltfilt(sos, data, axis=-1)  # Apply along axis=-1 (time)
-#
-# Plot_Raw_Data.plot_time_series_samples(np.transpose(filtered, (0, 2, 1)), time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True)
 
 
 ## train gan model
@@ -91,52 +80,69 @@ training_parameters = {'modes_generation': modes_generation, 'num_epochs': NUM_E
     'num_sample_per_condition': num_sample_per_condition, 'window_length': window_length, 'window_increment': window_increment,
     'num_window_per_transition': num_window_per_transition, 'window_shift': window_shift, 'channel_shift': channel_shift}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'gan_result_set': 0}
-trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCHS, num_sample_per_condition, num_batch_per_epoch)
-model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters)
+# trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCHS, num_sample_per_condition, num_batch_per_epoch)
+# model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters)
 
 
 
 ## generate transition data
 epoch_number = 30
 model = Storage.loadCheckPointModels(storage_parameters, epoch_number)
-generated_transition_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
-    num_window_per_transition, window_length, window_increment, window_shift, sample_number=30, batch_size=5)
+all_generated_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
+    num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=50)
+time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, sample_number=30)
 
+
+## sampled results
+extracted_data = Dtw_Similarity.extractFakeData(time_0_fake_data, old_emg_central, modes_generation, envelope_frequency=20, num_sample=50,
+    num_reference=30, method='select', random_reference=False, split_grids=True)
+selected_fake_data = Transformer_GAN_Testing.fakeDataForTraining(extracted_data)
 
 
 ## print image
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
-transition_type = 'emg_LWSA'
+transition_type = 'emg_LWSD'
 time_point = 0
-generated_image = generated_transition_data[transition_type][time_point]['generated_images'].squeeze(1)
-blending_factor_A = generated_transition_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
-blending_factor_B = generated_transition_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
+generated_image = selected_fake_data[transition_type][time_point]['generated_images'].squeeze(1)
+# blending_factor_A = order_sampled_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
+# blending_factor_B = order_sampled_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
+
 # Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
 Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
-Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
-Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+# Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+# Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+# Plot_Raw_Data.plot_sample_fft(generated_image, transition_type, num_samples=5)
 
 
+##
+transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW', 'emg_LWLW', 'emg_SASA', 'emg_SDSD']
+transition_type = 'emg_LWSD'
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
+Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
+# Plot_Raw_Data.plot_sample_fft(old_emg_central[transition_type], transition_type, num_samples=5)
+transition_type = 'emg_SDSD'
 Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 
 
 
 ##  classify using a single cnn 2d model
-# num_epochs = 50
-# batch_size = 32
-# decay_epochs = 20
-# now = datetime.datetime.now()
-# fold_number = 5
-# cross_validation_indices, cross_validation_dataset = Preprocessing.crossValidationSet(fold_number, classify_old_emg)
-# train_model = Classification_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-# models, model_results = train_model.trainModel(classify_old_emg, cross_validation_indices, decay_epochs)
-# print(datetime.datetime.now() - now)
-# accuracy, cm_recall = Results.getAccuracyCm(model_results)
-# class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
-# Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
+num_epochs = 45
+batch_size = 64
+decay_epochs = 20
+now = datetime.datetime.now()
+fold_number = 5
+generated_dataset, original_dataset = Preprocessing.build_cv_dataset_with_generated_data(old_emg_central, selected_fake_data, n_splits=5,
+    N_real_keep=0)
+train_model = Classification_Model.ModelTraining(num_epochs, batch_size, report_period=10)
+models, model_results = train_model.trainModel(generated_dataset, decay_epochs)
+accuracy, cm_recall = Results.getAccuracyCm(model_results)
+class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
+Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
 
 # import winsound
 # winsound.Beep(frequency=1000, duration=1000)
+
+

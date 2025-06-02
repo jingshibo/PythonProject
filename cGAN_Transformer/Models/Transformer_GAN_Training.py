@@ -6,6 +6,8 @@ from tqdm.auto import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torch.amp import autocast, GradScaler
 import os
+import gc
+import time
 import datetime
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
@@ -60,8 +62,8 @@ class GanTraining():
         self.train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=0)
         channel_number = dataset[0][0].shape[1]
         time_steps = dataset[0][0].shape[2]
-        self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions).to(self.device)
-        # self.gen = Transformer_GAN_Model.EMGFusionSeparateGenerator(num_conditions, input_h=channel_number, input_w=time_steps).to(self.device)
+        # self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions).to(self.device)
+        self.gen = Transformer_GAN_Model.EMGFusionSeparateGenerator(num_conditions).to(self.device)
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions=num_conditions).to(self.device)
 
         # training parameters
@@ -95,6 +97,10 @@ class GanTraining():
 
         # save the final model
         Storage.saveGanModels(models, storage_parameters)
+
+        torch.cuda.empty_cache()
+        gc.collect()
+        time.sleep(5)
         return models
 
     def trainOneEpoch(self, epoch_number):
@@ -207,11 +213,11 @@ class GanTraining():
         avg_real_targets = torch.stack([avg_real_by_condition[int(c.item())] for c in conditions])  # shape: [B, 1, C, T]
 
         # low pass filtering
-        data_np = avg_real_targets.cpu().numpy()
-        sos = butter(4, 10, fs=1000, btype='lowpass', output='sos')
-        filtered = sosfiltfilt(sos, data_np[:, 0, :, :], axis=-1)
-        filtered_safe = filtered.copy()
-        avg_real_targets = torch.tensor(filtered_safe[:, np.newaxis, :, :], dtype=avg_real_targets.dtype, device=avg_real_targets.device)
+        # data_np = avg_real_targets.cpu().numpy()
+        # sos = butter(4, 10, fs=1000, btype='lowpass', output='sos')
+        # filtered = sosfiltfilt(sos, data_np[:, 0, :, :], axis=-1)
+        # filtered_safe = filtered.copy()
+        # avg_real_targets = torch.tensor(filtered_safe[:, np.newaxis, :, :], dtype=avg_real_targets.dtype, device=avg_real_targets.device)
 
         # average_value = avg_real_targets.to("cpu").numpy()
         # Plot_Raw_Data.plot_time_series_samples(average_value.squeeze(1).transpose(0, 2, 1), key_label='mean', num_samples=60, y_limit=(0, 0.4))

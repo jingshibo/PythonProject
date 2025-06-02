@@ -31,3 +31,4 @@ def getAccuracyCm(model_results):
 
     return avg_accuracy, cm_recall
 
+

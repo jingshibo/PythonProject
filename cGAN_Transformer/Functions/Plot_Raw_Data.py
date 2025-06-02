@@ -250,10 +250,57 @@ def plot_overlap_sample_all_modes(old_emg_central):
         ax.set_title(f'{key}')
         ax.set_xlabel('Time Step')
         ax.set_ylabel('Avg Channel Value')
-        ax.set_ylim(0, 0.8)  # Set y-axis limit
+        ax.set_ylim(0, 0.4)  # Set y-axis limit
         ax.grid(True)
     # Hide unused subplot if only using 7
     for j in range(len(keys), len(axes)):
         fig.delaxes(axes[j])
     plt.tight_layout()
     plt.show()
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import welch
+
+def plot_sample_fft(data, transition_type, num_samples=5, fs=1000):
+    """
+    Plot PSDs of averaged time-series data for a given transition type.
+
+    Parameters:
+    - data_dict: your full data (e.g., selected_fake_data)
+    - transition_type: key like 'emg_LWSA'
+    - num_samples: how many samples to plot
+    - fs: sampling frequency (Hz) for PSD, adjust based on your data
+    """
+
+
+    # Limit number of samples
+    num_samples = min(num_samples, len(data))
+    N = data[0].shape[0]  # 1200 time steps
+
+    plt.figure(figsize=(15, 4 * num_samples))
+    for i in range(num_samples):
+        sample = data[i]  # shape: (1200, 65)
+        avg_signal = np.mean(sample, axis=1)  # shape: (1200,)
+
+        # Perform FFT
+        fft_result = np.fft.rfft(avg_signal)
+        freqs = np.fft.rfftfreq(N, d=1/fs)
+        # ✅ Normalize magnitude
+        magnitude = np.abs(fft_result) / N
+        magnitude[1:-1] *= 2  # double non-DC and non-Nyquist
+        magnitude_db = 20 * np.log10(magnitude + 1e-10)  # Avoid log(0)
+
+        # Plot
+        plt.subplot(num_samples, 1, i + 1)
+        plt.plot(freqs, magnitude_db)
+        plt.title(f"Sample {i} - FFT Magnitude Spectrum {transition_type}")
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Magnitude")
+
+    plt.tight_layout()
+    plt.show()
+
+

@@ -1,92 +1,5 @@
-##  import
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from torchinfo import summary
-import numpy as np
-import datetime
-import os
-import gc
 
-
-## design local focus model
-class Raw_Cnn_2d(nn.Module):
-    def __init__(self, input_channel, class_number):
-        super(Raw_Cnn_2d, self).__init__()
-
-        # define layer parameter
-        hidden_channel = 32
-        # define convolutional layer
-        self.convolutional_layer = nn.Sequential(
-            nn.Conv2d(in_channels=input_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01), #nn.LeakyReLU(0.2)
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-
-            nn.Conv2d(in_channels=hidden_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-
-            nn.Conv2d(in_channels=hidden_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-
-            nn.Conv2d(in_channels=hidden_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1)
-        )
-
-        # define dense layer
-        self.linear1_parameter = 512
-        self.linear2_parameter = 128
-        self.linear_layer = nn.Sequential(
-            nn.LazyLinear(self.linear1_parameter),
-            nn.BatchNorm1d(self.linear1_parameter),
-            nn.LeakyReLU(0.01),
-            nn.Dropout(0.5),
-
-            nn.LazyLinear(self.linear2_parameter),
-            nn.BatchNorm1d(self.linear2_parameter),
-            nn.LeakyReLU(0.01),
-            nn.Dropout(0.5),
-
-            nn.LazyLinear(class_number)
-        )
-        # self.initialize_weights()
-
-    # define the initialization method for each layer
-    def initialize_weights(self):
-        for m in self.convolutional_layer:
-            if isinstance(m, nn.Conv2d):
-                nn.init.xavier_normal_(m.weight)  # xavier / Glorot method
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                pass
-            elif isinstance(m, nn.Linear):
-                pass
-
-    def forward(self, x, intermediate_features=False):
-        x = self.convolutional_layer(x)
-        cnn_features = x.detach().clone()
-        x = torch.flatten(x, 1)
-        flatten_features = x.detach().clone()
-        x = self.linear_layer(x)
-        # if self.training is False:
-        #     x = F.softmax(x, dim=1)
-
-        # obtain intermediate_features
-        if intermediate_features:
-            return x, cnn_features, flatten_features
-        else:
-            return x
-
-# print("change hyperparameters!")
 
 ## training
 class ModelTraining():
@@ -107,28 +20,29 @@ class ModelTraining():
         self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
 
     #  train the model
-    def trainModel(self, classify_emg_dict, decay_epochs, select_channels='emg_all'):
+    def trainModel(self, classify_emg_dict, cross_validation_indices, decay_epochs, select_channels='emg_all'):
         models = []
         results = []
-
-        # train and test the dataset for each fold
-        for fold_id, fold_data in enumerate(classify_emg_dict):
+        # train and test the dataset for each group
+        fold_number = len(cross_validation_indices)
+        for fold_id in range(fold_number):
+        # for group_number, group_value in {'group_1': shuffled_groups['group_1'], 'group_3': shuffled_groups['group_3']}.items():
             # initialize the tensorboard writer
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
             # extract the dataset
             group_number = f"group_{fold_id}"
-            input_channel = fold_data['X_train'].shape[1]  # input channel number
-            class_number = len(set(fold_data['y_train_int']))
-            data_set = self.selectSamples(fold_data, select_channels)
+            input_size = classify_emg_dict['data_x'].shape[1]  # input channel number
+            class_number = len(set(classify_emg_dict['int_y']))
+            data_set = self.selectSamples(classify_emg_dict, select_channels)
 
             # dataset of a fold
-            self.train_loader, self.test_loader = foldDataloader(data_set, self.batch_size, onehot_label=False, shuffle_train=True,
-                shuffle_test=False, drop_last=True)
+            self.train_loader, self.test_loader = foldDataloader(data_set, cross_validation_indices, fold_id, self.batch_size,
+                onehot_label=False, shuffle_train=True, shuffle_test=False, drop_last=True)
 
             # training parameters
-            self.model = Raw_Cnn_2d(input_channel, class_number).to(self.device)  # move the model to GPU
+            self.model = Raw_Cnn_2d(input_size, class_number).to(self.device)  # move the model to GPU
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001, weight_decay=0.01)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
@@ -148,9 +62,6 @@ class ModelTraining():
             results.append(
                 {"true_value": test_true_labels, "predict_softmax": test_predict_softmax, "predict_value": test_predict_labels})
             models.append(self.model.to("cpu"))
-
-            torch.cuda.empty_cache()
-            gc.collect()
         return models, results
 
     #  conduct training of one epoch
@@ -246,57 +157,32 @@ class ModelTraining():
 
 ## load data one by one from a fold
 class EmgDataSet(Dataset):
-    def __init__(self, data_x, data_y):
+    def __init__(self, data_x, data_y, indices):
         self.data_x = data_x
         self.labels = data_y
+        self.indices = indices
 
     def __len__(self):
-        return len(self.data_x)
+        return len(self.indices)
 
     def __getitem__(self, idx):
-        return self.data_x[idx], self.labels[idx]
+        i = self.indices[idx]
+        return self.data_x[i], self.labels[i]
 
 ## build a dataloader to load data from each fold
-def foldDataloader(fold_data, batch_size, onehot_label=False, shuffle_train=True, shuffle_test=False, drop_last=True):
-    X_train = fold_data['X_train']
-    y_train = fold_data['y_train_onehot'] if onehot_label else fold_data['y_train_int']
-    X_test = fold_data['X_test']
-    y_test = fold_data['y_test_onehot'] if onehot_label else fold_data['y_test_int']
+def foldDataloader(classify_emg_dict, cross_validation_indices, fold_id, batch_size, onehot_label=False, shuffle_train=True,
+        shuffle_test=False, drop_last=True):
+    fold = cross_validation_indices[fold_id]
+    train_idx = fold['train']
+    val_idx = fold['val']
 
-    train_dataset = EmgDataSet(X_train, y_train)
-    test_dataset = EmgDataSet(X_test, y_test)
+    labels = classify_emg_dict['onehot_y'] if onehot_label else classify_emg_dict['int_y']
+    data_x = classify_emg_dict['data_x']
+
+    train_dataset = EmgDataSet(data_x, labels, train_idx)
+    val_dataset = EmgDataSet(data_x, labels, val_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle_train, drop_last=drop_last)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=shuffle_test)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=shuffle_test)
 
-    return train_loader, test_loader
-
-
-
-if __name__ == '__main__':
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    batch_size_example = 20
-    dummy_A = torch.randn(batch_size_example, 1, 1200, 65).to(device)
-    model = Raw_Cnn_2d(input_channel=1, class_number=7).to(device)
-    # model = EMGFusionPatchDiscriminator(num_conditions=num_conditions_example).to(device)
-
-    # Keras-like summary primarily shows Layer Name, Output Shape, and Param #
-    print(f"--- Model Summary (Keras-like: Layer Name, Output Shape, Param #) ---")
-    # 'input_size' is useful but not standard in Keras summary per layer, rather it's shown for the overall model.
-    # 'kernel_size' is also not typically in the main Keras summary table per row.
-    model_summary_obj = summary(model, input_data=dummy_A,
-        col_names=["output_size", "num_params", "trainable"],  # We can also add "trainable" to distinguish trainable params
-        # `row_settings=["var_names"]` will show variable names for layers if they have them (e.g. self.encoder1)
-        row_settings=["var_names", "depth"],  # Adding depth can help with structure
-        depth=3,  # Adjust depth to control nesting. For very nested models, a higher depth is informative.
-        # For a Keras-like flat view, you might use depth=1 or 2 if top-level modules are simple.
-        verbose=0  # Set to 0 to only return the object
-    )
-    print(model_summary_obj)
-
-    # Print total parameters separately, as Keras does at the end
-    print("================================================================")
-    print(f"Total params: {model_summary_obj.total_params:,}")
-    print(f"Trainable params: {model_summary_obj.trainable_params:,}")
-    print(f"Non-trainable params: {model_summary_obj.total_params - model_summary_obj.trainable_params:,}")
-    print("----------------------------------------------------------------")
+    return train_loader, val_loader

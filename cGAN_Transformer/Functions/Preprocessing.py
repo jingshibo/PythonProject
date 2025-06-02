@@ -8,7 +8,6 @@ from scipy.signal import correlate, correlation_lags, butter, filtfilt
 from scipy.ndimage import uniform_filter1d  # Kept for alternative smoothing
 
 
-
 ## build classification datasets and extract the relevent modes for data generation
 def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normalized, time_range):
     # select only the central part data for training
@@ -95,11 +94,88 @@ def crossValidationSet(fold_number, classify_emg_data):
     return cross_validation_indices, cross_validation_dataset
 
 
+## build a cross validation dataset with generated data incorporated into the training set
+def build_cv_dataset_with_generated_data(original_emg_data, generated_emg_data, n_splits=5, N_real_keep=5):
+    # Step 1: Extract generated data into dict of lists
+    generated_data = {}
+    for key, subdict in generated_emg_data.items():
+        images = subdict[0]['generated_images']  # shape: (N, 1, 1200, 65)
+        image_list = [img.astype(np.float32) for img in images]  # (1, 1200, 65)
+        generated_data[key] = image_list
+
+    # Step 2: Flatten original data
+    all_keys = sorted(original_emg_data.keys())
+    label_map = {key: i for i, key in enumerate(all_keys)}
+    X_all = [sample[np.newaxis, :, :] for key in all_keys for sample in original_emg_data[key]]
+    y_all = [label_map[key] for key in all_keys for _ in original_emg_data[key]]
+    X_all = np.array(X_all).astype(np.float32)
+    y_all = np.array(y_all).astype(np.int64)
+
+    # Step 3: Cross Validation data
+    kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    encoder = OneHotEncoder(sparse_output=False)
+    encoder.fit(y_all.reshape(-1, 1))  # fit once
+    original_folds = []
+    replaced_folds = []
+
+    for train_idx, test_idx in kf.split(X_all, y_all):
+        # ORIGINAL data
+        X_train_orig, y_train_orig = X_all[train_idx], y_all[train_idx]
+        X_test, y_test = X_all[test_idx], y_all[test_idx]
+
+        y_train_onehot_orig = encoder.transform(y_train_orig.reshape(-1, 1))
+        y_test_onehot = encoder.transform(y_test.reshape(-1, 1))
+
+        original_folds.append({
+            'X_train': np.array(X_train_orig),
+            'y_train_int': y_train_orig,
+            'y_train_onehot': y_train_onehot_orig,
+            'X_test': np.array(X_test),
+            'y_test_int': y_test,
+            'y_test_onehot': y_test_onehot,
+            'label_map': label_map
+        })
+
+        # REPLACED data
+        replaced_X_train, replaced_y_train = [], []
+
+        train_data_by_label = {}
+        for i, x in enumerate(X_train_orig):
+            label = y_train_orig[i]
+            train_data_by_label.setdefault(label, []).append(x)
+
+        for label, samples in train_data_by_label.items():
+            key = all_keys[label]
+            if key in generated_data:
+                replaced_X_train.extend(samples[:N_real_keep])  # retain N number of real data for this dataset
+                replaced_y_train.extend([label] * N_real_keep)
+                replaced_X_train.extend(generated_data[key])
+                replaced_y_train.extend([label] * len(generated_data[key]))
+            else:
+                replaced_X_train.extend(samples)
+                replaced_y_train.extend([label] * len(samples))
+
+        y_train_onehot_replaced = encoder.transform(np.array(replaced_y_train).reshape(-1, 1))
+
+        replaced_folds.append({
+            'X_train': np.array(replaced_X_train),
+            'y_train_int': np.array(replaced_y_train),
+            'y_train_onehot': y_train_onehot_replaced,
+            'X_test': np.array(X_test),
+            'y_test_int': y_test,
+            'y_test_onehot': y_test_onehot,
+            'label_map': label_map
+        })
+
+    return replaced_folds, original_folds
+
+
+##
 def align_by_cross_correlation(emg_data, max_lag=100, channel_weights=None, num_iterations=2, initial_reference_method='first',
         verbose=False, smoothing_method='butterworth', butter_cutoff_freq=None, butter_filter_order=4, sampling_rate=1000,
         ma_smoothing_window_size=0):
     """
-    Align time-series by maximizing cross-correlation, with iterative reference refinement
+    Align time-series EMG data by maximizing cross-correlation, with iterative reference refinement
     and optional Butterworth low-pass filtering or moving average for smoothing.
 
     Args:
