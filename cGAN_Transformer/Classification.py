@@ -69,7 +69,7 @@ time_slice_end = time_slice_start + window_length
 
 
 ## train gan model
-NUM_EPOCHS = 30
+NUM_EPOCHS = 50
 num_batch_per_epoch = 50
 num_sample_per_condition = 5  # in each batch
 num_transitions = len(transition_encoding)
@@ -80,17 +80,18 @@ training_parameters = {'modes_generation': modes_generation, 'num_epochs': NUM_E
     'num_sample_per_condition': num_sample_per_condition, 'window_length': window_length, 'window_increment': window_increment,
     'num_window_per_transition': num_window_per_transition, 'window_shift': window_shift, 'channel_shift': channel_shift}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'gan_result_set': 0}
-# trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCHS, num_sample_per_condition, num_batch_per_epoch)
-# model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters)
+trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCHS, num_sample_per_condition, num_batch_per_epoch)
+model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters)
 
 
 
 ## generate transition data
-epoch_number = 30
+epoch_number = 100
 model = Storage.loadCheckPointModels(storage_parameters, epoch_number)
 all_generated_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
-    num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=50)
-time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, sample_number=30)
+    num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=60, batch_size=30)
+time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, sample_number=50)
+selected_fake_data = ordered_sampled_data
 
 
 ## sampled results
@@ -104,8 +105,8 @@ transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
 transition_type = 'emg_LWSD'
 time_point = 0
 generated_image = selected_fake_data[transition_type][time_point]['generated_images'].squeeze(1)
-# blending_factor_A = order_sampled_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
-# blending_factor_B = order_sampled_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
+# blending_factor_A = ordered_sampled_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
+# blending_factor_B = ordered_sampled_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
 
 # Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
 Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
@@ -116,7 +117,7 @@ Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_typ
 
 ##
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW', 'emg_LWLW', 'emg_SASA', 'emg_SDSD']
-transition_type = 'emg_LWSD'
+transition_type = 'emg_SDLW'
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,

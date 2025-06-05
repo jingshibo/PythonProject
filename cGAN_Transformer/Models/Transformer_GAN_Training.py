@@ -1,4 +1,5 @@
 ##
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,7 +8,6 @@ from torch.utils.data import Dataset, DataLoader
 from torch.amp import autocast, GradScaler
 import os
 import gc
-import time
 import datetime
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
@@ -48,7 +48,8 @@ class GanTraining():
         self.train_loader = None
         self.mse_loss = nn.MSELoss()
         self.l1_loss = nn.L1Loss()
-        self.perceptual_loss_calculator = VGG19PerceptualLoss(feature_layers={'relu2_1': 6}, device='cuda')
+        self.perceptual_loss_calculator = VGG19PerceptualLoss(feature_layers={'relu3_1': 11}, device='cuda')
+
 
     def trainModel(self, train_gan_data, transition_encoding, training_parameters, storage_parameters):
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -60,18 +61,17 @@ class GanTraining():
             training_parameters['window_length'], training_parameters['window_increment'], training_parameters['window_shift'],
             self.num_sample_per_condition, self.num_batch_per_epoch)
         self.train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=0)
-        channel_number = dataset[0][0].shape[1]
-        time_steps = dataset[0][0].shape[2]
         # self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions).to(self.device)
         self.gen = Transformer_GAN_Model.EMGFusionSeparateGenerator(num_conditions).to(self.device)
-        self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions=num_conditions).to(self.device)
+        # self.gen = Transformer_GAN_Model.EMGFusionGFUGeneratorUNet(num_conditions).to(self.device)
+        self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions).to(self.device)
 
         # training parameters
         gen_lr = 0.0003
         disc_lr = 0.0002
         gen_lr_decay_rate = 0.8
         disc_lr_decay_rate = 0.8
-        decay_epochs = [10, 20]
+        decay_epochs = [10, 20, 30, 50, 75]
         self.critic_iterations = 3  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
@@ -112,7 +112,7 @@ class GanTraining():
         total_critic_loss_epoch = 0.0
         num_gen_updates = 0  # Track number of G updates
         # adjust reconstruction weight
-        if (epoch_number + 1) % self.lambda_l1_decay_epochs == 0:
+        if (epoch_number + 1) % self.lambda_l1_decay_epochs == 0 and (epoch_number + 1) <= 30:
             self.lambda_L1 = self.lambda_L1 // 2
 
         for batch_idx, (A, B, real_C, cond_label) in enumerate(loop):
