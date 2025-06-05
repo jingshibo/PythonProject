@@ -86,10 +86,10 @@ model = trainer.trainModel(train_gan_data, transition_encoding, training_paramet
 
 
 ## generate transition data
-epoch_number = 100
+epoch_number = 30
 model = Storage.loadCheckPointModels(storage_parameters, epoch_number)
 all_generated_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
-    num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=60, batch_size=30)
+    num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=30)
 time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, sample_number=50)
 selected_fake_data = ordered_sampled_data
 

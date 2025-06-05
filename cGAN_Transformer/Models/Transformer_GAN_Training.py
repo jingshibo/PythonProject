@@ -112,7 +112,7 @@ class GanTraining():
         total_critic_loss_epoch = 0.0
         num_gen_updates = 0  # Track number of G updates
         # adjust reconstruction weight
-        if (epoch_number + 1) % self.lambda_l1_decay_epochs == 0 and (epoch_number + 1) <= 30:
+        if (epoch_number + 1) % self.lambda_l1_decay_epochs == 0:
             self.lambda_L1 = self.lambda_L1 // 2
 
         for batch_idx, (A, B, real_C, cond_label) in enumerate(loop):
