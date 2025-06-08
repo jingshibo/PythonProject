@@ -115,7 +115,7 @@ class ModelTraining():
         for fold_id, fold_data in enumerate(classify_emg_dict):
             # initialize the tensorboard writer
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
+            # self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
             # extract the dataset
             group_number = f"group_{fold_id}"

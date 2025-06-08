@@ -98,7 +98,7 @@ def generateTransitionData(model, train_gan_data, transition_encoding, num_windo
 
 
 ## sample certain number of generated data for plotting
-def returnDataForPlotting(generated_data, sample_number):
+def returnDataForPlotting(generated_data, ordered_sample_number):
     time_0_fake_data = {}
     order_results = {}
     for transition_name, time_slice_dict in generated_data.items():
@@ -110,17 +110,17 @@ def returnDataForPlotting(generated_data, sample_number):
             total = images.shape[0]
 
             # Ensure we don't exceed available data
-            if sample_number > total:
+            if ordered_sample_number > total:
                 raise ValueError(
-                    f"Only {total} samples available in {transition_name} slice {time_slice_idx}, but requested {sample_number}.")
+                    f"Only {total} samples available in {transition_name} slice {time_slice_idx}, but requested {ordered_sample_number}.")
             # # Randomly sample indices
             # random_indices = np.random.choice(total, size=sample_number, replace=False)
             # # Store random sampled generated data
             # sampled_results[transition_name][time_slice_idx] = {'generated_images': images[random_indices],
             #     'blending_factors': factors[random_indices]}
             # Store in-order sampled generated data
-            order_results[transition_name][time_slice_idx] = {'generated_images': images[np.arange(0, sample_number)],
-                'blending_factors': factors[np.arange(0, sample_number)]}
+            order_results[transition_name][time_slice_idx] = {'generated_images': images[np.arange(0, ordered_sample_number)],
+                'blending_factors': factors[np.arange(0, ordered_sample_number)]}
 
         time_0_fake_data[transition_name] = [sample for sample in generated_data[transition_name][0]['generated_images'].squeeze(1)]
 

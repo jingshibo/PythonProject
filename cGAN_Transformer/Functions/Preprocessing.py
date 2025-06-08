@@ -25,17 +25,20 @@ def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normali
     new_emg_central = slice_center_time(new_emg_normalized, time_range)
 
     # build gan generation dataset
-    train_gan_data = {}
     data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is critical, corresponding to the locomotion modes
 
+    old_gan_data = {}
+    new_gan_data = {}
     for transition_type, modes in modes_generation.items():
         # Initialize transition_type key in real_emg and train_gan_data dictionaries
-        train_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
+        old_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
+        new_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
         for idx, mode in enumerate(modes):
             # Assign values using the new structure
-            train_gan_data[transition_type][data_keys[idx]] = old_emg_central[mode]
+            old_gan_data[transition_type][data_keys[idx]] = old_emg_central[mode]
+            new_gan_data[transition_type][data_keys[idx]] = new_emg_central[mode]
 
-    return old_emg_central, new_emg_central, train_gan_data
+    return old_emg_central, new_emg_central, old_gan_data, new_gan_data
 
 
 # build the paired x and y dataset
@@ -171,7 +174,7 @@ def build_cv_dataset_with_generated_data(original_emg_data, generated_emg_data, 
 
 
 ##
-def align_by_cross_correlation(emg_data, max_lag=100, channel_weights=None, num_iterations=2, initial_reference_method='first',
+def align_by_cross_correlation(emg_data, max_lag=100, channel_weights=None, num_iterations=2, initial_reference_method='average',
         verbose=False, smoothing_method='butterworth', butter_cutoff_freq=None, butter_filter_order=4, sampling_rate=1000,
         ma_smoothing_window_size=0):
     """
@@ -326,3 +329,116 @@ def align_by_cross_correlation(emg_data, max_lag=100, channel_weights=None, num_
         emg_list_aligned[data_mode] = aligned_list_final
         emg_cumulative_lags[data_mode] = cumulative_lags.tolist()
     return emg_list_aligned, emg_cumulative_lags
+
+
+
+##
+def align_new_emg_to_old_emg(new_emg_aligned, old_emg_aligned, fs=1000, lp_cutoff=20, max_lag=50):
+    """
+    Aligns EMG samples by cross-correlating with a reference mean waveform.
+
+    This function takes new EMG trials, finds the optimal time-shift to align them
+    with a template created from old trials, and applies that shift to the
+    original, unfiltered data.
+
+    Parameters:
+    - new_emg_aligned (dict): A dictionary where keys are trial identifiers and
+      values are lists of new EMG samples. Each sample is a (time, channels)
+      NumPy array, e.g., (1300, 65).
+    - old_emg_aligned (dict): A dictionary with the same structure containing
+      reference EMG samples used to build the alignment template.
+    - fs (int): Sampling frequency in Hz.
+    - lp_cutoff (int): Low-pass filter cutoff frequency in Hz for robust alignment.
+    - max_lag (int): Maximum allowable time shift (in samples) for alignment.
+
+    Returns:
+    - dict: A dictionary with the same keys, but with the new EMG samples
+      time-aligned to the reference.
+    """
+
+    def butter_lowpass_filter(data, cutoff, fs, order=4):
+        """
+        Apply a zero-phase low-pass Butterworth filter to a 1D signal.
+        """
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        # Use filtfilt for zero-phase filtering
+        return filtfilt(b, a, data)
+
+    def shift_array(arr, lag, fill_value=0.0):
+        """
+        Shifts a 2D array along its first axis (time) by a given lag.
+
+        This function correctly interprets the lag from scipy's cross-correlation:
+        - A positive lag indicates the signal is delayed, so we shift it LEFT.
+        - A negative lag indicates the signal is advanced, so we shift it RIGHT.
+
+        Parameters:
+        - arr (np.ndarray): The 2D array to shift, with shape (time, channels).
+        - lag (int): The integer lag to apply.
+        - fill_value (float): The value to use for padding.
+
+        Returns:
+        - np.ndarray: The shifted array with the same shape as the input.
+        """
+        shifted_arr = np.full_like(arr, fill_value)
+
+        if lag > 0:  # Positive lag -> Shift LEFT (advance in time)
+            shifted_arr[:-lag, :] = arr[lag:, :]
+        elif lag < 0:  # Negative lag -> Shift RIGHT (delay in time)
+            shift = abs(lag)
+            shifted_arr[shift:, :] = arr[:-shift, :]
+        else:  # No lag
+            shifted_arr = arr.copy()
+
+        return shifted_arr
+
+    aligned_emg = {}
+    for key in new_emg_aligned.keys():
+        # --- Improvement 1: Robustness ---
+        # Skip if there are no corresponding reference samples to create a template
+        if key not in old_emg_aligned or not old_emg_aligned[key]:
+            print(f"Warning: No reference samples found for key '{key}'. Skipping alignment.")
+            continue
+
+        # --- Improvement 2: Efficiency ---
+        # Step 1: Compute reference mean efficiently using NumPy Stacks all (1300, 65) arrays into (N, 1300, 65), then averages over
+        # trials (axis 0) and channels (axis 2) in one step.
+        reference_samples = np.stack(old_emg_aligned[key])
+        reference_mean = np.mean(reference_samples, axis=(0, 2))  # Shape: (1300,)
+
+        # Step 2: Low-pass filter the reference for robust correlation
+        ref_filtered = butter_lowpass_filter(reference_mean, cutoff=lp_cutoff, fs=fs)
+
+        aligned_samples = []
+        for sample in new_emg_aligned[key]:
+            # Step 3: Compute and filter the mean of the current sample
+            sample_mean = np.mean(sample, axis=1)
+            sample_filtered = butter_lowpass_filter(sample_mean, cutoff=lp_cutoff, fs=fs)
+
+            # --- Improvement 3: Clarity ---
+            # Step 4: Compute constrained cross-correlation more cleanly
+            correlation = correlate(sample_filtered, ref_filtered, mode='full', method='auto')
+            lags = correlation_lags(len(sample_filtered), len(ref_filtered), mode="full")
+
+            # Constrain to the max_lag window
+            lag_mask = (lags >= -max_lag) & (lags <= max_lag)
+            constrained_corr = correlation[lag_mask]
+            constrained_lags = lags[lag_mask]
+
+            # Find the lag that maximizes the correlation
+            if len(constrained_corr) == 0:
+                # This can happen if the signal length is smaller than max_lag
+                best_lag = 0
+            else:
+                best_lag = constrained_lags[np.argmax(constrained_corr)]
+
+            # --- Improvement 4: Correctness and Modularity ---
+            # Step 5: Apply the lag to the original, unfiltered signal using a robust helper function
+            shifted_sample = shift_array(sample, best_lag)
+            aligned_samples.append(shifted_sample)
+
+        aligned_emg[key] = aligned_samples
+
+    return aligned_emg

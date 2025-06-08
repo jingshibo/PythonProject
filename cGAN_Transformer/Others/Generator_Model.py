@@ -436,3 +436,101 @@ class EMGFusionGFUGeneratorImproved(nn.Module):
         # Used slicing blending_factors[:, 0:1, :, :] to keepdim for broadcasting if A/B are [B,1,H,W]
 
         return generated_image, blending_factors
+
+
+
+class EMGFusionGFUGeneratorUNet(nn.Module):
+    def __init__(self, num_conditions, cond_embed_dim=64, use_cbn=True, # use_adain, use_spectral_norm typically False for Generator
+            enc_channels_A_B=[32, 64],  # Channels for L1, L2 (GFU input)
+            gfu_gate_intermediate_channels=[32, 16], dec_channels_blend_factors=[64, 32],  # Channels for Decoder L2, L1
+            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}, default_kernel_size=(5, 9), default_padding=(2, 4),
+            refinement_kernel_size=(3, 3), refinement_padding=(1, 1)):
+        super().__init__()
+
+        act_fn = activation_class(**activation_params) if activation_params else activation_class()
+        self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
+
+        # --- U-Net Encoder Path for A (2 Levels) ---
+        self.enc_A_L1 = ConvCBNBlock(1, enc_channels_A_B[0], cond_embed_dim, use_cbn, activation=act_fn, kernel_size=default_kernel_size,
+            stride=(1, 2), padding=default_padding)  # W/2
+        self.enc_A_L2 = ConvCBNBlock(enc_channels_A_B[0], enc_channels_A_B[1], cond_embed_dim, use_cbn, activation=act_fn,
+            kernel_size=default_kernel_size, stride=(1, 2), padding=default_padding)  # W/4 (Input to GFU)
+
+        # --- U-Net Encoder Path for B (2 Levels) ---
+        self.enc_B_L1 = ConvCBNBlock(1, enc_channels_A_B[0], cond_embed_dim, use_cbn, activation=act_fn, kernel_size=default_kernel_size,
+            stride=(1, 2), padding=default_padding)
+        self.enc_B_L2 = ConvCBNBlock(enc_channels_A_B[0], enc_channels_A_B[1], cond_embed_dim, use_cbn, activation=act_fn,
+            kernel_size=default_kernel_size, stride=(1, 2), padding=default_padding)
+
+        gfu_input_ch = enc_channels_A_B[1]  # Output of L2 encoders
+
+        # --- GFU Core Components (Deeper Gate Path) ---
+        self.gfu_gate_common_intermediate1 = ConvCBNBlock(gfu_input_ch * 2, gfu_gate_intermediate_channels[0], cond_embed_dim, use_cbn,
+            activation=act_fn, kernel_size=refinement_kernel_size, stride=(1, 1), padding=refinement_padding)
+        self.gfu_gate_common_intermediate2 = ConvCBNBlock(gfu_gate_intermediate_channels[0], gfu_gate_intermediate_channels[1],
+            cond_embed_dim, use_cbn, activation=act_fn, kernel_size=refinement_kernel_size, stride=(1, 1), padding=refinement_padding)
+        self.gfu_gate_A_final_conv = nn.Conv2d(gfu_gate_intermediate_channels[1], 1, kernel_size=(1, 1))
+        self.gfu_gate_B_final_conv = nn.Conv2d(gfu_gate_intermediate_channels[1], 1, kernel_size=(1, 1))
+
+        # --- U-Net Decoder Path (2 Levels) ---
+        # Stage 2 (upsample from W/4 to W/2) - Input: 2 channels (g_A_ds, g_B_ds from GFU)
+        self.dec_L2_upsample = ConvCBNBlock(2, dec_channels_blend_factors[0], cond_embed_dim, use_cbn, activation=act_fn, transpose=True,
+            kernel_size=default_kernel_size, stride=(1, 1), padding=default_padding, upsample_scale=(1, 2))
+        # Skip from enc_A_L1 and enc_B_L1 (each has enc_channels_A_B[0] channels)
+        self.dec_L2_conv1 = ConvCBNBlock(dec_channels_blend_factors[0] + enc_channels_A_B[0] * 2, dec_channels_blend_factors[0],
+            cond_embed_dim, use_cbn, activation=act_fn, kernel_size=refinement_kernel_size, stride=(1, 1), padding=refinement_padding)
+        self.dec_L2_conv2 = ConvCBNBlock(dec_channels_blend_factors[0], dec_channels_blend_factors[0], cond_embed_dim, use_cbn,
+            activation=act_fn, kernel_size=refinement_kernel_size, stride=(1, 1), padding=refinement_padding)
+
+        # Stage 1 (upsample from W/2 to W) - Input from dec_L2_conv2
+        self.dec_L1_upsample = ConvCBNBlock(dec_channels_blend_factors[0], dec_channels_blend_factors[1], cond_embed_dim, use_cbn,
+            activation=act_fn, transpose=True, kernel_size=default_kernel_size, stride=(1, 1), padding=default_padding,
+            upsample_scale=(1, 2))
+        # Skip from original A and B (1 channel each)
+        self.dec_L1_conv1 = ConvCBNBlock(dec_channels_blend_factors[1] + 1 * 2, dec_channels_blend_factors[1], cond_embed_dim, use_cbn,
+            activation=act_fn, kernel_size=refinement_kernel_size, stride=(1, 1), padding=refinement_padding)
+        self.dec_L1_conv2 = ConvCBNBlock(dec_channels_blend_factors[1], dec_channels_blend_factors[1], cond_embed_dim, use_cbn,
+            activation=act_fn, kernel_size=refinement_kernel_size, stride=(1, 1), padding=refinement_padding)
+
+        self.final_blend_conv = nn.Conv2d(dec_channels_blend_factors[1], 2, kernel_size=(1, 1))
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, A, B, condition):
+        cond_embed = self.condition_embedding(condition)
+
+        # Encoder A
+        A_e1 = self.enc_A_L1(A, cond_embed)  # W/2, Channels: enc_channels_A_B[0]
+        A_feat_ds = self.enc_A_L2(A_e1, cond_embed)  # W/4, Channels: enc_channels_A_B[1] (Input to GFU)
+
+        # Encoder B
+        B_e1 = self.enc_B_L1(B, cond_embed)
+        B_feat_ds = self.enc_B_L2(B_e1, cond_embed)
+
+        # GFU Gate Computation
+        concat_for_gates_ds = torch.cat([A_feat_ds, B_feat_ds], dim=1)
+        gate_inter1 = self.gfu_gate_common_intermediate1(concat_for_gates_ds, cond_embed)
+        gate_inter2 = self.gfu_gate_common_intermediate2(gate_inter1, cond_embed)
+        g_A_ds_logits = self.gfu_gate_A_final_conv(gate_inter2)
+        g_A_ds = self.sigmoid(g_A_ds_logits)
+        g_B_ds_logits = self.gfu_gate_B_final_conv(gate_inter2)
+        g_B_ds = self.sigmoid(g_B_ds_logits)
+        low_res_blending_factors = torch.cat([g_A_ds, g_B_ds], dim=1)  # [B, 2, H_ds, W/4]
+
+        # Decoder (Upsampling blending factors)
+        # Stage 2 Upsampling (from W/4 to W/2)
+        d2_up = self.dec_L2_upsample(low_res_blending_factors, cond_embed)  # Channels: dec_channels_blend_factors[0]
+        d2_cat = torch.cat([d2_up, A_e1, B_e1], dim=1)  # Skip from enc_L1 of A and B
+        d2_c1 = self.dec_L2_conv1(d2_cat, cond_embed)
+        d2_c2 = self.dec_L2_conv2(d2_c1, cond_embed)  # Channels: dec_channels_blend_factors[0]
+
+        # Stage 1 Upsampling (from W/2 to W)
+        d1_up = self.dec_L1_upsample(d2_c2, cond_embed)  # Channels: dec_channels_blend_factors[1]
+        d1_cat = torch.cat([d1_up, A, B], dim=1)  # Skip from original A, B
+        d1_c1 = self.dec_L1_conv1(d1_cat, cond_embed)
+        d1_c2 = self.dec_L1_conv2(d1_c1, cond_embed)  # Channels: dec_channels_blend_factors[1]
+
+        raw_blending_factors_final = self.final_blend_conv(d1_c2)
+        blending_factors = self.sigmoid(raw_blending_factors_final)
+
+        generated_image = blending_factors[:, 0:1, :, :] * A + blending_factors[:, 1:2, :, :] * B
+        return generated_image, blending_factors

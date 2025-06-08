@@ -44,6 +44,7 @@ class Dtw_Distance:
         for transition_type in self.modes_generation.keys():
             # select reference data
             if random_reference:  # select references randomly
+                self.num_reference = min(len(dtw_results[transition_type]['within_reference_ds']), self.num_reference)
                 selected_reference_index = random.sample(range(len(dtw_results[transition_type]['within_reference_ds'])), self.num_reference)
             else:  # select representative references
                 dtw_reference_mean = np.mean(dtw_results[transition_type]['within_reference_ds'], axis=0)

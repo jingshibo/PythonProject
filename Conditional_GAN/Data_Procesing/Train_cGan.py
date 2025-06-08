@@ -6,8 +6,8 @@ from Conditional_GAN.Data_Procesing import Process_Raw_Data, Plot_Emg_Data
 
 '''train generative model'''
 ##  define windows
-start_before_toeoff_ms = 650
-endtime_after_toeoff_ms = 650
+start_before_toeoff_ms = 700
+endtime_after_toeoff_ms = 700
 feature_window_ms = start_before_toeoff_ms + endtime_after_toeoff_ms
 predict_window_ms = start_before_toeoff_ms + endtime_after_toeoff_ms
 window_parameters = Process_Raw_Data.returnWindowParameters(start_before_toeoff_ms=start_before_toeoff_ms,
