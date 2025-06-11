@@ -12,88 +12,12 @@ import os
 import gc
 
 
-## design local focus model
-class Raw_Cnn_2d(nn.Module):
-    def __init__(self, input_channel, class_number):
-        super(Raw_Cnn_2d, self).__init__()
-
-        # define layer parameter
-        hidden_channel = 32
-        # define convolutional layer
-        self.convolutional_layer = nn.Sequential(
-            nn.Conv2d(in_channels=input_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01), #nn.LeakyReLU(0.2)
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-
-            nn.Conv2d(in_channels=hidden_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-
-            nn.Conv2d(in_channels=hidden_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-
-            nn.Conv2d(in_channels=hidden_channel, out_channels=hidden_channel, kernel_size=(5, 3), dilation=2, stride=(2, 1), padding=(2, 1)),
-            nn.BatchNorm2d(hidden_channel),
-            nn.LeakyReLU(0.01),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=1)
-        )
-
-        # define dense layer
-        self.linear1_parameter = 512
-        self.linear2_parameter = 128
-        self.linear_layer = nn.Sequential(
-            nn.LazyLinear(self.linear1_parameter),
-            nn.BatchNorm1d(self.linear1_parameter),
-            nn.LeakyReLU(0.01),
-            nn.Dropout(0.5),
-
-            nn.LazyLinear(self.linear2_parameter),
-            nn.BatchNorm1d(self.linear2_parameter),
-            nn.LeakyReLU(0.01),
-            nn.Dropout(0.5),
-
-            nn.LazyLinear(class_number)
-        )
-        # self.initialize_weights()
-
-    # define the initialization method for each layer
-    def initialize_weights(self):
-        for m in self.convolutional_layer:
-            if isinstance(m, nn.Conv2d):
-                nn.init.xavier_normal_(m.weight)  # xavier / Glorot method
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                pass
-            elif isinstance(m, nn.Linear):
-                pass
-
-    def forward(self, x, intermediate_features=False):
-        x = self.convolutional_layer(x)
-        cnn_features = x.detach().clone()
-        x = torch.flatten(x, 1)
-        flatten_features = x.detach().clone()
-        x = self.linear_layer(x)
-        # if self.training is False:
-        #     x = F.softmax(x, dim=1)
-
-        # obtain intermediate_features
-        if intermediate_features:
-            return x, cnn_features, flatten_features
-        else:
-            return x
-
-# print("change hyperparameters!")
-
 ## training
 class ModelTraining():
-    def __init__(self, num_epochs, batch_size, report_period=10):
+    def __init__(self, models, num_epochs, batch_size, report_period=10):
         #  initialize member variables
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.pretrained_models = models
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.report_period = report_period
@@ -108,7 +32,7 @@ class ModelTraining():
         self.result_dir = f'D:\Project\pythonProject\Model_Raw\CNN_2D\Results\\runs_{timestamp}'
 
     #  train the model
-    def trainModel(self, classify_emg_dict, decay_epochs, pretrained_model=None, select_channels='emg_all'):
+    def trainModel(self, classify_emg_dict, decay_epochs, select_channels='emg_all'):
         models = []
         results = []
 
@@ -129,14 +53,11 @@ class ModelTraining():
                 shuffle_test=False, drop_last=True)
 
             # training parameters
-            if pretrained_model:
-                self.model = copy.deepcopy(pretrained_model[fold_id]).to(self.device)  # move the model to GPU
-            else:
-                self.model = Raw_Cnn_2d(input_channel, class_number).to(self.device)  # move the model to GPU
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001, weight_decay=0.01)  # initial learning rate and regularization
+            self.model = copy.deepcopy(self.pretrained_models[fold_id]).to(self.device)  # move the model to GPU
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0005, weight_decay=0.00001)  # initial learning rate and regularization
             self.loss_fn = torch.nn.CrossEntropyLoss()  # Loss functions expect data in batches
             decay_steps = decay_epochs * len(self.train_loader)
-            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.1)  # adjusted learning rate
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=decay_steps, gamma=0.3)  # adjusted learning rate
 
             # train and test the model of a fold
             for epoch_number in range(self.num_epochs):  # loop over each epoch
@@ -276,31 +197,3 @@ def foldDataloader(fold_data, batch_size, onehot_label=False, shuffle_train=True
     return train_loader, test_loader
 
 
-
-if __name__ == '__main__':
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    batch_size_example = 20
-    dummy_A = torch.randn(batch_size_example, 1, 1200, 65).to(device)
-    model = Raw_Cnn_2d(input_channel=1, class_number=7).to(device)
-    # model = EMGFusionPatchDiscriminator(num_conditions=num_conditions_example).to(device)
-
-    # Keras-like summary primarily shows Layer Name, Output Shape, and Param #
-    print(f"--- Model Summary (Keras-like: Layer Name, Output Shape, Param #) ---")
-    # 'input_size' is useful but not standard in Keras summary per layer, rather it's shown for the overall model.
-    # 'kernel_size' is also not typically in the main Keras summary table per row.
-    model_summary_obj = summary(model, input_data=dummy_A,
-        col_names=["output_size", "num_params", "trainable"],  # We can also add "trainable" to distinguish trainable params
-        # `row_settings=["var_names"]` will show variable names for layers if they have them (e.g. self.encoder1)
-        row_settings=["var_names", "depth"],  # Adding depth can help with structure
-        depth=3,  # Adjust depth to control nesting. For very nested models, a higher depth is informative.
-        # For a Keras-like flat view, you might use depth=1 or 2 if top-level modules are simple.
-        verbose=0  # Set to 0 to only return the object
-    )
-    print(model_summary_obj)
-
-    # Print total parameters separately, as Keras does at the end
-    print("================================================================")
-    print(f"Total params: {model_summary_obj.total_params:,}")
-    print(f"Trainable params: {model_summary_obj.trainable_params:,}")
-    print(f"Non-trainable params: {model_summary_obj.total_params - model_summary_obj.trainable_params:,}")
-    print("----------------------------------------------------------------")

@@ -67,8 +67,8 @@ time_slice_end = time_slice_start + window_length
 #     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 # Plot_Raw_Data.plot_heatmaps_samples(new_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=True, stata='mean')
-Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-    key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=False, stata='mean')
+# Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+#     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=False, stata='mean')
 # Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=False, stata='mean')
 #
@@ -96,13 +96,12 @@ model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generat
 all_generated_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], new_gan_data, transition_encoding,
     num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=30)
 time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, ordered_sample_number=50)
-selected_fake_data = ordered_sampled_data
 
 
 ## sampled results
-extracted_data = Dtw_Similarity.extractFakeData(time_0_fake_data, new_emg_central, modes_generation, envelope_frequency=50, num_sample=50,
+extracted_data = Dtw_Similarity.extractFakeData(time_0_fake_data, new_emg_central, modes_generation, envelope_frequency=20, num_sample=50,
     num_reference=1, method='select', random_reference=True, split_grids=True)
-selected_fake_data = Transformer_GAN_Testing.fakeDataForTraining(extracted_data)
+selected_fake_data, organized_fake_data = Transformer_GAN_Testing.fakeDataForTraining(extracted_data)
 
 
 ## print image
@@ -121,11 +120,11 @@ Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_t
 
 ##
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW', 'emg_LWLW', 'emg_SASA', 'emg_SDSD']
-transition_type = 'emg_LWSD'
+transition_type = 'emg_SDSD'
 # Plot_Raw_Data.plot_heatmaps_samples(new_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
-    key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=False, stata='mean')
+    key_label=transition_type, num_samples=5, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 # Plot_Raw_Data.plot_sample_fft(old_emg_central[transition_type], transition_type, num_samples=5)
 # transition_type = 'emg_SDSD'
 # Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
@@ -133,16 +132,15 @@ Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_st
 
 
 
-##  classify using a single cnn 2d model
+##  train the old model using synthetic transition data
 num_epochs = 40
 batch_size = 64
 decay_epochs = 20
 now = datetime.datetime.now()
-fold_number = 5
-generated_dataset, original_dataset = Preprocessing.build_cv_dataset_with_generated_data(new_emg_central, selected_fake_data, n_splits=5,
-    N_real_keep=0)
+synthetic_dataset, original_dataset = Preprocessing.build_cv_dataset_with_augmented_data(new_emg_central, organized_fake_data,
+    modes_generation, n_splits=5, n_real_transition=0)
 train_model = Classification_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-models, model_results = train_model.trainModel(generated_dataset, decay_epochs)
+models, model_results = train_model.trainModel(original_dataset, decay_epochs)
 accuracy, cm_recall = Results.getAccuracyCm(model_results)
 class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)

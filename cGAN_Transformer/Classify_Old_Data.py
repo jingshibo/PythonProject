@@ -90,13 +90,12 @@ model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generat
 all_generated_data = Transformer_GAN_Testing.generateTransitionData(model['gen'], train_gan_data, transition_encoding,
     num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=30)
 time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, ordered_sample_number=50)
-selected_fake_data = ordered_sampled_data
 
 
 ## sampled results
 extracted_data = Dtw_Similarity.extractFakeData(time_0_fake_data, old_emg_central, modes_generation, envelope_frequency=50, num_sample=50,
-    num_reference=1, method='select', random_reference=True, split_grids=True)
-selected_fake_data = Transformer_GAN_Testing.fakeDataForTraining(extracted_data)
+    num_reference=1, method='select', random_reference=False, split_grids=True)
+selected_fake_data, organized_fake_data = Transformer_GAN_Testing.fakeDataForTraining(extracted_data)
 
 
 ## print image
@@ -127,21 +126,27 @@ Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_st
 
 
 
-##  classify using a single cnn 2d model
+##  train the old model using synthetic transition data
 num_epochs = 40
 batch_size = 64
 decay_epochs = 20
 now = datetime.datetime.now()
-fold_number = 5
-generated_dataset, original_dataset = Preprocessing.build_cv_dataset_with_generated_data(old_emg_central, selected_fake_data, n_splits=5,
-    N_real_keep=0)
+synthetic_dataset, original_dataset = Preprocessing.build_cv_dataset_with_augmented_data(old_emg_central, organized_fake_data,
+    modes_generation, n_splits=5, n_real_transition=0)
 train_model = Classification_Model.ModelTraining(num_epochs, batch_size, report_period=10)
-models, model_results = train_model.trainModel(generated_dataset, decay_epochs)
+models, model_results = train_model.trainModel(synthetic_dataset, decay_epochs)
 accuracy, cm_recall = Results.getAccuracyCm(model_results)
 class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
 
-# import winsound
-# winsound.Beep(frequency=1000, duration=1000)
+
+## train the old model with new data and noisy data
+synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_noisy_data(old_emg_central, modes_generation, snr=None, n_splits=5,
+    n_real_steady_state=10, n_synthetic_transition=10, n_real_transition=10, random_sampling=False)
+train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=16, report_period=10)
+models_update, results_new = train_model.trainModel(synthetic_dataset, decay_epochs=20)
+accuracy, cm_recall = Results.getAccuracyCm(results_new)
+class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
+Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
 
 

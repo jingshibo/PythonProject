@@ -67,15 +67,15 @@ class GanTraining():
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions).to(self.device)
 
         # training parameters
-        gen_lr = 0.0003
-        disc_lr = 0.0002
-        gen_lr_decay_rate = 0.8
-        disc_lr_decay_rate = 0.8
+        gen_lr = 0.0005
+        disc_lr = 0.0003
+        gen_lr_decay_rate = 0.7
+        disc_lr_decay_rate = 0.7
         decay_epochs = [10, 20, 30, 50, 75]
         self.critic_iterations = 3  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
-        self.lambda_l1_decay_epochs = 10
+        self.lambda_l1_decay_epochs = [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
         # For WGAN, Adam with these betas is common, or RMSprop
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.5, 0.999))
@@ -112,13 +112,13 @@ class GanTraining():
         total_critic_loss_epoch = 0.0
         num_gen_updates = 0  # Track number of G updates
         # adjust reconstruction weight
-        if (epoch_number + 1) % self.lambda_l1_decay_epochs == 0:
+        if (epoch_number + 1) in self.lambda_l1_decay_epochs:
             self.lambda_L1 = self.lambda_L1 // 2
 
         for batch_idx, (A, B, real_C, cond_label) in enumerate(loop):
             A = A.to(self.device)
             B = B.to(self.device)
-            real_C = real_C.to(self.device);
+            real_C = real_C.to(self.device)
             cond_label = cond_label.to(self.device)
             batch_number = epoch_number * self.num_batch_per_epoch + batch_idx
 
@@ -211,13 +211,6 @@ class GanTraining():
 
         # Construct batch of condition-averaged real targets
         avg_real_targets = torch.stack([avg_real_by_condition[int(c.item())] for c in conditions])  # shape: [B, 1, C, T]
-
-        # low pass filtering
-        # data_np = avg_real_targets.cpu().numpy()
-        # sos = butter(4, 10, fs=1000, btype='lowpass', output='sos')
-        # filtered = sosfiltfilt(sos, data_np[:, 0, :, :], axis=-1)
-        # filtered_safe = filtered.copy()
-        # avg_real_targets = torch.tensor(filtered_safe[:, np.newaxis, :, :], dtype=avg_real_targets.dtype, device=avg_real_targets.device)
 
         # average_value = avg_real_targets.to("cpu").numpy()
         # Plot_Raw_Data.plot_time_series_samples(average_value.squeeze(1).transpose(0, 2, 1), key_label='mean', num_samples=60, y_limit=(0, 0.4))
