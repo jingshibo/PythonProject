@@ -93,7 +93,7 @@ gen_results, old_emg_classify_normalized, new_emg_classify_normalized, extracted
 models_basis, accuracy_basis, cm_recall_basis, accuracy_best, cm_recall_best, accuracy_worst, cm_recall_worst, accuracy_tf, cm_recall_tf = \
     train_classifier.trainClassifierBasicScenarios(old_emg_classify_normalized, new_emg_classify_normalized)
 # ## save models
-# Model_Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, basis_result_set, 'classify_basis', project='cGAN_Model')
+Model_Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, basis_result_set, 'classify_basis', project='cGAN_Model')
 # Model_Storage.saveClassifyResult(subject, accuracy_best, cm_recall_best, version, basis_result_set, 'classify_best', project='cGAN_Model')
 # Model_Storage.saveClassifyResult(subject, accuracy_tf, cm_recall_tf, version, basis_result_set, 'classify_tf', project='cGAN_Model')
 # Model_Storage.saveClassifyResult(subject, accuracy_worst, cm_recall_worst, version, basis_result_set, 'classify_worst', project='cGAN_Model')
@@ -111,7 +111,6 @@ models_old, accuracy_old, cm_recall_old, selected_old_fake_data, filtered_old_re
 ## save model
 # Model_Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, filter_result_set, 'classify_old', project='cGAN_Model', num_reference=reference)
 # Model_Storage.saveClassifyModels(models_old, subject, version, 'classify_old', model_number=list(range(5)), project='cGAN_Model', num_reference=reference)
-#
 
 
 '''

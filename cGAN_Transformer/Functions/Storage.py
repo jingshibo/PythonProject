@@ -67,3 +67,32 @@ def loadCheckPointModels(storage_parameters, epoch_number, project='cGAN_Model')
         model = torch.load(model_path, weights_only=False)
         models[name] = model
     return models
+
+
+## save classification accuracy and cm recall values
+def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model', num_reference=None):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
+    result_path = os.path.join(data_dir, result_file)
+
+    # Combine the two dictionaries into one
+    combined_data = {'accuracy': accuracy, 'cm_recall': cm_recall.tolist()}
+
+    # Save to JSON file
+    with open(result_path, 'w') as f:
+        json.dump(combined_data, f, indent=8)
+
+
+## read classification accuracy and cm recall values
+def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model', num_reference=None):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
+    result_path = os.path.join(data_dir, result_file)
+
+    with open(result_path, 'r') as f:
+        loaded_data = json.load(f)
+
+    accuracy = loaded_data['accuracy']
+    cm_recall = np.array(loaded_data['cm_recall'])
+
+    return accuracy, cm_recall

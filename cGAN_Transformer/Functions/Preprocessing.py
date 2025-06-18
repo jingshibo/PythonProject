@@ -253,10 +253,10 @@ def build_cv_dataset_with_noisy_data(original_emg_data, modes_generation, snr=25
 
 
 # generate fake data by adding noise to real emg transition data
-def generateNoiseData(real_transition_data, num_sample, snr=25):
+def generateNoiseData(real_transition_data, num_sample_to_generate, snr=25):
     '''
     :param real_transition_data: selected real data used for noisy sample generation
-    :param num_sample:  the number of noisy samples to generate for each locomotion mode
+    :param num_sample_to_generate:  the number of noisy samples to generate for each locomotion mode
     :param snr:  the amplitude of noise to add based on signal-to-noise ratio. None means simply copying without adding noise.
     :return: real emg data with certain modes replaced by generated noisy data
     '''
@@ -282,7 +282,7 @@ def generateNoiseData(real_transition_data, num_sample, snr=25):
 
     # Generate noisy samples for each numpy array in reference_data
     noisy_data = [generate_noisy_sample(array, snr) for array in real_transition_data for _ in
-        range(int(num_sample / len(real_transition_data)))]
+        range(int(num_sample_to_generate / len(real_transition_data)))]
 
     return noisy_data
 
