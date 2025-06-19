@@ -150,7 +150,7 @@ class ConvCBNBlock(nn.Module):
         return out
 
 
-class EMGFusionSeparateGenerator(nn.Module):
+class EMGFusionOneFactorGenerator(nn.Module):
     def __init__(self, num_conditions, cond_embed_dim=128, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
             activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
         super().__init__()
@@ -208,10 +208,77 @@ class EMGFusionSeparateGenerator(nn.Module):
 
         # Blend
         out = mask_A * A + (1 - mask_A) * B
+        # out = mask_A * A + mask_B * B
+
         return out, mask_A
+        # return out, torch.cat([mask_A, mask_B], dim=1)
 
 
-# Conceptual EMGFusionPatchDiscriminator with Projection Principle
+class EMGFusionTwoFactorGenerator(nn.Module):
+    def __init__(self, num_conditions, cond_embed_dim=128, use_cbn=True, use_adain=False, use_spectral_norm=False, hidden_channels=32,
+            activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.01}):
+        super().__init__()
+
+        act_fn = activation_class(**activation_params) if activation_params else activation_class()
+        self.condition_embedding = nn.Embedding(num_conditions, cond_embed_dim)
+
+        # Separate initial feature extractors for A and B
+        self.A_feat = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
+            activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
+        self.B_feat = ConvCBNBlock(1, hidden_channels, cond_embed_dim, use_cbn, use_adain, use_spectral_norm, transpose=False,
+            activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
+
+        # Shared encoder
+        self.encoder1 = ConvCBNBlock(hidden_channels * 2 + 2, hidden_channels * 4, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
+        self.encoder2 = ConvCBNBlock(hidden_channels * 4, hidden_channels * 8, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=False, activation=act_fn, kernel_size=(5, 9), stride=(1, 2))
+
+        # Decoder with skip connections
+        self.decoder0 = ConvCBNBlock(hidden_channels * 8 + hidden_channels * 4, hidden_channels * 5, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        self.decoder1 = ConvCBNBlock(hidden_channels * 5 + hidden_channels * 2 + 2, hidden_channels * 2, cond_embed_dim, use_cbn, use_adain,
+            use_spectral_norm, transpose=True, activation=act_fn, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+
+        # Separate branches for mask generation
+        self.branch_A = ConvCBNBlock(hidden_channels * 2 + 2, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        self.branch_B = ConvCBNBlock(hidden_channels * 2 + 2, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+            transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, A, B, condition):
+        cond_embed = self.condition_embedding(condition)
+
+        A_downsampled = F.max_pool2d(A, kernel_size=(1, 2), stride=(1, 2))
+        B_downsampled = F.max_pool2d(B, kernel_size=(1, 2), stride=(1, 2))
+
+        # Separate feature extraction
+        A_feat = self.A_feat(A, cond_embed)
+        B_feat = self.B_feat(B, cond_embed)
+        x = torch.cat([A_feat, B_feat, A_downsampled, B_downsampled], dim=1)
+
+        # Encoder
+        e1 = self.encoder1(x, cond_embed)
+        e2 = self.encoder2(e1, cond_embed)
+
+        # Decoder with skip connections
+        d0 = self.decoder0((e2, e1), cond_embed)
+        d1 = self.decoder1((d0, x), cond_embed)
+
+        # Branches
+        mask_A = self.sigmoid(self.branch_A((d1, torch.cat([A, B], dim=1)), cond_embed))  # [B, 1, C, T]
+        mask_B = self.sigmoid(self.branch_B((d1, torch.cat([A, B], dim=1)), cond_embed))
+
+        # Blend
+        # out = mask_A * A + (1 - mask_A) * B
+        out = mask_A * A + mask_B * B
+
+        # return out, mask_A
+        return out, torch.cat([mask_A, mask_B], dim=1)
+
+
+## Conceptual EMGFusionPatchDiscriminator with Projection Principle
 class EMGFusionPatchDiscriminator(nn.Module):
     def __init__(self, num_conditions, cond_embed_dim=128, use_cbn=True, use_adain=False, use_spectral_norm=True, hidden_channels=64,
             activation_class=nn.LeakyReLU, activation_params={'negative_slope': 0.2}):
@@ -269,8 +336,6 @@ class EMGFusionPatchDiscriminator(nn.Module):
         # final_patch_logits = unconditional_patch_logits + conditional_term_values
 
         return unconditional_patch_logits
-
-
 
 
 class EMGFusionGenerator(nn.Module):
@@ -367,7 +432,7 @@ if __name__ == '__main__':
     dummy_B = torch.randn(batch_size_example, 1, 65, 1200).to(device)
     dummy_C = torch.randn(batch_size_example, 1, 65, 1200).to(device)
     dummy_condition = torch.randint(0, num_conditions_example, (batch_size_example,), dtype=torch.long).to(device)
-    model = EMGFusionSeparateGenerator(num_conditions=num_conditions_example).to(device)
+    model = EMGFusionTwoFactorGenerator(num_conditions=num_conditions_example).to(device)
     # model = EMGFusionPatchDiscriminator(num_conditions=num_conditions_example).to(device)
 
     # Keras-like summary primarily shows Layer Name, Output Shape, and Param #

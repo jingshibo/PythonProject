@@ -232,7 +232,7 @@ def plot_time_series_and_heatmaps(data, time_start=0, time_end='end', key_label=
     plt.show()
 
 
-def plot_overlap_sample_all_modes(old_emg_central):
+def plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 0.4)):
     # The 7 EMG data keys
     keys = ['emg_LWLW', 'emg_LWSA', 'emg_SASA', 'emg_SDSD', 'emg_SDLW', 'emg_LWSD', 'emg_SALW']
     # Setup subplots
@@ -250,7 +250,7 @@ def plot_overlap_sample_all_modes(old_emg_central):
         ax.set_title(f'{key}')
         ax.set_xlabel('Time Step')
         ax.set_ylabel('Avg Channel Value')
-        ax.set_ylim(0, 0.4)  # Set y-axis limit
+        ax.set_ylim(*y_limit)  # Set y-axis limit
         ax.grid(True)
     # Hide unused subplot if only using 7
     for j in range(len(keys), len(axes)):

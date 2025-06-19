@@ -37,60 +37,65 @@ class Dtw_Distance:
 
     ## select reference curves and return the most matching fake dataset
     def selectFakeData(self, dtw_results, synthetic_data, random_reference=False):
-        selected_fake_data = copy.deepcopy(synthetic_data)
+        selected_fake_data = {}
         selected_fake_data_indices = {}
         selected_reference_indices = {}
-        # calculate the average distance value between the reference data to select a representative reference curve
-        for transition_type in self.modes_generation.keys():
-            # select reference data
-            if random_reference:  # select references randomly
+
+        for transition_type in self.modes_generation:
+            reference_matrix = dtw_results[transition_type]['within_reference_ds']
+            num_refs_available = len(reference_matrix)
+
+            # Select reference indices
+            if random_reference:
                 random.seed(5)
-                self.num_reference = min(len(dtw_results[transition_type]['within_reference_ds']), self.num_reference)
-                selected_reference_index = random.sample(range(len(dtw_results[transition_type]['within_reference_ds'])), self.num_reference)
-            else:  # select representative references
-                dtw_reference_mean = np.mean(dtw_results[transition_type]['within_reference_ds'], axis=0)
+                self.num_reference = min(num_refs_available, self.num_reference)
+                selected_reference_index = random.sample(range(num_refs_available), self.num_reference)
+            else:
+                dtw_reference_mean = np.mean(reference_matrix, axis=0)
                 sorted_reference_index = np.argsort(dtw_reference_mean)
-                if len(sorted_reference_index) < self.num_reference:  # in case selected reference number is larger than the available number
-                    self.num_reference = len(sorted_reference_index)
-                selected_reference_index = sorted_reference_index[0::len(sorted_reference_index) // self.num_reference][0: self.num_reference]
+                self.num_reference = min(len(sorted_reference_index), self.num_reference)
+                step = max(len(sorted_reference_index) // self.num_reference, 1)
+                selected_reference_index = sorted_reference_index[::step][:self.num_reference]
 
-            # select fake data closest to the references
+            # Select fake data closest to the references
             selected_fake_index = self.avoidReplicatedData(dtw_results, selected_reference_index, transition_type)
-            # selected_fake_index = []
-            # for i in selected_reference_index:  # i is the row index of references in the dtw_results 2d array, the column refers to fake data
-            #     sorted_fake_index = np.argsort(dtw_results[transition_type]['fake_reference_ds'][i, :])
-            #     selected_fake_index.append(sorted_fake_index[: self.num_sample // self.num_reference])  # get the closest fake data index
-            # selected_fake_index = np.concatenate(selected_fake_index)
 
-            selected_fake_data[transition_type] = [synthetic_data[transition_type][index] for index in selected_fake_index]
+            # Populate the output dicts
+            selected_fake_data[transition_type] = [synthetic_data[transition_type][i] for i in selected_fake_index]
             selected_fake_data_indices[transition_type] = selected_fake_index
             selected_reference_indices[transition_type] = selected_reference_index
+
         return selected_fake_data, selected_fake_data_indices, selected_reference_indices
 
     # select representative fake data based on all reference curves available
     def bestFakeData(self, dtw_results, synthetic_data):
-        fake_data = copy.deepcopy(synthetic_data)
+        fake_data = {}
         selected_fake_data_indices = {}
-        for transition_type in self.modes_generation.keys():
-            # calculate the average distance value for each fake data with respect to all references
+
+        for transition_type in self.modes_generation:
+            # Compute average DTW distance to all references
             dtw_fake_mean = np.mean(dtw_results[transition_type]['fake_reference_ds'], axis=0)
             sorted_fake_index = np.argsort(dtw_fake_mean)
-            # select those data with smallest average distance to all references
+            # Select top-N (smallest distances)
             selected_fake_index = sorted_fake_index[:self.num_sample]
-            fake_data[transition_type] = [synthetic_data[transition_type][index] for index in selected_fake_index]
+            # Use selected indices to pull from synthetic data
+            fake_data[transition_type] = [synthetic_data[transition_type][i] for i in selected_fake_index]
             selected_fake_data_indices[transition_type] = selected_fake_index
-        selected_reference_index = []  # for consistence with the pickFakeData() function.
+
+        selected_reference_index = []  # to keep structure consistent
         return fake_data, selected_fake_data_indices, selected_reference_index
 
     # randomly select given number of fake data without using any references
     def selectRandomData(self, synthetic_data):
-        fake_data = copy.deepcopy(synthetic_data)
-        for transition_type, transition_data in synthetic_data.items():
-            if transition_type in self.modes_generation.keys():
-                random.seed(5)
-                fake_data[transition_type] = random.sample(transition_data, min(self.num_sample, len(transition_data)))
+        fake_data = {}
         selected_fake_data_indices = []
         selected_reference_index = []
+        random.seed(5)  # set once outside the loop
+        for transition_type, transition_data in synthetic_data.items():
+            if transition_type in self.modes_generation:
+                selected = random.sample(transition_data, min(self.num_sample, len(transition_data)))
+                fake_data[transition_type] = selected
+
         return fake_data, selected_fake_data_indices, selected_reference_index
 
     # when selecting fake data based on references, there may be same data from different reference. Then we would get the next one instead.

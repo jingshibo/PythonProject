@@ -1,7 +1,8 @@
 ##
 from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, Train_cGan
 from cGAN_Transformer.Functions import Preprocessing, Results, Storage, Plot_Raw_Data
-from cGAN_Transformer.Models import Classification_Model, Classification_TL_Model, Classification_Test, Transformer_GAN_Training, Transformer_GAN_Testing
+from cGAN_Transformer.Models import Classification_Model, Classification_TL_Model, Classification_Test, Transformer_GAN_Training, \
+    Transformer_GAN_Model, Transformer_GAN_Testing
 from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 from Conditional_GAN.Data_Procesing import Dtw_Similarity
 import numpy as np
@@ -14,31 +15,31 @@ import copy
 subjects = {
     'Number0': {'grid': 'grid_2', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [0, 1, 2, 5, 6], 'up_down_session_t1': [5, 6, 7, 8, 9],
-        'down_up_session_t1': [4, 5, 6, 8, 9], },
+        'down_up_session_t1': [4, 5, 6, 8, 9], 'amplitude_limit': 3000, 'epoch_number_to_generate': 60, 'gen_model': 'two_factors'},
     'Number1': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [1, 2, 3, 4, 5], 'up_down_session_t1': [0, 1, 2, 3, 4],
-        'down_up_session_t1': [1, 2, 3, 4], },
+        'down_up_session_t1': [1, 2, 3, 4], 'amplitude_limit': 1500, 'epoch_number_to_generate': 100, 'gen_model': 'one_factor'},
     'Number2': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [5, 6, 7, 8, 9], 'down_up_session_t0': [6, 8, 9, 10], 'up_down_session_t1': [5, 6, 7, 8, 9],
-        'down_up_session_t1': [6, 7, 8, 9, 10], },
+        'down_up_session_t1': [6, 7, 8, 9, 10], 'amplitude_limit': 1500, },
     'Number3': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [0, 1, 2, 3, 4], 'up_down_session_t1': [0, 1, 2, 3, 4, 5],
-        'down_up_session_t1': [1, 2, 3, 4, 5], },
+        'down_up_session_t1': [1, 2, 3, 4, 5], 'amplitude_limit': 1500, },
     'Number4': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [0, 1, 2, 4, 5], 'down_up_session_t0': [0, 1, 2, 3, 4], 'up_down_session_t1': [0, 1, 2, 3, 4],
-        'down_up_session_t1': [0, 1, 3, 4], },
-    'Number5': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
-        'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [0, 1, 2, 3, 4], 'up_down_session_t1': [0, 1, 2, 3, 4],
-        'down_up_session_t1': [0, 1, 2, 3, 4], },
+        'down_up_session_t1': [0, 1, 3, 4], 'amplitude_limit': 1500, },
+    # 'Number5': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
+    #     'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [0, 1, 2, 3, 4], 'up_down_session_t1': [0, 1, 2, 3, 4],
+    #     'down_up_session_t1': [0, 1, 2, 3, 4], },
     'Number6': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [2, 3, 4, 5], 'up_down_session_t1': [0, 1, 2, 3, 4],
-        'down_up_session_t1': [0, 1, 2, 3, 4], },
+        'down_up_session_t1': [0, 1, 2, 3, 4], 'amplitude_limit': 1000, },
     'Number7': {'grid': 'grid_1', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [0, 1, 2, 3, 4], 'down_up_session_t0': [0, 1, 2, 3, 4], 'up_down_session_t1': [0, 1, 2, 3],
-        'down_up_session_t1': [0, 1, 2, 3], },
+        'down_up_session_t1': [0, 1, 2, 3], }, 'amplitude_limit': 2000,
     'Number8': {'grid': 'grid_2', 'version': 0,  # the data from which experiment version to process
         'up_down_session_t0': [5, 6, 7, 8, 9], 'down_up_session_t0': [7, 8, 9, 10], 'up_down_session_t1': [0, 1, 2, 3, 4],
-        'down_up_session_t1': [0, 1, 2, 3], }, }
+        'down_up_session_t1': [0, 1, 2, 3], }, 'amplitude_limit': 3000, }
 result_set = 0
 class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
@@ -55,7 +56,7 @@ for subject, data_selection in subjects.items():
         data_selection['down_up_session_t1'], grid=data_selection['grid'], envelope=True, envelope_cutoff=400, reordering=False)
 
     ## parameters for normalize emg data to train models
-    amplitude_limit = 1500
+    amplitude_limit = data_selection['amplitude_limit']
     length = window_parameters['start_before_toeoff_ms'] + window_parameters[
         'endtime_after_toeoff_ms']  # the length of data in each repetition
     old_emg_normalized, new_emg_normalized, _, _ = Process_Raw_Data.normalizeFilterEmgData(old_emg_data, new_emg_data, amplitude_limit,
@@ -90,12 +91,17 @@ for subject, data_selection in subjects.items():
         'window_length': window_length, 'window_increment': window_increment, 'num_window_per_transition': num_window_per_transition,
         'window_shift': window_shift, 'channel_shift': channel_shift}
     storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'gan_result_set': 0}
+    gen_model = data_selection['gen_model']
     # trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCH_TO_TRAIN, num_sample_per_condition, num_batch_per_epoch)
-    # gan_model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters)
+    # gan_model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters, gen_model)
 
     ## generate and sample transition data
-    epoch_number_to_generate = 70
-    gan_model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generate)
+    num_conditions = len(transition_encoding) * training_parameters['num_window_per_transition']
+    model_class_map = {'gen': Transformer_GAN_Model.EMGFusionOneFactorGenerator(
+        num_conditions) if gen_model == 'one_factor' else Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
+        'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions), }
+    epoch_number_to_generate = data_selection['epoch_number_to_generate']
+    gan_model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generate, model_class_map)
     all_generated_data = Transformer_GAN_Testing.generateTransitionData(gan_model['gen'], train_gan_data, transition_encoding,
         num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=30)
     time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, ordered_sample_number=50)

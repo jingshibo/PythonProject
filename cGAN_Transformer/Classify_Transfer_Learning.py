@@ -1,7 +1,8 @@
 ##
 from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, Train_cGan
 from cGAN_Transformer.Functions import Preprocessing, Results, Storage, Plot_Raw_Data
-from cGAN_Transformer.Models import Classification_Model, Classification_TL_Model, Classification_Test, Transformer_GAN_Training, Transformer_GAN_Testing
+from cGAN_Transformer.Models import Classification_Model, Classification_TL_Model, Classification_Test, Transformer_GAN_Training, \
+    Transformer_GAN_Model, Transformer_GAN_Testing
 from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 from Conditional_GAN.Data_Procesing import Dtw_Similarity
 import numpy as np
@@ -10,20 +11,20 @@ import copy
 
 
 ## load and filter data
-subject = 'Number1'
+subject = 'Number2'
 grid = 'grid_1'
 version = 0  # the data from which experiment version to process
 result_set = 0
-up_down_session_t0 = [0, 1, 2, 3, 4]
-down_up_session_t0 = [1, 2, 3, 4, 5]
-up_down_session_t1 = [0, 1, 2, 3, 4]
-down_up_session_t1 = [1, 2, 3, 4]
+up_down_session_t0 = [5, 6, 7, 8, 9]
+down_up_session_t0 = [6, 8, 9, 10]
+up_down_session_t1 = [5, 6, 7, 8, 9]
+down_up_session_t1 = [6, 7, 8, 9, 10]
 old_emg_data, new_emg_data, window_parameters, start_before_toeoff_ms = Train_cGan.realEmgData(subject, version, up_down_session_t0,
     down_up_session_t0, up_down_session_t1, down_up_session_t1, grid=grid, envelope=True, envelope_cutoff=400, reordering=False)
 
 
 ## parameters for normalize emg data to train models
-amplitude_limit = 1500
+amplitude_limit = 3000
 class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 modes_generation = {'emg_LWSA': ['emg_LWLW', 'emg_SASA', 'emg_LWSA'], 'emg_LWSD': ['emg_LWLW', 'emg_SDSD', 'emg_LWSD'],
     'emg_SALW': ['emg_SASA', 'emg_LWLW', 'emg_SALW'],
@@ -53,23 +54,23 @@ old_emg_central, new_emg_central, train_gan_data, new_gan_data = Preprocessing.e
 
 ## plot raw data
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW', 'emg_LWLW', 'emg_SASA', 'emg_SDSD']
-transition_type = 'emg_LWSD'
+transition_type = 'emg_SDSD'
 time_point = 0
 time_slice_start = window_shift + time_point * window_increment
 time_slice_end = time_slice_start + window_length
-# Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central)
-# Plot_Raw_Data.plot_overlap_sample_all_modes(new_emg_central)
+# Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 1))
+# Plot_Raw_Data.plot_overlap_sample_all_modes(new_emg_central, y_limit=(0, 1))
 # Plot_Raw_Data.plot_time_series_and_heatmaps(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
 # key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=True, stata='mean')
 # Plot_Raw_Data.plot_heatmaps_samples(new_emg_central[transition_type], time_start=0, time_end=None,
 #     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=True, stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=False, stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=False, stata='mean')
-#
+Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=60, y_limit=(0, 1), random_sampling=False, stata='mean')
+Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=60, y_limit=(0, 1), random_sampling=False, stata='mean')
+
 
 ## train gan model
 NUM_EPOCH_TO_TRAIN = 100
@@ -84,14 +85,19 @@ training_parameters = {'modes_generation': modes_generation, 'transition_encodin
     'window_increment': window_increment, 'num_window_per_transition': num_window_per_transition, 'window_shift': window_shift,
     'channel_shift': channel_shift}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'gan_result_set': 0}
+gen_model = 'one_factor'  # or two_factors
 # trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCH_TO_TRAIN, num_sample_per_condition, num_batch_per_epoch)
-# gan_model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters)
+# gan_model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters, gen_model)
 
 
 
 ## generate transition data
-epoch_number_to_generate = 70
-gan_model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generate)
+num_conditions = len(transition_encoding) * training_parameters['num_window_per_transition']
+model_class_map = {'gen': Transformer_GAN_Model.EMGFusionOneFactorGenerator(
+    num_conditions) if gen_model == 'one_factor' else Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
+    'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions), }
+epoch_number_to_generate = 80
+gan_model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generate, model_class_map)
 all_generated_data = Transformer_GAN_Testing.generateTransitionData(gan_model['gen'], new_gan_data, transition_encoding,
     num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=3600, batch_size=30)
 time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, ordered_sample_number=50)

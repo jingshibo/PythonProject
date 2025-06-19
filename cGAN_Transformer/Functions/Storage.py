@@ -16,6 +16,7 @@ def saveGanModels(models, storage_parameters, project='cGAN_Model'):
         model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}.json'
         model_path = os.path.join(data_dir, model_file)
         # save model
+        models[name].to("cpu")
         torch.save(models[name].to("cpu"), model_path)
 
 
@@ -45,27 +46,45 @@ def saveCheckPointModels(models, storage_parameters, epoch_number, project='cGAN
     for name in storage_parameters['model_name']:
         # model path
         data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model'
-        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}_{epoch_number}.json'
+        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}_{epoch_number}.pth'
         model_path = os.path.join(data_dir, model_file)
         # save model
-        torch.save(models[name].to("cpu"), model_path)
+        models[name].to("cpu")
+        torch.save(models[name].state_dict(), model_path)
         models[name].to(device)
 
 
 ## load models from certain check points
-def loadCheckPointModels(storage_parameters, epoch_number, project='cGAN_Model'):
+def loadCheckPointModels(storage_parameters, epoch_number, model_class_map, project='cGAN_Model'):
+    """
+    Loads models saved via `state_dict`.
+
+    Parameters:
+    - storage_parameters: dict containing keys 'subject', 'version', 'model_type', and 'model_name' (list of model keys)
+    - epoch_number: int, used to identify checkpoint file
+    - model_class_map: dict {model_name: model_class_instance} with instantiated models
+    - project: project folder name
+
+    Returns:
+    - dict {model_name: model instance with loaded weights}
+    """
     models = {}
-    # model path
     subject = storage_parameters['subject']
     version = storage_parameters['version']
     model_type = storage_parameters['model_type']
+
     for name in storage_parameters['model_name']:
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model'
-        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}_{epoch_number}.json'
+        # Build path
+        data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\transformer_model'
+        model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}_{epoch_number}.pth'
         model_path = os.path.join(data_dir, model_file)
-        # load model
-        model = torch.load(model_path, weights_only=False)
+
+        # Load weights into the provided model structure
+        model = model_class_map[name]
+        state_dict = torch.load(model_path, map_location='cpu')
+        model.load_state_dict(state_dict)
         models[name] = model
+
     return models
 
 

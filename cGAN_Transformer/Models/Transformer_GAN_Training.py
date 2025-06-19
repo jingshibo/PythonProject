@@ -51,7 +51,7 @@ class GanTraining():
         self.perceptual_loss_calculator = VGG19PerceptualLoss(feature_layers={'relu3_1': 11}, device='cuda')
 
 
-    def trainModel(self, train_gan_data, transition_encoding, training_parameters, storage_parameters):
+    def trainModel(self, train_gan_data, transition_encoding, training_parameters, storage_parameters, gen_model):
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.writer = SummaryWriter(os.path.join(self.result_dir, f'experiment_{timestamp}'))
 
@@ -61,9 +61,12 @@ class GanTraining():
             training_parameters['window_length'], training_parameters['window_increment'], training_parameters['window_shift'],
             self.num_sample_per_condition, self.num_batch_per_epoch)
         self.train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=0)
-        # self.gen = Transformer_GAN_Model.EMGFusionGenerator(num_conditions).to(self.device)
-        self.gen = Transformer_GAN_Model.EMGFusionSeparateGenerator(num_conditions).to(self.device)
-        # self.gen = Transformer_GAN_Model.EMGFusionGFUGeneratorUNet(num_conditions).to(self.device)
+        if gen_model == 'one_factor':
+            self.gen = Transformer_GAN_Model.EMGFusionOneFactorGenerator(num_conditions).to(self.device)
+        elif gen_model == 'two_factors':
+            self.gen = Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions).to(self.device)
+        else:
+            raise Exception
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions).to(self.device)
 
         # training parameters
@@ -75,7 +78,7 @@ class GanTraining():
         self.critic_iterations = 3  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
-        self.lambda_l1_decay_epochs = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+        self.lambda_l1_decay_epochs = [10, 20, 30, 40, 50]
 
         # For WGAN, Adam with these betas is common, or RMSprop
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.5, 0.999))
