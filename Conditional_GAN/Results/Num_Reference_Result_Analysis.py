@@ -79,7 +79,7 @@ def calcuNumOfReferenceStatValues(reorganized_results):
     combined_mean_values_df.index = combined_mean_values_df.index.droplevel(1)
     combined_std_values_df.index = combined_std_values_df.index.droplevel(1)
     # Assign the combined mean and std values DataFrames to the 'mean' and 'std' keys under 'accuracy'
-    mean_std_value['accuracy']["statistics"]['mean'] = combined_mean_values_df
+    mean_std_value['accuracy']["statistics"]['mean'] = combined_mean_values_df * 100
     mean_std_value['accuracy']["statistics"]['std'] = combined_std_values_df
 
     # calculate the mean for the cm in the 'cm_recall' part
@@ -104,7 +104,7 @@ def calcuNumOfReferenceStatValues(reorganized_results):
             cm_diagonal_means[reference_key][accuracy_name] = diagonal_mean * 100
     # Convert the nested dictionary into a DataFrame
     cm_diagonal_mean_df = pd.DataFrame(cm_diagonal_means).T  # Transpose to get references as rows
-    cm_diagonal_mean_df.loc['reference_1', 'accuracy_combine'] = cm_diagonal_mean_df.loc['reference_1', 'accuracy_combine'] - 0.3
+    # cm_diagonal_mean_df.loc['reference_1', 'accuracy_combine'] = cm_diagonal_mean_df.loc['reference_1', 'accuracy_combine'] - 0.3
     # Store the DataFrame into the 'accuracy' key under 'cm_diagonal_mean'
     mean_std_value["accuracy"]["statistics"]["cm_diagonal_mean"] = cm_diagonal_mean_df
 

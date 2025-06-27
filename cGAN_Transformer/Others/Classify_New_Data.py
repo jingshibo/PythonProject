@@ -1,6 +1,6 @@
 ##
 from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, Train_cGan
-from cGAN_Transformer.Functions import Preprocessing, Results, Storage, Plot_Raw_Data
+from cGAN_Transformer.Functions import Preprocessing, Result_Analysis, Storage, Plot_Raw_Data
 from cGAN_Transformer.Models import Classification_Model, Transformer_GAN_Training, Transformer_GAN_Testing
 from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 from Conditional_GAN.Data_Procesing import Dtw_Similarity
@@ -141,7 +141,7 @@ synthetic_dataset, original_dataset = Preprocessing.build_cv_dataset_with_augmen
     modes_generation, n_splits=5, n_real_transition=0)
 train_model = Classification_Model.ModelTraining(num_epochs, batch_size, report_period=10)
 models, model_results = train_model.trainModel(original_dataset, decay_epochs)
-accuracy, cm_recall = Results.getAccuracyCm(model_results)
+accuracy, cm_recall = Result_Analysis.getAccuracyCm(model_results)
 class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
 Confusion_Matrix.plotConfusionMatrix(cm_recall, class_labels, normalize=False)
 

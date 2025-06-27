@@ -70,15 +70,15 @@ class GanTraining():
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions).to(self.device)
 
         # training parameters
-        gen_lr = 0.0005
-        disc_lr = 0.0003
+        gen_lr = 0.0003
+        disc_lr = 0.0002
         gen_lr_decay_rate = 0.7
         disc_lr_decay_rate = 0.7
         decay_epochs = [10, 20, 30, 50, 75]
         self.critic_iterations = 3  # Number of critic updates per generator update 5
         self.gp_lambda = 10.0  # GP weight
         self.lambda_L1 = 100  # L1 weight
-        self.lambda_l1_decay_epochs = [10, 20, 30, 40, 50]
+        self.lambda_l1_decay_epochs = [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
         # For WGAN, Adam with these betas is common, or RMSprop
         self.gen_opt = torch.optim.Adam(self.gen.parameters(), lr=gen_lr, weight_decay=0, betas=(0.5, 0.999))
@@ -96,10 +96,10 @@ class GanTraining():
             # set the checkpoints to save models
             if (epoch_number + 1) % 5 == 0:
                 print(f"Saved checkpoint at epoch {epoch_number + 1}")
-                Storage.saveCheckPointModels(models, storage_parameters, epoch_number + 1)
+                Storage.saveCheckPointModels(models, storage_parameters, epoch_number + 1, gen_model)
 
         # save the final model
-        Storage.saveGanModels(models, storage_parameters)
+        Storage.saveGanModels(models, gen_model, storage_parameters)
 
         torch.cuda.empty_cache()
         gc.collect()

@@ -179,8 +179,8 @@ class EMGFusionOneFactorGenerator(nn.Module):
         # Separate branches for mask generation
         self.branch_A = ConvCBNBlock(hidden_channels * 2 + 2, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
             transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
-        self.branch_B = ConvCBNBlock(hidden_channels * 2 + 2, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
-            transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
+        # self.branch_B = ConvCBNBlock(hidden_channels * 2 + 2, 1, cond_embed_dim, use_cbn, use_adain, use_spectral_norm,
+        #     transpose=True, activation=None, kernel_size=(5, 9), stride=(1, 1), upsample_scale=(1, 2))
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, A, B, condition):

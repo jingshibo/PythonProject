@@ -7,7 +7,7 @@ import pandas as pd
 def plotSubjectAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bonferroni_coeff=1):
     # Create sample data
     data = copy.deepcopy(mean_std_value)
-    df_mean = data['accuracy']['statistics']['cm_diagonal_mean'][columns_to_plot]
+    df_mean = data['accuracy']['statistics']['mean'][columns_to_plot]
     df_std = data['accuracy']['statistics']['std'][columns_to_plot]
     df_pval = data['accuracy']['statistics']['ttest'][columns_to_plot]
     df_mean.columns = legend
@@ -62,7 +62,7 @@ def plotSubjectAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bon
     ax.set_xticklabels([])  # set x-tick value
 
     # Set y-axis
-    ax.set_ylim(70, None)  # only set the lower limit
+    ax.set_ylim(80, None)  # only set the lower limit
     ymin, ymax = ax.get_ylim()  # get the current limits of the y-axis
     yticks = range(int(ymin), int(ymax+1), 5)  # set the space between y-axis ticks to 5
     ax.set_yticks(yticks)
@@ -83,7 +83,7 @@ def plotSubjectAdjacentTtest(mean_std_value, legend, columns_to_plot, title, bon
 def plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, legend, columns_to_plot, title, bonferroni_coeff=1):
     # Create sample data
     data = copy.deepcopy(mean_std_value)
-    df_mean = data['accuracy']['statistics']['cm_diagonal_mean'][columns_to_plot]
+    df_mean = data['accuracy']['statistics']['mean'][columns_to_plot]
     df_std = data['accuracy']['statistics']['std'][columns_to_plot]
     df_pval = data['accuracy']['statistics']['ttest'][columns_to_plot]
     df_mean.columns = legend
@@ -94,7 +94,7 @@ def plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, le
     # bench mark values
     benchmark = copy.deepcopy(benchmark_mean_std_value)
     lowest_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_worst'].to_numpy()
-    tf_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_tf'].to_numpy() + 0.6
+    tf_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_tf'].to_numpy()
     highest_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_best'].to_numpy()
 
     # Create color list

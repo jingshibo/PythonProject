@@ -6,13 +6,13 @@ import numpy as np
 
 
 ##
-def saveGanModels(models, storage_parameters, project='cGAN_Model'):
+def saveGanModels(models, gen_model, storage_parameters, project='cGAN_Model'):
     subject = storage_parameters['subject']
     version = storage_parameters['version']
     model_type = storage_parameters['model_type']
     for name in storage_parameters['model_name']:
         # model path
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model'
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model\\{gen_model}'
         model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}.json'
         model_path = os.path.join(data_dir, model_file)
         # save model
@@ -21,14 +21,14 @@ def saveGanModels(models, storage_parameters, project='cGAN_Model'):
 
 
 ##
-def loadGanModels(storage_parameters, project='cGAN_Model'):
+def loadGanModels(storage_parameters, gen_model, project='cGAN_Model'):
     models = {}
     # model path
     subject = storage_parameters['subject']
     version = storage_parameters['version']
     model_type = storage_parameters['model_type']
     for name in storage_parameters['model_name']:
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model'
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model\\{gen_model}'
         model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}.json'
         model_path = os.path.join(data_dir, model_file)
         # load model
@@ -38,14 +38,14 @@ def loadGanModels(storage_parameters, project='cGAN_Model'):
 
 
 ## save models during training at certain check points
-def saveCheckPointModels(models, storage_parameters, epoch_number, project='cGAN_Model'):
+def saveCheckPointModels(models, storage_parameters, epoch_number, gen_model, project='cGAN_Model'):
     subject = storage_parameters['subject']
     version = storage_parameters['version']
     model_type = storage_parameters['model_type']
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     for name in storage_parameters['model_name']:
         # model path
-        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model'
+        data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model\\{gen_model}'
         model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}_{epoch_number}.pth'
         model_path = os.path.join(data_dir, model_file)
         # save model
@@ -55,7 +55,7 @@ def saveCheckPointModels(models, storage_parameters, epoch_number, project='cGAN
 
 
 ## load models from certain check points
-def loadCheckPointModels(storage_parameters, epoch_number, model_class_map, project='cGAN_Model'):
+def loadCheckPointModels(storage_parameters, epoch_number, model_class_map, gen_model, project='cGAN_Model'):
     """
     Loads models saved via `state_dict`.
 
@@ -75,7 +75,7 @@ def loadCheckPointModels(storage_parameters, epoch_number, model_class_map, proj
 
     for name in storage_parameters['model_name']:
         # Build path
-        data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\transformer_model'
+        data_dir = f'D:\\Data\\{project}\\subject_{subject}\\Experiment_{version}\\transformer_model\\{gen_model}'
         model_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_{name}_{epoch_number}.pth'
         model_path = os.path.join(data_dir, model_file)
 
@@ -89,8 +89,8 @@ def loadCheckPointModels(storage_parameters, epoch_number, model_class_map, proj
 
 
 ## save classification accuracy and cm recall values
-def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_type, project='cGAN_Model', num_reference=None):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results'
+def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_type, gen_model, project='cGAN_Model', num_reference=None):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results\\{gen_model}'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 
@@ -103,8 +103,8 @@ def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_
 
 
 ## read classification accuracy and cm recall values
-def loadClassifyResult(subject, version, result_set, model_type, project='cGAN_Model', num_reference=None):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results'
+def loadClassifyResult(subject, version, result_set, model_type, gen_model, project='cGAN_Model', num_reference=None):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results\\{gen_model}'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 

@@ -1,6 +1,6 @@
 ## Imports
 from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, Train_cGan
-from cGAN_Transformer.Functions import Preprocessing, Results
+from cGAN_Transformer.Functions import Preprocessing, Result_Analysis
 # Assuming model.py is in the same directory or Python path is configured
 from cGAN_Transformer.Grid_Search.Grid_Search_Model import Raw_Cnn_2d, ModelTraining, perform_grid_search, EmgDataSet, foldDataloader
 import datetime
@@ -124,7 +124,7 @@ if run_final_training:
     print(f"Final model training completed in: {final_training_duration_for_summary}")
 
     if final_model_results_detailed:
-        avg_final_accuracy_for_summary, _ = Results.getAccuracyCm(final_model_results_detailed)
+        avg_final_accuracy_for_summary, _ = Result_Analysis.getAccuracyCm(final_model_results_detailed)
         for i, fold_result in enumerate(final_model_results_detailed):
             true_v = fold_result['true_value'];
             pred_v = fold_result['predict_value']
