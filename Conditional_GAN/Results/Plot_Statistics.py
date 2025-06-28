@@ -171,21 +171,23 @@ def plotModeAccuracyAdjacentTtest(mean_std_value, legend, columns_to_plot, title
     # Create sample data
     data = copy.deepcopy(mean_std_value)
     df_mean = data['accuracy']['statistics']['mean'][columns_to_plot]
+    df_std = data['accuracy']['statistics']['std'][columns_to_plot]
     df_mean.columns = legend
+    df_std.columns = legend
     font_size = 35
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold',
         'slategray']
-    ax = df_mean.plot.bar(capsize=4, width=0.8, color=color_list)
+    ax = df_mean.plot.bar(yerr=df_std, capsize=4, width=0.8, color=color_list)
 
     # Customizations
-    plt.title(title, fontsize=font_size+2)
+    plt.title(title, fontsize=font_size + 2)
     plt.xlabel('Transition Mode', fontsize=font_size)
     plt.ylabel('Classification Accuracy(%)', fontsize=font_size)
     plt.xticks(range(len(df_mean.index)), df_mean.index, rotation=0, fontsize=font_size)  # Set x-tick labels as row index names
     plt.yticks(fontsize=font_size)
-    ax.set_ylim(55, 100)
+    ax.set_ylim(50, 105)
     # Display the plot
 
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.17), fontsize=font_size - 5, ncol=3)  # Adjust legend

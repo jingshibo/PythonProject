@@ -41,7 +41,7 @@ def convertToDataframes(combined_data):
                 reference_dataframe = pd.DataFrame()
                 for model_key, number_dict in model_dict.items():  # e.g., 'model_old', 'model_new', ...
                     # Create a Series from the dictionary with NumberX as the index
-                    series = pd.Series(number_dict, name=model_key)
+                    series = pd.Series(number_dict, name=model_key) * 100
                     # Append the Series as a new column in the reference DataFrame
                     reference_dataframe = reference_dataframe.join(series, how='outer')
                 # Store the DataFrame for each reference in the metric dictionary
@@ -79,7 +79,7 @@ def calcuNumOfReferenceStatValues(reorganized_results):
     combined_mean_values_df.index = combined_mean_values_df.index.droplevel(1)
     combined_std_values_df.index = combined_std_values_df.index.droplevel(1)
     # Assign the combined mean and std values DataFrames to the 'mean' and 'std' keys under 'accuracy'
-    mean_std_value['accuracy']["statistics"]['mean'] = combined_mean_values_df * 100
+    mean_std_value['accuracy']["statistics"]['mean'] = combined_mean_values_df
     mean_std_value['accuracy']["statistics"]['std'] = combined_std_values_df
 
     # calculate the mean for the cm in the 'cm_recall' part
@@ -104,7 +104,6 @@ def calcuNumOfReferenceStatValues(reorganized_results):
             cm_diagonal_means[reference_key][accuracy_name] = diagonal_mean * 100
     # Convert the nested dictionary into a DataFrame
     cm_diagonal_mean_df = pd.DataFrame(cm_diagonal_means).T  # Transpose to get references as rows
-    # cm_diagonal_mean_df.loc['reference_1', 'accuracy_combine'] = cm_diagonal_mean_df.loc['reference_1', 'accuracy_combine'] - 0.3
     # Store the DataFrame into the 'accuracy' key under 'cm_diagonal_mean'
     mean_std_value["accuracy"]["statistics"]["cm_diagonal_mean"] = cm_diagonal_mean_df
 
@@ -144,7 +143,6 @@ def calcuNumOfReferenceTtestValues(mean_std_value):
     ttest_column_names = [f'{model_keys[i]}' for i in range(len(model_keys))]
     ttest_df = pd.DataFrame(ttest_results, index=ttest_column_names).T
     # Store the DataFrame into the 'statistics' key under 'ttest'
-    ttest_df.loc['reference_3', 'accuracy_noise'] = 0.04
     mean_std_value["accuracy"]["statistics"]["ttest"] = ttest_df
 
     return mean_std_value

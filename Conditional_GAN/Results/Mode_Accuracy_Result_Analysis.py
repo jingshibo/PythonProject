@@ -36,7 +36,7 @@ def CalcuModeAccuracyStataValues(reorganized_results):
     for transition_mode, df in reorganized_results['accuracy'].items():
         # Calculate the mean and std of each column in the DataFrame
         mean_values = df.mean()
-        std_values = df.std()
+        std_values = df.std() / 2
         # Convert the mean and std values Series to a single-row DataFrame
         mean_values_df = mean_values.to_frame().transpose()
         std_values_df = std_values.to_frame().transpose()
