@@ -61,12 +61,13 @@ class GanTraining():
             training_parameters['window_length'], training_parameters['window_increment'], training_parameters['window_shift'],
             self.num_sample_per_condition, self.num_batch_per_epoch)
         self.train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=0)
-        if gen_model == 'one_factor':
-            self.gen = Transformer_GAN_Model.EMGFusionOneFactorGenerator(num_conditions).to(self.device)
-        elif gen_model == 'two_factors':
-            self.gen = Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions).to(self.device)
-        else:
-            raise Exception
+        # if gen_model == 'one_factor':
+        #     self.gen = Transformer_GAN_Model.EMGFusionOneFactorGenerator(num_conditions).to(self.device)
+        # elif gen_model == 'two_factors':
+        #     self.gen = Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions).to(self.device)
+        # else:
+        #     raise Exception
+        self.gen = Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions).to(self.device)
         self.critic = Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions).to(self.device)
 
         # training parameters

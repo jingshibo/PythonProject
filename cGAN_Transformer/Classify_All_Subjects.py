@@ -80,6 +80,8 @@ for subject, data_selection in subjects.items():
     time_range = [-600, 600]  # select data centered around toe-off
     old_emg_central, new_emg_central, train_gan_data, new_gan_data = Preprocessing.extractGanTrainingData(modes_generation, old_emg_aligned,
         new_emg_aligned, time_range)
+    # old_sampled_emg, old_remaining_emg, train_gan_data = Preprocessing.sample_transition_remove_from_dict(old_emg_central, modes_generation,
+    #     n_samples=10, random_sampling=False)
 
     ## gan model train parameters
     NUM_EPOCH_TO_TRAIN = 100
@@ -100,13 +102,12 @@ for subject, data_selection in subjects.items():
 
     ## generate and sample transition data
     num_conditions = len(transition_encoding) * training_parameters['num_window_per_transition']
-    model_class_map = {'gen': Transformer_GAN_Model.EMGFusionOneFactorGenerator(
-        num_conditions) if gen_model == 'one_factor' else Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
-        'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions), }
+    model_class_map = {'gen': Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
+        'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions)}
     epoch_number_to_generate = data_selection['epoch_number_to_generate']
     gan_model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generate, model_class_map, gen_model)
     all_generated_data = Transformer_GAN_Testing.generateTransitionData(gan_model['gen'], train_gan_data, transition_encoding,
-        num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=60, batch_size=30)
+        num_window_per_transition, window_length, window_increment, window_shift, number_to_generate=30, batch_size=30)
     time_0_fake_data, ordered_sampled_data = Transformer_GAN_Testing.returnDataForPlotting(all_generated_data, ordered_sample_number=50)
     # only generate old synthetic data for old model training, since new synthetic data will be generated on-the-fly when required
     extracted_data = Dtw_Similarity.extractFakeData(time_0_fake_data, old_emg_central, modes_generation, envelope_frequency=30,
@@ -118,11 +119,11 @@ for subject, data_selection in subjects.items():
         train new classifier (basic updating scenarios), training and testing using data from the same and different time
     '''
     ##  train old model using old data
-    _, original_old_dataset = Preprocessing.build_cv_dataset_with_augmented_data(old_emg_central, organized_fake_data, modes_generation,
-        n_splits=5)
-    train_old_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
-    models_basis, results_basis = train_old_model.trainModel(original_old_dataset, decay_epochs=20)
-    accuracy_basis, cm_recall_basis = Result_Analysis.getAccuracyCm(results_basis)
+    # _, original_old_dataset = Preprocessing.build_cv_dataset_with_augmented_data(old_emg_central, organized_fake_data, modes_generation,
+    #     n_splits=5)
+    # train_old_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
+    # models_basis, results_basis = train_old_model.trainModel(original_old_dataset, decay_epochs=20)
+    # accuracy_basis, cm_recall_basis = Result_Analysis.getAccuracyCm(results_basis)
     # # Confusion_Matrix.plotConfusionMatrix(cm_recall_basis, class_labels, normalize=False)
     # Storage.saveClassifyResult(subject, accuracy_basis, cm_recall_basis, version, result_set, 'classify_basis', gen_model, num_reference=None)
     #
@@ -156,39 +157,39 @@ for subject, data_selection in subjects.items():
     '''
         train new classifier (with data augmentation), training and testing using data augmented by different methods
     '''
-    for num_reference in [3]:
-        ## update the old model with new data and old data (the n_synthetic_transition here is actually old transition data)
-        synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_augmented_data(new_emg_central, old_emg_central, modes_generation,
-            n_splits=5, n_real_steady_state=10, n_synthetic_transition=10, n_real_transition=num_reference, random_sampling=False)
-        train_model = Classification_TL_Model.ModelTraining(models_basis, num_epochs=30, batch_size=8, report_period=10)
-        models_old, results_old = train_model.trainModel(synthetic_dataset, decay_epochs=10)
-        accuracy_old, cm_recall_old = Result_Analysis.getAccuracyCm(results_old)
-        # Confusion_Matrix.plotConfusionMatrix(cm_recall_old, class_labels, normalize=False)
-        Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, result_set, 'classify_with_old', gen_model,
-            num_reference=num_reference)
-
-        ## update the old model with new data and synthetic data
-        synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_synthetic_data(new_emg_central, gan_model, modes_generation,
-            training_parameters, n_splits=5, n_real_steady_state=10, n_synthetic_transition=10, n_real_transition=num_reference,
-            random_sampling=False)
-        train_model = Classification_TL_Model.ModelTraining(models_basis, num_epochs=30, batch_size=8, report_period=10)
-        models_synthetic, results_synthetic = train_model.trainModel(synthetic_dataset, decay_epochs=10)
-        accuracy_synthetic, cm_recall_synthetic = Result_Analysis.getAccuracyCm(results_synthetic)
-        # Confusion_Matrix.plotConfusionMatrix(cm_recall_synthetic, class_labels, normalize=False)
-        Storage.saveClassifyResult(subject, accuracy_synthetic, cm_recall_synthetic, version, result_set, 'classify_with_synthetic', gen_model,
-            num_reference=num_reference)
-
-        ## update the old model with new data， old data and synthetic data
-        mix_dataset, _ = Preprocessing.build_cv_dataset_with_mix_data(new_emg_central, old_emg_central, gan_model, modes_generation,
-            training_parameters, n_splits=5, n_real_steady_state=10, n_old_transition=5, n_synthetic_transition=5,
-            n_real_transition=num_reference, random_sampling=False)
-        train_model = Classification_TL_Model.ModelTraining(models_basis, num_epochs=30, batch_size=8, report_period=10)
-        models_mix, results_mix = train_model.trainModel(mix_dataset, decay_epochs=10)
-        accuracy_mix, cm_recall_mix = Result_Analysis.getAccuracyCm(results_mix)
-        # Confusion_Matrix.plotConfusionMatrix(cm_recall_mix, class_labels, normalize=False)
-        Storage.saveClassifyResult(subject, accuracy_mix, cm_recall_mix, version, result_set, 'classify_with_mix', gen_model,
-            num_reference=num_reference)
-
+    # for num_reference in [3]:
+    #     ## update the old model with new data and old data (the n_synthetic_transition here is actually old transition data)
+    #     synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_augmented_data(new_emg_central, old_emg_central, modes_generation,
+    #         n_splits=5, n_real_steady_state=10, n_synthetic_transition=10, n_real_transition=num_reference, random_sampling=False)
+    #     train_model = Classification_TL_Model.ModelTraining(models_basis, num_epochs=30, batch_size=8, report_period=10)
+    #     models_old, results_old = train_model.trainModel(synthetic_dataset, decay_epochs=10)
+    #     accuracy_old, cm_recall_old = Result_Analysis.getAccuracyCm(results_old)
+    #     # Confusion_Matrix.plotConfusionMatrix(cm_recall_old, class_labels, normalize=False)
+    #     Storage.saveClassifyResult(subject, accuracy_old, cm_recall_old, version, result_set, 'classify_with_old', gen_model,
+    #         num_reference=num_reference)
+    #
+    #     ## update the old model with new data and synthetic data
+    #     synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_synthetic_data(new_emg_central, gan_model, modes_generation,
+    #         training_parameters, n_splits=5, n_real_steady_state=10, n_synthetic_transition=10, n_real_transition=num_reference,
+    #         random_sampling=False)
+    #     train_model = Classification_TL_Model.ModelTraining(models_basis, num_epochs=30, batch_size=8, report_period=10)
+    #     models_synthetic, results_synthetic = train_model.trainModel(synthetic_dataset, decay_epochs=10)
+    #     accuracy_synthetic, cm_recall_synthetic = Result_Analysis.getAccuracyCm(results_synthetic)
+    #     # Confusion_Matrix.plotConfusionMatrix(cm_recall_synthetic, class_labels, normalize=False)
+    #     Storage.saveClassifyResult(subject, accuracy_synthetic, cm_recall_synthetic, version, result_set, 'classify_with_synthetic', gen_model,
+    #         num_reference=num_reference)
+    #
+    #     ## update the old model with new data， old data and synthetic data
+    #     mix_dataset, _ = Preprocessing.build_cv_dataset_with_mix_data(new_emg_central, old_emg_central, gan_model, modes_generation,
+    #         training_parameters, n_splits=5, n_real_steady_state=10, n_old_transition=5, n_synthetic_transition=5,
+    #         n_real_transition=num_reference, random_sampling=False)
+    #     train_model = Classification_TL_Model.ModelTraining(models_basis, num_epochs=30, batch_size=8, report_period=10)
+    #     models_mix, results_mix = train_model.trainModel(mix_dataset, decay_epochs=10)
+    #     accuracy_mix, cm_recall_mix = Result_Analysis.getAccuracyCm(results_mix)
+    #     # Confusion_Matrix.plotConfusionMatrix(cm_recall_mix, class_labels, normalize=False)
+    #     Storage.saveClassifyResult(subject, accuracy_mix, cm_recall_mix, version, result_set, 'classify_with_mix', gen_model,
+    #         num_reference=num_reference)
+    #
         # ## update the old model with new data and noisy data
         # if num_reference != 0:  # only applies when num_reference is greater than 0
         #     for snr in [None, 25]:
@@ -228,17 +229,17 @@ for subject, data_selection in subjects.items():
     # Storage.saveClassifyResult(subject, accuracy_old_synthetic, cm_recall_old_synthetic, version, result_set, 'classify_old_synthetic', gen_model,
     #     num_reference=None)
     #
-    # ## train the old model with old data and noisy data
-    # synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_augmented_data(old_emg_central, organized_fake_data, modes_generation,
-    #     n_splits=5, n_real_steady_state=50, n_synthetic_transition=0, n_real_transition=5, random_sampling=False)
-    # train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
-    # models_old_imbalance, results_old_imbalance = train_model.trainModel(synthetic_dataset, decay_epochs=20)
-    # accuracy_old_imbalance, cm_recall_old_imbalance = Result_Analysis.getAccuracyCm(results_old_imbalance)
-    # # Confusion_Matrix.plotConfusionMatrix(cm_recall_old_imbalance, class_labels, normalize=False)
-    # Storage.saveClassifyResult(subject, accuracy_old_imbalance, cm_recall_old_imbalance, version, result_set, 'classify_old_imbalance', gen_model,
-    #     num_reference=5)
-    #
-    # ## train the old model with old data and noisy data
+    ## train the old model with a few old data
+    synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_augmented_data(old_emg_central, organized_fake_data, modes_generation,
+        n_splits=5, n_real_steady_state=50, n_synthetic_transition=0, n_real_transition=5, random_sampling=False)
+    train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
+    models_old_imbalance, results_old_imbalance = train_model.trainModel(synthetic_dataset, decay_epochs=20)
+    accuracy_old_imbalance, cm_recall_old_imbalance = Result_Analysis.getAccuracyCm(results_old_imbalance)
+    # Confusion_Matrix.plotConfusionMatrix(cm_recall_old_imbalance, class_labels, normalize=False)
+    Storage.saveClassifyResult(subject, accuracy_old_imbalance, cm_recall_old_imbalance, version, result_set, 'classify_old_imbalance', gen_model,
+        num_reference=5)
+
+    # ## train the old model with a few old data and synthetic data
     # synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_augmented_data(old_emg_central, organized_fake_data, modes_generation,
     #     n_splits=5, n_real_steady_state=50, n_synthetic_transition=50, n_real_transition=5, random_sampling=False)
     # train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
@@ -247,14 +248,22 @@ for subject, data_selection in subjects.items():
     # # Confusion_Matrix.plotConfusionMatrix(cm_recall_old_rebalanced, class_labels, normalize=False)
     # Storage.saveClassifyResult(subject, accuracy_old_rebalanced, cm_recall_old_rebalanced, version, result_set, 'classify_old_rebalanced', gen_model,
     #     num_reference=5)
-    #
-    # ## train the old model with real data and noisy data
-    # synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_noisy_data(old_emg_central, modes_generation, snr=25, n_splits=5,
-    #     n_real_steady_state=50, n_synthetic_transition=50, n_real_transition=5, random_sampling=False)
-    # train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
-    # models_noise, results_noise = train_model.trainModel(synthetic_dataset, decay_epochs=20)
-    # accuracy_noise, cm_recall_noise = Result_Analysis.getAccuracyCm(results_noise)
-    # Confusion_Matrix.plotConfusionMatrix(cm_recall_noise, class_labels, normalize=False)
-    # Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, result_set, 'classify_old_noisy', gen_model,
-    #     num_reference=5)
 
+    ## train the old model with real data and noisy data
+    synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_noisy_data(old_emg_central, modes_generation, snr=25, n_splits=5,
+        n_real_steady_state=50, n_synthetic_transition=50, n_real_transition=5, random_sampling=False)
+    train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
+    models_noise, results_noise = train_model.trainModel(synthetic_dataset, decay_epochs=20)
+    accuracy_noise, cm_recall_noise = Result_Analysis.getAccuracyCm(results_noise)
+    # Confusion_Matrix.plotConfusionMatrix(cm_recall_noise, class_labels, normalize=False)
+    Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, result_set, 'classify_old_noisy', gen_model,
+        num_reference=5)
+
+    ## train the old model with real data and copy data
+    synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_noisy_data(old_emg_central, modes_generation, snr=None, n_splits=5,
+        n_real_steady_state=50, n_synthetic_transition=50, n_real_transition=5, random_sampling=False)
+    train_model = Classification_Model.ModelTraining(num_epochs=40, batch_size=32, report_period=10)
+    models_copy, results_copy = train_model.trainModel(synthetic_dataset, decay_epochs=20)
+    accuracy_copy, cm_recall_copy = Result_Analysis.getAccuracyCm(results_copy)
+    # Confusion_Matrix.plotConfusionMatrix(cm_recall_copy, class_labels, normalize=False)
+    Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, result_set, 'classify_old_copy', gen_model, num_reference=5)

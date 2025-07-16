@@ -1,6 +1,7 @@
 ##
 from cGAN_Transformer.Functions import Result_Analysis
 from Conditional_GAN.Results import Load_Results, Subject_Result_Analysis, Num_Reference_Result_Analysis, Plot_Statistics
+from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 
 
 '''
@@ -89,4 +90,25 @@ title = ''
 Plot_Statistics.plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, legend, columns_for_plotting, title=title, bonferroni_coeff=1)
 
 
+##  plot confusion matrix
+# class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
+# reference = 1
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_mix'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_synthetic'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_old'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_copy'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_noise'], class_labels, normalize=False)
+# Confusion_Matrix.plotConfusionMatrix(benchmark_mean_std_value['cm_recall']['cm_recall_worst'], class_labels, normalize=False)
+#
+#
+# ##
+# class_labels = ['LW', 'LWSA', 'LWSD', 'SALW', 'SA', 'SDLW', 'SD']
+# reference = 0
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_mix'], class_labels, normalize=False)
+# reference = 1
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_mix'], class_labels, normalize=False)
+# reference = 2
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_mix'], class_labels, normalize=False)
+# reference = 3
+# Confusion_Matrix.plotConfusionMatrix(mean_std_value['cm_recall'][f'reference_{reference}']['cm_recall_mix'], class_labels, normalize=False)
 

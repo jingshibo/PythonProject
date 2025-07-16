@@ -85,7 +85,7 @@ training_parameters = {'modes_generation': modes_generation, 'transition_encodin
     'window_increment': window_increment, 'num_window_per_transition': num_window_per_transition, 'window_shift': window_shift,
     'channel_shift': channel_shift}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'gan_result_set': 0}
-gen_model = 'two_factors'  # or two_factors
+gen_model = 'two_factors'  # one_factor or two_factors
 # trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCH_TO_TRAIN, num_sample_per_condition, num_batch_per_epoch)
 # gan_model = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters, gen_model)
 
@@ -93,9 +93,8 @@ gen_model = 'two_factors'  # or two_factors
 
 ## generate transition data
 num_conditions = len(transition_encoding) * training_parameters['num_window_per_transition']
-model_class_map = {'gen': Transformer_GAN_Model.EMGFusionOneFactorGenerator(
-    num_conditions) if gen_model == 'one_factor' else Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
-    'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions), }
+model_class_map = {'gen': Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
+    'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions)}
 epoch_number_to_generate = 80
 gan_model = Storage.loadCheckPointModels(storage_parameters, epoch_number_to_generate, model_class_map, gen_model)
 all_generated_data = Transformer_GAN_Testing.generateTransitionData(gan_model['gen'], new_gan_data, transition_encoding,

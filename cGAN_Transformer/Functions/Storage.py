@@ -104,7 +104,7 @@ def saveClassifyResult(subject, accuracy, cm_recall, version, result_set, model_
 
 ## read classification accuracy and cm recall values
 def loadClassifyResult(subject, version, result_set, model_type, gen_model, project='cGAN_Model', num_reference=None):
-    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results - Copy\\{gen_model}'
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results\\{gen_model}'
     result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_results_{result_set}.json'
     result_path = os.path.join(data_dir, result_file)
 

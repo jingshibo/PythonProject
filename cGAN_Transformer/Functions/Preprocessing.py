@@ -12,7 +12,7 @@ from Conditional_GAN.Data_Procesing import Dtw_Similarity
 
 
 ## build classification datasets and extract the relevent modes for data generation
-def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normalized, time_range):
+def extractGanTrainingData(modes_generation, old_emg_data, new_emg_data, time_range):
     # select only the central part data for training
     def slice_center_time(emg_dict, selected_range):
         new_emg_dict = {}
@@ -24,8 +24,8 @@ def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normali
                 end = total_length // 2 + selected_range[1]
                 new_emg_dict[label].append(sample[start:end, :])  # Slice time axis
         return new_emg_dict
-    old_emg_central = slice_center_time(old_emg_normalized, time_range)
-    new_emg_central = slice_center_time(new_emg_normalized, time_range)
+    old_emg_central = slice_center_time(old_emg_data, time_range)
+    new_emg_central = slice_center_time(new_emg_data, time_range)
 
     # build gan generation dataset
     data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is critical, corresponding to the locomotion modes
@@ -42,6 +42,37 @@ def extractGanTrainingData(modes_generation, old_emg_normalized, new_emg_normali
             new_gan_data[transition_type][data_keys[idx]] = new_emg_central[mode]
 
     return old_emg_central, new_emg_central, old_gan_data, new_gan_data
+
+
+## extract only five samples from transition old data for gan training
+def sample_transition_remove_from_dict(original_emg_data, modes_generation, n_samples=5, random_sampling=True):
+    if not random_sampling:
+        random.seed(5)
+
+    sampled_data = {}
+    remaining_data = {}
+    for key, data_list in original_emg_data.items():
+        if key in list(modes_generation.keys()):
+            indices = list(range(len(data_list)))
+            sampled_indices = random.sample(indices, min(n_samples, len(indices)))
+            sampled_data[key] = [data_list[i] for i in sampled_indices]
+            remaining_data[key] = [data_list[i] for i in indices if i not in sampled_indices]
+
+        else:
+            sampled_data[key] = data_list.copy()
+            remaining_data[key] = data_list.copy()
+
+    # build gan generation dataset
+    old_gan_data = {}
+    data_keys = ['gen_data_1', 'gen_data_2', 'disc_data']  # The order in the list is critical, corresponding to the locomotion modes
+    for transition_type, modes in modes_generation.items():
+        # Initialize transition_type key in real_emg and train_gan_data dictionaries
+        old_gan_data[transition_type] = {'gen_data_1': None, 'gen_data_2': None, 'disc_data': None}
+        for idx, mode in enumerate(modes):
+            # Assign values using the new structure
+            old_gan_data[transition_type][data_keys[idx]] = sampled_data[mode]
+
+    return sampled_data, remaining_data, old_gan_data
 
 
 ## build the paired x and y dataset
@@ -98,6 +129,165 @@ def crossValidationSet(fold_number, classify_emg_data):
         print(f"  Val class counts:   {dict(zip(unique_val, counts_val))}")
 
     return cross_validation_indices, cross_validation_dataset
+
+
+## for five selected old data classification
+def build_old_cv_dataset(old_remaining_data, old_sampled_data, augmented_emg_data, modes_generation, n_splits=5, n_real_steady_state=50,
+        n_synthetic_transition=50, n_real_transition=5, random_sampling=True):
+    # Step 1: Set seed for reproducibility
+    if not random_sampling:
+        random.seed(5)
+        np.random.seed(5)
+
+    # Step 2: Flatten original data
+    all_keys = sorted(old_remaining_data.keys())
+    label_map = {key: i for i, key in enumerate(all_keys)}
+    X_all = [sample[np.newaxis, :, :] for key in all_keys for sample in old_remaining_data[key]]
+    y_all = [label_map[key] for key in all_keys for _ in old_remaining_data[key]]
+    X_all = np.array(X_all).astype(np.float32)
+    y_all = np.array(y_all).astype(np.int64)
+    augmented_emg_dict = {key: [arr[np.newaxis, :, :] if arr.ndim == 2 else arr for arr in list_of_arrays] for key, list_of_arrays in
+        augmented_emg_data.items()}
+    old_sampled_dict = {key: [arr[np.newaxis, :, :] if arr.ndim == 2 else arr for arr in list_of_arrays] for key, list_of_arrays in
+        old_sampled_data.items()}
+
+    # Step 3: Cross Validation data
+    kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    encoder = OneHotEncoder(sparse_output=False)
+    encoder.fit(y_all.reshape(-1, 1))  # fit once
+    original_folds = []
+    replaced_folds = []
+
+    for train_idx, test_idx in kf.split(X_all, y_all):
+        # Split original data
+        X_train_orig, y_train_orig = X_all[train_idx], y_all[train_idx]
+        X_test, y_test = X_all[test_idx], y_all[test_idx]
+
+        y_train_onehot_orig = encoder.transform(y_train_orig.reshape(-1, 1))
+        y_test_onehot = encoder.transform(y_test.reshape(-1, 1))
+
+        # 🔹 ORIGINAL FOLDS: keep all real samples per class
+        original_folds.append({'X_train': X_train_orig, 'y_train_int': y_train_orig, 'y_train_onehot': y_train_onehot_orig, 'X_test': X_test,
+                'y_test_int': y_test, 'y_test_onehot': y_test_onehot, 'label_map': label_map})
+
+        # 🔹 REPLACED FOLDS: N real + N generated if available; else just N real
+        replaced_X_train, replaced_y_train = [], []
+
+        train_data_by_label = {}
+        for i, x in enumerate(X_train_orig):
+            label = y_train_orig[i]
+            train_data_by_label.setdefault(label, []).append(x)
+
+        for label, samples in train_data_by_label.items():
+            key = all_keys[label]
+            samples = np.array(samples)
+            if key in list(modes_generation.keys()):
+                # N real transition samples
+                real_samples = old_sampled_dict[key]
+                real_indices = np.random.choice(len(real_samples), size=min(n_real_transition, len(real_samples)), replace=False)
+                replaced_X_train.extend([real_samples[i] for i in real_indices])
+                replaced_y_train.extend([label] * len(real_indices))
+
+                # N generated samples
+                gen_samples = augmented_emg_dict[key]
+                gen_indices = np.random.choice(len(gen_samples), size=min(n_synthetic_transition, len(gen_samples)), replace=False)
+                replaced_X_train.extend([gen_samples[i] for i in gen_indices])
+                replaced_y_train.extend([label] * len(gen_indices))
+            else:
+                # Only N real samples (no generated data available)
+                real_indices = np.random.choice(len(samples), size=min(n_real_steady_state, len(samples)), replace=False)
+                replaced_X_train.extend(samples[real_indices])
+                replaced_y_train.extend([label] * len(real_indices))
+
+        y_train_onehot_replaced = encoder.transform(np.array(replaced_y_train).reshape(-1, 1))
+
+        replaced_folds.append(
+            {'X_train': np.array(replaced_X_train), 'y_train_int': np.array(replaced_y_train), 'y_train_onehot': y_train_onehot_replaced,
+                'X_test': np.array(X_test), 'y_test_int': y_test, 'y_test_onehot': y_test_onehot, 'label_map': label_map})
+
+    return replaced_folds, original_folds
+
+
+## for five selected old data classification
+def build_old_cv_dataset_with_noise(old_remaining_data, old_sampled_data, modes_generation, snr=25, n_splits=5, n_real_steady_state=50,
+        n_synthetic_transition=50, n_real_transition=5, random_sampling=True):
+    # Step 1: Set seed for reproducibility
+    if not random_sampling:
+        random.seed(5)
+        np.random.seed(5)
+
+    # Step 2: Flatten original data
+    all_keys = sorted(old_remaining_data.keys())
+    label_map = {key: i for i, key in enumerate(all_keys)}
+    X_all = [sample[np.newaxis, :, :] for key in all_keys for sample in old_remaining_data[key]]
+    y_all = [label_map[key] for key in all_keys for _ in old_remaining_data[key]]
+    X_all = np.array(X_all).astype(np.float32)
+    y_all = np.array(y_all).astype(np.int64)
+    old_sampled_dict = {key: [arr[np.newaxis, :, :] if arr.ndim == 2 else arr for arr in list_of_arrays] for key, list_of_arrays in
+        old_sampled_data.items()}
+
+    # Step 3: Cross Validation data
+    kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    encoder = OneHotEncoder(sparse_output=False)
+    encoder.fit(y_all.reshape(-1, 1))  # fit once
+    original_folds = []
+    replaced_folds = []
+
+    for train_idx, test_idx in kf.split(X_all, y_all):
+        # Split original data
+        X_train_orig, y_train_orig = X_all[train_idx], y_all[train_idx]
+        X_test, y_test = X_all[test_idx], y_all[test_idx]
+        y_train_onehot_orig = encoder.transform(y_train_orig.reshape(-1, 1))
+        y_test_onehot = encoder.transform(y_test.reshape(-1, 1))
+
+        # 🔹 ORIGINAL FOLDS: keep all real samples per class
+        original_folds.append(
+            {'X_train': X_train_orig, 'y_train_int': y_train_orig, 'y_train_onehot': y_train_onehot_orig, 'X_test': X_test,
+                'y_test_int': y_test, 'y_test_onehot': y_test_onehot, 'label_map': label_map})
+
+        # 🔹 REPLACED FOLDS: N real + N generated if available; else just N real
+        replaced_train_dict = {}
+
+        train_data_by_label = {}
+        for i, x in enumerate(X_train_orig):
+            label = y_train_orig[i]
+            train_data_by_label.setdefault(label, []).append(x)
+
+        for label, samples in train_data_by_label.items():
+            key = all_keys[label]
+            samples = np.array(samples)
+
+            # Initialize an empty list for this class in our new dictionary
+            replaced_train_dict[key] = []
+            if key in list(modes_generation.keys()):
+                real_samples = old_sampled_dict[key]
+                # N real transition samples
+                real_indices = np.random.choice(len(real_samples), size=min(n_real_transition, len(real_samples)), replace=False)
+                # Add the selected real samples to the list for this key
+                replaced_train_dict[key].extend([real_samples[i] for i in real_indices])
+                # generate noisy data for augmentation
+                gen_samples = generateNoiseData([real_samples[i] for i in real_indices], n_synthetic_transition, snr)
+                # Add the selected generated samples to the same list
+                replaced_train_dict[key].extend(gen_samples)
+            else:
+                # Only N real samples (no generated data available)
+                real_indices = np.random.choice(len(samples), size=min(n_real_steady_state, len(samples)), replace=False)
+                # Add the selected real samples to the list for this key
+                replaced_train_dict[key].extend(list(samples[real_indices]))
+
+        # To maintain compatibility with the rest of the function (like one-hot encoding),
+        # we can now flatten this dictionary back into X and y arrays.
+        replaced_X_train = [sample for key in sorted(replaced_train_dict.keys()) for sample in replaced_train_dict[key]]
+        replaced_y_train = [label_map[key] for key in sorted(replaced_train_dict.keys()) for _ in replaced_train_dict[key]]
+
+        y_train_onehot_replaced = encoder.transform(np.array(replaced_y_train).reshape(-1, 1))
+
+        replaced_folds.append({  # We now add our new dictionary to the output for easy access
+            'train_data_dict': replaced_train_dict, 'X_train': np.array(replaced_X_train), 'y_train_int': np.array(replaced_y_train),
+            'y_train_onehot': y_train_onehot_replaced, 'X_test': np.array(X_test), 'y_test_int': y_test, 'y_test_onehot': y_test_onehot,
+            'label_map': label_map})
+
+    return replaced_folds, original_folds
 
 
 ## build a cross validation dataset with generated data incorporated into the training set
@@ -382,7 +572,7 @@ def build_cv_dataset_with_synthetic_data(original_emg_data, gan_model, modes_gen
 
 
 ## build a cross validation dataset with data generation based on available new real data, old real data and synthetic data
-def build_cv_dataset_with_mix_data(new_emg_data, old_emg_data , gan_model, modes_generation, training_parameters, n_splits=5,
+def build_cv_dataset_with_mix_data(new_emg_data, old_emg_data, gan_model, modes_generation, training_parameters, n_splits=5,
         n_real_steady_state=50, n_old_transition=50, n_synthetic_transition=50, n_real_transition=5, random_sampling=True):
     # Step 1: Set seed for reproducibility
     if not random_sampling:

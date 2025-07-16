@@ -75,18 +75,20 @@ def getSubjectResults(subject, version, result_set, gen_model, num_reference=1):
         project='cGAN_Model', num_reference=5)
     accuracy_old_noisy, cm_recall_old_noisy = Storage.loadClassifyResult(subject, version, result_set, 'classify_old_noisy',
         gen_model, project='cGAN_Model', num_reference=5)
+    accuracy_old_copy, cm_recall_old_copy = Storage.loadClassifyResult(subject, version, result_set, 'classify_old_copy',
+        gen_model, project='cGAN_Model', num_reference=5)
 
     accuracy = {'accuracy_old_real': accuracy_old_real, 'accuracy_old_synthetic': accuracy_old_synthetic,
         'accuracy_old_imbalance': accuracy_old_imbalance, 'accuracy_old_rebalanced': accuracy_old_rebalanced,
-        'accuracy_old_noisy': accuracy_old_noisy, 'accuracy_best': accuracy_best, 'accuracy_tf': accuracy_tf, 'accuracy_mix': accuracy_mix,
-        'accuracy_synthetic': accuracy_synthetic, 'accuracy_copy': accuracy_copy, 'accuracy_noise': accuracy_noise,
-        'accuracy_old': accuracy_old, 'accuracy_worst': accuracy_worst, 'accuracy_basis': accuracy_basis}
+        'accuracy_old_copy': accuracy_old_copy, 'accuracy_old_noisy': accuracy_old_noisy, 'accuracy_best': accuracy_best,
+        'accuracy_tf': accuracy_tf, 'accuracy_mix': accuracy_mix, 'accuracy_synthetic': accuracy_synthetic, 'accuracy_copy': accuracy_copy,
+        'accuracy_noise': accuracy_noise, 'accuracy_old': accuracy_old, 'accuracy_worst': accuracy_worst, 'accuracy_basis': accuracy_basis}
     cm_recall = {'cm_recall_old_real': cm_recall_old_real, 'cm_recall_old_synthetic': cm_recall_old_synthetic,
         'cm_recall_old_imbalance': cm_recall_old_imbalance, 'cm_recall_old_rebalanced': cm_recall_old_rebalanced,
-        'cm_recall_old_noisy': cm_recall_old_noisy, 'cm_recall_best': cm_recall_best, 'cm_recall_tf': cm_recall_tf,
-        'cm_recall_mix': cm_recall_mix, 'cm_recall_synthetic': cm_recall_synthetic, 'cm_recall_copy': cm_recall_copy,
-        'cm_recall_noise': cm_recall_noise, 'cm_recall_old': cm_recall_old, 'cm_recall_worst': cm_recall_worst,
-        'cm_recall_basis': cm_recall_basis}
+        'cm_recall_old_copy': cm_recall_old_copy, 'cm_recall_old_noisy': cm_recall_old_noisy, 'cm_recall_best': cm_recall_best,
+        'cm_recall_tf': cm_recall_tf, 'cm_recall_mix': cm_recall_mix, 'cm_recall_synthetic': cm_recall_synthetic,
+        'cm_recall_copy': cm_recall_copy, 'cm_recall_noise': cm_recall_noise, 'cm_recall_old': cm_recall_old,
+        'cm_recall_worst': cm_recall_worst, 'cm_recall_basis': cm_recall_basis}
     classify_results = {'accuracy': accuracy, 'cm_recall': cm_recall}
 
     return classify_results
@@ -102,14 +104,16 @@ def getOldResults(subject, version, gen_model, result_set):
         gen_model, project='cGAN_Model')
     accuracy_old_imbalance, cm_recall_old_imbalance = Storage.loadClassifyResult(subject, version, result_set, 'classify_old_imbalance',
         gen_model, project='cGAN_Model', num_reference=5)
+    accuracy_old_copy, cm_recall_old_copy = Storage.loadClassifyResult(subject, version, result_set, 'classify_old_copy',
+        gen_model, project='cGAN_Model', num_reference=5)
     accuracy_old_noisy, cm_recall_old_noisy = Storage.loadClassifyResult(subject, version, result_set, 'classify_old_noisy',
         gen_model, project='cGAN_Model', num_reference=5)
     accuracy = {'accuracy_old_real': accuracy_old_real, 'accuracy_old_rebalanced': accuracy_old_rebalanced,
         'accuracy_old_synthetic': accuracy_old_synthetic, 'accuracy_old_imbalance': accuracy_old_imbalance,
-        'accuracy_old_noisy': accuracy_old_noisy}
+        'accuracy_old_noisy': accuracy_old_noisy, 'accuracy_old_copy': accuracy_old_copy}
     cm_recall = {'cm_recall_old_real': cm_recall_old_real, 'cm_recall_old_rebalanced': cm_recall_old_rebalanced,
         'cm_recall_old_synthetic': cm_recall_old_synthetic, 'cm_recall_old_imbalance': cm_recall_old_imbalance,
-        'cm_recall_old_noisy': cm_recall_old_noisy}
+        'cm_recall_old_noisy': cm_recall_old_noisy, 'cm_recall_old_copy': cm_recall_old_copy}
 
     classify_results = {'accuracy': accuracy, 'cm_recall': cm_recall}
 
@@ -176,11 +180,6 @@ def getModeAccuracyResults(subject, version, result_set, gen_model, num_referenc
     classify_results['cm_recall'][f'cm_recall_tf'] = cm_recall_tf
 
     for reference in num_references:
-        # accuracy_synthetic, cm_recall_synthetic = Storage.loadClassifyResult(subject, version, result_set, 'classify_with_synthetic', gen_model,
-        #     project='cGAN_Model', num_reference=reference)
-        # classify_results['accuracy'][f'accuracy_synthetic_{reference}'] = accuracy_synthetic
-        # classify_results['cm_recall'][f'cm_recall_synthetic_{reference}'] = cm_recall_synthetic
-
         accuracy_mix, cm_recall_mix = Storage.loadClassifyResult(subject, version, result_set, 'classify_with_mix', gen_model,
             project='cGAN_Model', num_reference=reference)
         classify_results['accuracy'][f'accuracy_mix_{reference}'] = accuracy_mix
@@ -245,8 +244,8 @@ def calcuSubjectStatValues(combined_results):
     model_stds = all_accuracies_df.std().to_dict()
 
     # Store the calculated statistics
-    stats_results["accuracy"]["statistics"]["mean"] = pd.DataFrame([model_means], index=['mean'])
-    stats_results["accuracy"]["statistics"]["std"] = pd.DataFrame([model_stds], index=['std'])
+    stats_results["accuracy"]["statistics"]["mean"] = pd.DataFrame([model_means], index=['mean']) * 100
+    stats_results["accuracy"]["statistics"]["std"] = pd.DataFrame([model_stds], index=['std']) * 100
 
     # --- 2. Calculate Mean for Confusion Matrices (cm_recall) ---
     for model_name, model_value in combined_results["cm_recall"].items():

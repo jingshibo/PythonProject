@@ -93,9 +93,9 @@ def plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, le
 
     # bench mark values
     benchmark = copy.deepcopy(benchmark_mean_std_value)
-    lowest_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_worst'].to_numpy()
-    tf_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_tf'].to_numpy()
-    highest_benchmark = benchmark['accuracy']['statistics']['cm_diagonal_mean']['accuracy_best'].to_numpy()
+    lowest_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_worst'].to_numpy()
+    tf_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_tf'].to_numpy()
+    highest_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_best'].to_numpy()
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
