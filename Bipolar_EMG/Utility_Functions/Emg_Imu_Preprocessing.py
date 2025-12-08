@@ -50,6 +50,9 @@ def plotEmgImu(emg_data, imu_data, start_index, end_index):
     axes[0].legend(loc="upper right")
     axes[1].legend(loc="upper right")
 
+    plt.tight_layout()
+    plt.show()
+
 
 ## plot the pulses of imu and emg After alignment
 def plotEmgImuAligned(emg_data, imu_data, start_index, end_index):

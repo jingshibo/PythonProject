@@ -186,3 +186,4 @@ models_copy, results_copy = train_model.trainModel(synthetic_dataset, decay_epoc
 accuracy_copy, cm_recall_copy = Result_Analysis.getAccuracyCm(results_copy)
 # Confusion_Matrix.plotConfusionMatrix(cm_recall_noise, class_labels, normalize=False)
 Storage.saveClassifyResult(subject, accuracy_copy, cm_recall_copy, version, result_set, 'classify_old_copy', gen_model, num_reference=5)
+
