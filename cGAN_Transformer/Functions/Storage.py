@@ -115,3 +115,27 @@ def loadClassifyResult(subject, version, result_set, model_type, gen_model, proj
     cm_recall = np.array(loaded_data['cm_recall'])
 
     return accuracy, cm_recall
+
+
+## save similarity results
+def saveSimilarityResult(subject, results, version, result_set, model_type, gen_model, project='cGAN_Model', num_reference=None):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results\\{gen_model}'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_similarity_results_{result_set}.json'
+    result_path = os.path.join(data_dir, result_file)
+
+    with open(result_path, "w") as f:
+        json.dump(results, f, indent=8)
+
+
+## load similarity results
+def loadSimilarityResult(subject, version, result_set, model_type, gen_model, project='cGAN_Model', num_reference=None):
+    data_dir = f'D:\Data\{project}\subject_{subject}\Experiment_{version}\\transformer_model_results\\{gen_model}'
+    result_file = f'subject_{subject}_Experiment_{version}_model_{model_type}_reference_{num_reference}_similarity_results_{result_set}.json'
+    result_path = os.path.join(data_dir, result_file)
+
+    with open(result_path, 'r') as f:
+        similarity = json.load(f)
+
+    return similarity
+
+

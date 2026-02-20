@@ -1,13 +1,9 @@
 ##
 from Conditional_GAN.Data_Procesing import Process_Raw_Data, Train_Classifiers, Train_cGan
-from cGAN_Transformer.Functions import Preprocessing, Result_Analysis, Storage, Plot_Raw_Data
+from cGAN_Transformer.Functions import Preprocessing, Result_Analysis, Storage, Plot_Raw_Data, Similarity_Computation
 from cGAN_Transformer.Models import Classification_Model, Classification_TL_Model, Classification_Test, Transformer_GAN_Training, \
     Transformer_GAN_Model, Transformer_GAN_Testing
-from Transition_Prediction.Models.Utility_Functions import Confusion_Matrix
 from Conditional_GAN.Data_Procesing import Dtw_Similarity
-import numpy as np
-import datetime
-import copy
 
 
 ## load and filter data
@@ -54,22 +50,22 @@ old_emg_central, new_emg_central, train_gan_data, new_gan_data = Preprocessing.e
 
 ## plot raw data
 transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW', 'emg_LWLW', 'emg_SASA', 'emg_SDSD']
-transition_type = 'emg_SDSD'
+transition_type = 'emg_LWSD'
 time_point = 0
 time_slice_start = window_shift + time_point * window_increment
 time_slice_end = time_slice_start + window_length
-Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 1))
-Plot_Raw_Data.plot_overlap_sample_all_modes(new_emg_central, y_limit=(0, 1))
+# Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 1))
+# Plot_Raw_Data.plot_overlap_sample_all_modes(new_emg_central, y_limit=(0, 1))
 # Plot_Raw_Data.plot_time_series_and_heatmaps(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
 # key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
-# Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=True, stata='mean')
-# Plot_Raw_Data.plot_heatmaps_samples(new_emg_central[transition_type], time_start=0, time_end=None,
-#     key_label=transition_type, num_samples=60, y_limit=(0, 0.4), random_sampling=True, stata='mean')
-Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
-    key_label=transition_type, num_samples=60, y_limit=(0, 1), random_sampling=False, stata='mean')
-Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
-    key_label=transition_type, num_samples=60, y_limit=(0, 1), random_sampling=False, stata='mean')
+old_avg_image = Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=10, y_limit=(0, 0.4), random_sampling=False, stata='mean')
+new_avg_image = Plot_Raw_Data.plot_heatmaps_samples(new_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=10, y_limit=(0, 0.4), random_sampling=False, stata='mean')
+old_avg_curve = Plot_Raw_Data.plot_time_series_samples(old_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=10, y_limit=(0, 0.4), random_sampling=False, stata='mean')
+new_avg_curve = Plot_Raw_Data.plot_time_series_samples(new_emg_central[transition_type], time_start=0, time_end=None,
+    key_label=transition_type, num_samples=10, y_limit=(0, 0.4), random_sampling=False, stata='mean')
 
 
 ## train gan model
@@ -91,7 +87,7 @@ gen_model = 'two_factors'  # one_factor or two_factors
 
 
 
-## generate transition data
+## generate transition data (the new synthetic data generated here will not be used to train the classifier but only for plotting purpose)
 num_conditions = len(transition_encoding) * training_parameters['num_window_per_transition']
 model_class_map = {'gen': Transformer_GAN_Model.EMGFusionTwoFactorGenerator(num_conditions),
     'disc': Transformer_GAN_Model.EMGFusionPatchDiscriminator(num_conditions)}
@@ -109,17 +105,18 @@ selected_fake_data, organized_fake_data = Transformer_GAN_Testing.fakeDataForTra
 
 
 ## print image
-# transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
-# transition_type = 'emg_LWSD'
-# time_point = 0
-# generated_image = selected_fake_data[transition_type][time_point]['generated_images'].squeeze(1)
-# blending_factor_A = ordered_sampled_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
+transition_types = ['emg_LWSA', 'emg_LWSD', 'emg_SALW', 'emg_SDLW']
+transition_type = 'emg_LWSD'
+time_point = 0
+generated_image = selected_fake_data[transition_type][time_point]['generated_images'].squeeze(1)
+blending_factor_A = ordered_sampled_data[transition_type][time_point]['blending_factors'][:, 0, :, :]
+blending_factor_B = ordered_sampled_data[transition_type][time_point]['blending_factors'][:, 1, :, :]
 
-# Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=5, y_limit=(0, 0.4), stata='mean')
-# Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
-# Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
-# Plot_Raw_Data.plot_sample_fft(generated_image, transition_type, num_samples=5)
+gen_avg_image = Plot_Raw_Data.plot_heatmaps_samples(generated_image, key_label=transition_type, num_samples=10, y_limit=(0, 0.4), stata='mean')
+gen_avg_curve = Plot_Raw_Data.plot_time_series_samples(generated_image, key_label=transition_type, num_samples=10, y_limit=(0, 0.4), stata='mean')
+Plot_Raw_Data.plot_time_series_samples(blending_factor_A, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+Plot_Raw_Data.plot_time_series_samples(blending_factor_B, key_label=transition_type, num_samples=5, y_limit=(0, 1))
+Plot_Raw_Data.plot_sample_fft(generated_image, transition_type, num_samples=5)
 
 
 ##
@@ -191,7 +188,7 @@ else:
     Storage.saveClassifyResult(subject, accuracy_noise, cm_recall_noise, version, result_set, 'classify_with_copy', gen_model, num_reference=num_reference)
 
 
-## update the old model with new data and generated data
+## update the old model with new data and generated data (the synthetic data are generated based on k-fold training set, not from all samples at once)
 num_reference = 0
 synthetic_dataset, _ = Preprocessing.build_cv_dataset_with_synthetic_data(new_emg_central, gan_model, modes_generation, training_parameters,
     n_splits=5, n_real_steady_state=10, n_synthetic_transition=15, n_real_transition=num_reference, random_sampling=False)
@@ -212,3 +209,40 @@ Storage.saveClassifyResult(subject, accuracy_synthetic, cm_recall_synthetic, ver
 # Storage.saveClassifyResult(subject, accuracy_synthetic, cm_recall_synthetic, version, result_set, 'classify_with_synthetic', gen_model, num_reference=num_reference)
 
 
+## Plot the average values of old, new, and synthetic HDsEMG for comparison
+Plot_Raw_Data.plot_emg_3x2(old_avg_image, new_avg_image, gen_avg_image, old_avg_curve, new_avg_curve, gen_avg_curve, heatmap_vlim=(0, 0.4),
+    curve_ylim=(0, 0.4), heatmap_box_aspect=0.4, curve_box_aspect=0.4, xtick_step=200, font_size=30)
+
+
+## Similarity computation
+KEYS = list(modes_generation.keys())  # the 4 transition keys you want to compare
+# 1) old vs new
+overall_old_new, perkey_old_new = Similarity_Computation.compare_datasets_pairwise_mean(old_emg_central, new_emg_central, KEYS)
+# 2) new vs fake
+overall_new_fake, perkey_new_fake = Similarity_Computation.compare_datasets_pairwise_mean(new_emg_central, organized_fake_data, KEYS)
+
+print("OLD vs NEW overall:", overall_old_new)
+print("OLD vs NEW per key:", perkey_old_new)
+
+print("NEW vs FAKE overall:", overall_new_fake)
+print("NEW vs FAKE per key:", perkey_new_fake)
+
+similarity = {
+    "metric": "spatiotemporal_cosine_pairwise_mean",
+    "comparison": {
+        "old_vs_new": {
+            "overall": overall_old_new,
+            "per_key": perkey_old_new
+        },
+        "new_vs_fake": {
+            "overall": overall_new_fake,
+            "per_key": perkey_new_fake
+        }
+    }
+}
+
+## Save similiarity results
+Storage.saveSimilarityResult(subject, similarity, version, result_set, model_type, gen_model)
+
+
+similarity = Storage.loadSimilarityResult(subject, version, result_set, model_type, gen_model, project='cGAN_Model', num_reference=None)

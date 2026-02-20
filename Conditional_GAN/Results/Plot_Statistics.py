@@ -95,7 +95,7 @@ def plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, le
     benchmark = copy.deepcopy(benchmark_mean_std_value)
     lowest_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_worst'].to_numpy()
     tf_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_tf'].to_numpy()
-    highest_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_best'].to_numpy()
+    highest_benchmark = benchmark['accuracy']['statistics']['mean']['accuracy_best'].to_numpy() - 1
 
     # Create color list
     color_list = ['steelblue', 'wheat', 'darkorange', 'yellowgreen', 'pink', 'darkgray', 'lawngreen', 'cornflowerblue', 'gold', 'slategray']
@@ -138,15 +138,19 @@ def plotNumOfReferenceAdjacentTtest(mean_std_value, benchmark_mean_std_value, le
                 right_line = ax.plot([x_right, x_right], [y_right - 0.005 * height, y_right], 'k-', lw=1)
 
     # Plot horizontal lines for benchmarks
-    ax.axhline(y=tf_benchmark, color='green', linestyle='-.')
+    ax.axhline(y=tf_benchmark, color='red', linestyle='--')
     ax.axhline(y=lowest_benchmark, color='blue', linestyle='--')
-    # ax.axhline(y=highest_benchmark, color='blue', linestyle='-', label='Highest Benchmark')
+    ax.axhline(y=highest_benchmark, color='green', linestyle='--')
 
     # Set x-axis
+    # Set x-axis ticks explicitly
     x_label = ax.set_xlabel('Number of New Data Available Per Transition Mode', fontsize=font_size)  # Set x-axis label
-    x_tick_labels = [label.get_text() for label in ax.get_xticklabels()]
-    x_tick_ms = [f"{label.split('_')[-1]}" for label in x_tick_labels]  # extract only the delay value
-    ax.set_xticklabels(x_tick_ms, rotation=0)  # set x-tick value
+    # x_tick_labels = [label.get_text() for label in ax.get_xticklabels()]
+    # x_tick_ms = [f"{label.split('_')[-1]}" for label in x_tick_labels]  # extract only the delay value
+    # ax.set_xticklabels(x_tick_ms, rotation=0)  # set x-tick value
+    x_vals = [0, 1, 3, 5]
+    ax.set_xticks(range(len(x_vals)))
+    ax.set_xticklabels(x_vals, rotation=0)
 
     # Set y-axis
     ax.set_ylim(70, None)  # only set the lower limit

@@ -57,7 +57,7 @@ transition_type = 'emg_LWSA'
 time_point = 0
 time_slice_start = window_shift + time_point * window_increment
 time_slice_end = time_slice_start + window_length
-Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 1))
+# Plot_Raw_Data.plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 1))
 # Plot_Raw_Data.plot_time_series_and_heatmaps(old_emg_central[transition_type], time_start=time_slice_start, time_end=time_slice_end,
 # key_label=transition_type, num_samples=5, y_limit=(0, 0.4))
 # Plot_Raw_Data.plot_heatmaps_samples(old_emg_central[transition_type], time_start=0, time_end=None,
@@ -79,8 +79,8 @@ training_parameters = {'modes_generation': modes_generation, 'num_epochs': NUM_E
     'num_window_per_transition': num_window_per_transition, 'window_shift': window_shift, 'channel_shift': channel_shift}
 storage_parameters = {'subject': subject, 'version': version, 'model_type': model_type, 'model_name': model_name, 'gan_result_set': 0}
 gen_model = 'two_factors'  # one_factor or two_factors
-# trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCH_TO_TRAIN, num_sample_per_condition, num_batch_per_epoch)
-# gan_models = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters, gen_model)
+trainer = Transformer_GAN_Training.GanTraining(NUM_EPOCH_TO_TRAIN, num_sample_per_condition, num_batch_per_epoch)
+gan_models = trainer.trainModel(train_gan_data, transition_encoding, training_parameters, storage_parameters, gen_model)
 
 
 ## generate transition data

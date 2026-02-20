@@ -74,6 +74,10 @@ def plotSplitLine(left_insole_dataframe, right_insole_dataframe, emg_dataframe, 
     axes[2].legend(loc="upper right")
     axes[3].legend(loc="upper right")
 
+    plt.tight_layout()
+    plt.show()
+
+
     return left_cross_idx, right_cross_idx
 
 

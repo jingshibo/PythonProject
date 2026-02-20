@@ -52,6 +52,6 @@ mean_std_value = Mode_Accuracy_Result_Analysis.CalcuModeAccuracyStataValues(reor
 
 ## plot accuracy
 columns_for_plotting = ['cm_recall_tf', 'cm_recall_mix_3', 'cm_recall_mix_2', 'cm_recall_mix_1', 'cm_recall_mix_0', 'cm_recall_worst']
-legend = ['10 New Transition Data', '3 New Transition Data', '2 New Transition Data', '1 New Transition Data', '0 New Transition Data', 'No Model Updating']
+legend = ['10 New Transition Data', '5 New Transition Data', '3 New Transition Data', '1 New Transition Data', '0 New Transition Data', 'No Model Updating']
 title = ''
 Plot_Statistics.plotModeAccuracyAdjacentTtest(mean_std_value, legend, columns_for_plotting, title=title, bonferroni_coeff=1)

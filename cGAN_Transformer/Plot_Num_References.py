@@ -83,7 +83,8 @@ benchmark_mean_std_value = Result_Analysis.calcuSubjectStatValues(benchmark_comb
 
 ## calcualte statistic values
 columns_for_plotting = ['accuracy_mix', 'accuracy_synthetic', 'accuracy_old', 'accuracy_copy', 'accuracy_noise']
-legend = ['Dataset 4', 'Dataset 2', 'Dataset 3', 'Dataset 5', 'Dataset 1']
+# legend = ['Dataset 4', 'Dataset 2', 'Dataset 3', 'Dataset 1', 'Dataset 5']
+legend = ['D4:Hybrid', 'D2:GAN', 'D3:Old', 'D1:Copy', 'D5:Noise']
 # columns_for_plotting = ['accuracy_copy', 'accuracy_noise', 'accuracy_compare', 'accuracy_new', 'accuracy_combine']
 # legend = ['Limited New Data', 'Limited New Data + Noise', 'Old Data', 'Synthetic Data + Old Data', 'Synthetic Data']
 title = ''

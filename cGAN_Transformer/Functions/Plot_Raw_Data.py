@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import random
-
-
+from scipy.signal import welch
+from matplotlib.gridspec import GridSpec
 
 def plot_time_series_samples(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, stata='mean'):
     """
@@ -69,6 +69,7 @@ def plot_time_series_samples(data, time_start=0, time_end='end', key_label=None,
 
     plt.tight_layout()
     plt.show()
+    return overall_avg
 
 
 def plot_heatmaps_samples(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, cmap='viridis', stata='mean'):
@@ -138,6 +139,7 @@ def plot_heatmaps_samples(data, time_start=0, time_end='end', key_label=None, nu
 
     plt.tight_layout()
     plt.show()
+    return avg_matrix.T
 
 
 def plot_time_series_and_heatmaps(data, time_start=0, time_end='end', key_label=None, num_samples=None, y_limit=None, random_sampling=False, cmap='viridis'):
@@ -259,11 +261,6 @@ def plot_overlap_sample_all_modes(old_emg_central, y_limit=(0, 0.4)):
     plt.show()
 
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import welch
-
 def plot_sample_fft(data, transition_type, num_samples=5, fs=1000):
     """
     Plot PSDs of averaged time-series data for a given transition type.
@@ -304,3 +301,248 @@ def plot_sample_fft(data, transition_type, num_samples=5, fs=1000):
     plt.show()
 
 
+## Plot the old, new, and synthetic HDsEMG values
+def plot_summary_2x3(
+    old_avg_image, new_avg_image, gen_avg_image,
+    old_avg_curve, new_avg_curve, gen_avg_curve,
+    column_titles=("Old Data", "New Data", "Synthetic Data"),
+    cmap="viridis",
+    heatmap_vlim=(0, 0.4),
+    curve_ylim=(0, 0.4),
+    font_size=18
+):
+
+    plt.rcParams.update({
+        "font.size": font_size,
+        "axes.titlesize": font_size,
+        "axes.labelsize": font_size,
+        "xtick.labelsize": font_size - 2,
+        "ytick.labelsize": font_size - 2
+    })
+
+    fig, axes = plt.subplots(2, 3, figsize=(18, 8), constrained_layout=True)
+
+    # -------- Column titles (top row only) --------
+    for j, title in enumerate(column_titles):
+        axes[0, j].set_title(title, fontsize=font_size + 2, pad=15)
+
+    # -------- Row 1: Heatmaps --------
+    heatmaps = [old_avg_image, new_avg_image, gen_avg_image]
+    vmin, vmax = heatmap_vlim if heatmap_vlim else (None, None)
+
+    last_im = None
+    for j, hm in enumerate(heatmaps):
+        ax = axes[0, j]
+        last_im = ax.imshow(
+            hm, aspect="auto", origin="lower",
+            cmap=cmap, vmin=vmin, vmax=vmax
+        )
+
+        # Y-label only on left
+        if j == 0:
+            ax.set_ylabel("Channel")
+        else:
+            ax.set_ylabel("")
+            ax.set_yticklabels([])
+
+        # Remove X labels on heatmaps
+        ax.set_xlabel("")
+        ax.set_xticklabels([])
+
+    # Shared colorbar
+    fig.colorbar(last_im, ax=axes[0, :],
+                 orientation="vertical",
+                 fraction=0.02, pad=0.02)
+
+    # -------- Row 2: Curves --------
+    curves = [old_avg_curve, new_avg_curve, gen_avg_curve]
+
+    for j, cv in enumerate(curves):
+        ax = axes[1, j]
+        ax.plot(cv, linewidth=2)
+        ax.grid(True)
+
+        # Y-label only on left
+        if j == 0:
+            ax.set_ylabel("Avg Value")
+        else:
+            ax.set_ylabel("")
+            ax.set_yticklabels([])
+
+        # Keep ticks for all bottom plots
+        T = len(cv)
+        ax.set_xticks(np.arange(0, T+1, 300))
+
+        # X-label only on bottom-left
+        if j == 1:
+            ax.set_xlabel("Time Step")
+        else:
+            ax.set_xlabel("")
+
+        if curve_ylim:
+            ax.set_ylim(*curve_ylim)
+
+    plt.show()
+    return fig, axes
+
+
+##
+def plot_emg_3x2(
+    old_avg_image, new_avg_image, gen_avg_image,
+    old_avg_curve, new_avg_curve, gen_avg_curve,
+    row_labels=("Old Data", "New Data", "Synthetic Data"),
+    col_labels=("Heatmap", "Mean Curve"),
+    cmap="jet",
+    heatmap_vlim=(0, 0.4),
+    curve_ylim=(0, 0.4),
+    xtick_step=200,
+    font_size=12,
+    row_label_size=None,
+    title_size=None,
+    line_width=1.4,
+    show_channel_ticks=(0, 20, 40, 60),
+    save_path=None,
+    dpi=600,
+    # --- NEW: control each subplot box aspect (height/width) ---
+    heatmap_box_aspect=0.32,   # height/width for each heatmap axis
+    curve_box_aspect=0.32,     # height/width for each curve axis
+):
+    """
+    Publication-style 3x2 figure:
+      rows: Old/New/Synthetic
+      col1: heatmap (C x T)
+      col2: mean curve (T,)
+    No colorbar.
+
+    `*_box_aspect` controls each subplot's height/width ratio (per-axis),
+    independent of figure size.
+    """
+
+    heatmaps = [old_avg_image, new_avg_image, gen_avg_image]
+    curves   = [old_avg_curve, new_avg_curve, gen_avg_curve]
+
+    # --- shared limits ---
+    if heatmap_vlim is None:
+        vmin = min(np.nanmin(h) for h in heatmaps)
+        vmax = max(np.nanmax(h) for h in heatmaps)
+    else:
+        vmin, vmax = heatmap_vlim
+
+    if curve_ylim is None:
+        ymin = min(np.nanmin(c) for c in curves)
+        ymax = max(np.nanmax(c) for c in curves)
+        curve_ylim = (ymin, ymax)
+
+    row_label_size = row_label_size or (font_size + 1)
+    title_size = title_size or (font_size + 1)
+
+    plt.rcParams.update({
+        "font.size": font_size,
+        "axes.titlesize": title_size,
+        "axes.labelsize": font_size,
+        "xtick.labelsize": font_size - 1,
+        "ytick.labelsize": font_size - 1,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+    })
+
+    # --- layout (keep as you like; subplot shape is controlled by set_box_aspect) ---
+    fig = plt.figure(figsize=(10.2, 5.6))
+    gs = GridSpec(
+        3, 2, figure=fig,
+        width_ratios=[1.25, 1.0],
+        wspace=0.2, hspace=0.18
+    )
+    ax_h = [fig.add_subplot(gs[i, 0]) for i in range(3)]
+    ax_c = [fig.add_subplot(gs[i, 1]) for i in range(3)]
+
+    # Column headers
+    ax_h[0].set_title(col_labels[0], pad=6)
+    ax_c[0].set_title(col_labels[1], pad=6)
+
+    # ---------------- heatmaps ----------------
+    for i in range(3):
+        ax = ax_h[i]
+        hm = heatmaps[i]
+        T = hm.shape[1]  # time length
+
+        ax.imshow(hm, aspect="auto", origin="lower", cmap=cmap, vmin=vmin, vmax=vmax, interpolation="nearest")
+
+        # NEW: force identical x-limits for ALL heatmaps (align right borders)
+        ax.set_xlim(0, T + 10)
+
+        # NEW: force per-subplot height/width ratio (if you're using it)
+        ax.set_box_aspect(heatmap_box_aspect)
+
+        if show_channel_ticks is not None:
+            ax.set_yticks(list(show_channel_ticks))
+
+        # y-label only on middle heatmap
+        if i == 1:
+            ax.set_ylabel("Channel")
+        else:
+            ax.set_ylabel("")
+
+        # x-ticks/label only on bottom heatmap (but xlim already aligned for all)
+        if i < 2:
+            ax.tick_params(axis="x", labelbottom=False)
+        else:
+            ax.set_xlabel("Time Step")
+            ticks = list(np.arange(0, T + 1, xtick_step))
+            if ticks[-1] != T:
+                ticks.append(T)
+            ax.set_xticks(ticks)
+
+        # row label (left margin) - NOT bold
+        ax.text(-0.16, 0.5, row_labels[i], transform=ax.transAxes, rotation=90, va="center", ha="right", fontsize=row_label_size)
+
+    # ---------------- curves ----------------
+    for i in range(3):
+        ax = ax_c[i]
+        cv = curves[i]
+        T = len(cv)
+
+        ax.plot(cv, linewidth=line_width)
+        ax.set_ylim(*curve_ylim)
+
+        # NEW: force per-subplot height/width ratio
+        ax.set_box_aspect(curve_box_aspect)
+
+        # show the endpoint tick (e.g., 1200) and avoid overlap with right spine
+        ax.set_xlim(0, T + 10)
+
+        ticks = list(np.arange(0, T + 1, xtick_step))
+        if ticks[-1] != T:
+            ticks.append(T)
+        ax.set_xticks(ticks)
+
+        # subtle y-grid only
+        ax.grid(True, axis="y", alpha=0.18, linewidth=0.8)
+        ax.grid(False, axis="x")
+
+        # restore full rectangular border for curves
+        for spine in ax.spines.values():
+            spine.set_visible(True)
+
+        # y-label only middle (tick labels still visible for all)
+        if i == 1:
+            ax.set_ylabel("Amplitude")
+        else:
+            ax.set_ylabel("")
+
+        # only bottom curve shows x tick labels + xlabel
+        if i < 2:
+            ax.set_xlabel("")
+            ax.tick_params(axis="x", labelbottom=False)
+        else:
+            ax.set_xlabel("Time step")
+            ax.tick_params(axis="x", labelbottom=True)
+
+    # margins
+    fig.subplots_adjust(left=0.15, right=0.80, top=0.92, bottom=0.12)
+
+    if save_path is not None:
+        fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+
+    plt.show()
+    return fig, (ax_h, ax_c)

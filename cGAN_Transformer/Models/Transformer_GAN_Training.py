@@ -88,6 +88,32 @@ class GanTraining():
         self.lr_disc_opt = torch.optim.lr_scheduler.MultiStepLR(optimizer=self.critic_opt, milestones=decay_epochs, gamma=disc_lr_decay_rate)
         models = {'gen': self.gen, 'disc': self.critic}
 
+        # log the model structure (use a tiny batch for tracing)
+        A, B, C_real, cond = next(iter(self.train_loader))
+        A = A.to(self.device)
+        B = B.to(self.device)
+        C_real = C_real.to(self.device)
+        cond = cond.to(self.device)
+
+        # Use a small subset to avoid huge tracing graphs / OOM
+        A, B, C_real, cond = A[:2], B[:2], C_real[:2], cond[:2]
+
+        self.gen.eval()
+        self.critic.eval()
+        with torch.no_grad():
+            # Generator: expects (A, B, condition)
+            self.writer.add_graph(self.gen, (A, B, cond))
+
+            # Critic on real: expects (C_sample, condition_label)
+            self.writer.add_graph(self.critic, (C_real, cond))
+
+            # (Optional) Critic on fake as well
+            C_fake, _ = self.gen(A, B, cond)
+            self.writer.add_graph(self.critic, (C_fake, cond))
+
+        self.gen.train()
+        self.critic.train()
+
         for epoch_number in range(self.num_epochs):
             avg_gen_loss, avg_critic_loss = self.trainOneEpoch(epoch_number)
             self.lr_disc_opt.step()  # update the learning rate
@@ -137,7 +163,7 @@ class GanTraining():
                 # gp = self.compute_gradient_penalty(self.critic, real_C, fake_C, cond_label, self.device)
                 # critic_loss = loss_critic_adv + self.gp_lambda * gp
 
-                # BCEWithLogitsLoss for critic
+                # LSGANloss for critic
                 real_labels = torch.full_like(critic_real_scores, 0.9, device=self.device)
                 loss_disc_real = self.mse_loss(critic_real_scores, real_labels)
                 fake_labels = torch.full_like(critic_fake_scores, 0.1, device=self.device)

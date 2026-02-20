@@ -477,7 +477,7 @@ def generateNoiseData(real_transition_data, num_sample_to_generate, snr=25):
     return noisy_data
 
 
-## build a cross validation dataset with data generation based on available new real data
+## build a cross validation dataset with data generation based solely on available new real data
 def build_cv_dataset_with_synthetic_data(original_emg_data, gan_model, modes_generation, training_parameters, n_splits=5,
         n_real_steady_state=50, n_synthetic_transition=50, n_real_transition=5, random_sampling=True):
     # Step 1: Set seed for reproducibility
@@ -532,7 +532,7 @@ def build_cv_dataset_with_synthetic_data(original_emg_data, gan_model, modes_gen
                 # Add the selected real samples to the list for this key
                 replaced_train_dict[key].extend(list(samples[real_indices]))
             else:
-                # Only N real samples (no generated data available)
+                # N real steady-state samples
                 real_indices = np.random.choice(len(samples), size=min(n_real_steady_state, len(samples)), replace=False)
                 # Add the selected real samples to the list for this key
                 replaced_train_dict[key].extend(list(samples[real_indices]))
@@ -634,7 +634,7 @@ def build_cv_dataset_with_mix_data(new_emg_data, old_emg_data, gan_model, modes_
                 replaced_train_dict[key].extend([gen_samples[i] for i in gen_indices])
 
             else:
-                # Only N real samples (no generated data available)
+                # N real steady-state samples
                 real_indices = np.random.choice(len(samples), size=min(n_real_steady_state, len(samples)), replace=False)
                 # Add the selected real samples to the list for this key
                 replaced_train_dict[key].extend(list(samples[real_indices]))
